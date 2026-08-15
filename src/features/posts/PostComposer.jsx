@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { X } from 'lucide-react';
 import {
   createPost,
   addPostMedia,
@@ -9,11 +8,33 @@ import {
 } from '@/lib/posts';
 import { invokeFunction } from '@/lib/supabaseFunctions';
 import { CanvaDesignPicker } from '@/features/integrations/canva/CanvaDesignPicker';
-import { FacebookPreview, InstagramPreview } from '@/features/posts/PlatformPreviews';
+import { FacebookFeedPreview } from '@/features/posts/previews/FacebookFeedPreview';
+import { InstagramFeedPreview } from '@/features/posts/previews/InstagramFeedPreview';
+import { MediaStrip, MAX_CAROUSEL_ITEMS } from '@/features/posts/MediaStrip';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+const IG_CAPTION_LIMIT = 2200;
+const FB_CAPTION_LIMIT = 63206;
+
+function validatePost({ caption, media, publishInstagram, publishFacebook }) {
+  const errors = [];
+  if (publishInstagram && !media.length) {
+    errors.push('Instagram requires at least one image or video.');
+  }
+  if (media.length > MAX_CAROUSEL_ITEMS) {
+    errors.push(`Maximum ${MAX_CAROUSEL_ITEMS} media items per carousel.`);
+  }
+  if (publishInstagram && caption.length > IG_CAPTION_LIMIT) {
+    errors.push(`Instagram caption exceeds ${IG_CAPTION_LIMIT} characters.`);
+  }
+  if (publishFacebook && caption.length > FB_CAPTION_LIMIT) {
+    errors.push(`Facebook caption exceeds ${FB_CAPTION_LIMIT} characters.`);
+  }
+  return errors;
+}
 
 export function PostComposer() {
   const navigate = useNavigate();
@@ -34,9 +55,13 @@ export function PostComposer() {
   const [media, setMedia] = useState([]);
   const [saving, setSaving] = useState(false);
 
-  const primaryMediaUrl = media[0]?.publicUrl || media[0]?.public_url;
+  const validationErrors = validatePost({ caption, media, publishInstagram, publishFacebook });
+  const captionHint = publishInstagram
+    ? `${caption.length}/${IG_CAPTION_LIMIT} (Instagram)`
+    : `${caption.length}/${FB_CAPTION_LIMIT} (Facebook)`;
 
   const handleCanvaSelect = (item) => {
+    if (media.length >= MAX_CAROUSEL_ITEMS) return;
     setMedia((prev) => [...prev, {
       source: 'canva',
       canva_design_id: item.canvaDesignId,
@@ -48,26 +73,30 @@ export function PostComposer() {
   };
 
   const handleFileUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    setMedia((prev) => [...prev, {
-      source: 'upload',
-      public_url: url,
-      mime_type: file.type,
-      file,
-      sort_order: prev.length,
-    }]);
-  };
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
 
-  const removeMedia = (index) => {
-    setMedia((prev) => prev.filter((_, i) => i !== index));
+    setMedia((prev) => {
+      const remaining = MAX_CAROUSEL_ITEMS - prev.length;
+      const toAdd = files.slice(0, remaining);
+      return [
+        ...prev,
+        ...toAdd.map((file, i) => ({
+          source: 'upload',
+          public_url: URL.createObjectURL(file),
+          mime_type: file.type,
+          file,
+          sort_order: prev.length + i,
+        })),
+      ];
+    });
+    e.target.value = '';
   };
 
   const saveMediaToPost = async (postId) => {
     for (const item of media) {
       if (item.file) {
-        await uploadMediaFile(postId, item.file);
+        await uploadMediaFile(postId, item.file, item.sort_order);
       } else {
         await addPostMedia(postId, {
           source: item.source,
@@ -81,18 +110,14 @@ export function PostComposer() {
     }
   };
 
-  const handleSaveDraft = async () => {
+  const runWithValidation = async (action) => {
+    if (validationErrors.length) {
+      alert(validationErrors.join('\n'));
+      return;
+    }
     setSaving(true);
     try {
-      const post = await createPost({
-        caption,
-        status: 'draft',
-        publish_facebook: publishFacebook,
-        publish_instagram: publishInstagram,
-        scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
-      });
-      await saveMediaToPost(post.id);
-      navigate(`/app/posts/${post.id}`);
+      await action();
     } catch (err) {
       alert(err.message);
     } finally {
@@ -100,7 +125,19 @@ export function PostComposer() {
     }
   };
 
-  const handleSchedule = async () => {
+  const handleSaveDraft = () => runWithValidation(async () => {
+    const post = await createPost({
+      caption,
+      status: 'draft',
+      publish_facebook: publishFacebook,
+      publish_instagram: publishInstagram,
+      scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
+    });
+    await saveMediaToPost(post.id);
+    navigate(`/app/posts/${post.id}`);
+  });
+
+  const handleSchedule = () => runWithValidation(async () => {
     if (!scheduledAt) {
       alert('Please set a schedule date and time');
       return;
@@ -111,51 +148,50 @@ export function PostComposer() {
       alert('Schedule time must be at least 10 minutes in the future');
       return;
     }
-    setSaving(true);
-    try {
-      const post = await createPost({
-        caption,
-        status: 'scheduled',
-        publish_facebook: publishFacebook,
-        publish_instagram: publishInstagram,
-        scheduled_at: scheduleDate.toISOString(),
-      });
-      await saveMediaToPost(post.id);
-      await schedulePost(post.id, scheduleDate.toISOString());
-      navigate('/app/calendar');
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setSaving(false);
-    }
-  };
+    const post = await createPost({
+      caption,
+      status: 'scheduled',
+      publish_facebook: publishFacebook,
+      publish_instagram: publishInstagram,
+      scheduled_at: scheduleDate.toISOString(),
+    });
+    await saveMediaToPost(post.id);
+    await schedulePost(post.id, scheduleDate.toISOString());
+    navigate('/app/calendar');
+  });
 
-  const handlePublishNow = async () => {
-    setSaving(true);
-    try {
-      const post = await createPost({
-        caption,
-        status: 'scheduled',
-        publish_facebook: publishFacebook,
-        publish_instagram: publishInstagram,
-        scheduled_at: new Date().toISOString(),
-      });
-      await saveMediaToPost(post.id);
-      await invokeFunction('publishPost', { postId: post.id });
-      navigate(`/app/posts/${post.id}`);
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setSaving(false);
-    }
-  };
+  const handlePublishNow = () => runWithValidation(async () => {
+    const post = await createPost({
+      caption,
+      status: 'scheduled',
+      publish_facebook: publishFacebook,
+      publish_instagram: publishInstagram,
+      scheduled_at: new Date().toISOString(),
+    });
+    await saveMediaToPost(post.id);
+    await invokeFunction('publishPost', { postId: post.id });
+    navigate(`/app/posts/${post.id}`);
+  });
+
+  const handleSubmitForReview = () => runWithValidation(async () => {
+    const post = await createPost({
+      caption,
+      status: 'draft',
+      approval_status: 'pending',
+      publish_facebook: publishFacebook,
+      publish_instagram: publishInstagram,
+      scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
+    });
+    await saveMediaToPost(post.id);
+    navigate('/app/queue');
+  });
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle>Compose Post</CardTitle>
+            <CardTitle className="font-display">Compose Post</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <Textarea
@@ -164,7 +200,7 @@ export function PostComposer() {
               onChange={(e) => setCaption(e.target.value)}
               rows={6}
             />
-            <p className="text-xs text-muted-foreground">{caption.length} characters</p>
+            <p className="text-xs text-muted-foreground">{captionHint}</p>
 
             <div className="flex gap-4">
               <label className="flex items-center gap-2 text-sm">
@@ -197,41 +233,40 @@ export function PostComposer() {
             <div className="space-y-2">
               <p className="text-sm font-medium">Media</p>
               <div className="flex gap-2">
-                <CanvaDesignPicker onSelect={handleCanvaSelect} />
-                <label className="cursor-pointer">
+                <CanvaDesignPicker onSelect={handleCanvaSelect} disabled={media.length >= MAX_CAROUSEL_ITEMS} />
+                <label className={media.length >= MAX_CAROUSEL_ITEMS ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}>
                   <span className="inline-flex h-10 items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground">
                     Upload
                   </span>
-                  <input type="file" accept="image/*,video/*" className="hidden" onChange={handleFileUpload} />
+                  <input
+                    type="file"
+                    accept="image/*,video/*"
+                    multiple
+                    className="hidden"
+                    disabled={media.length >= MAX_CAROUSEL_ITEMS}
+                    onChange={handleFileUpload}
+                  />
                 </label>
               </div>
-              {media.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {media.map((item, i) => (
-                    <div key={i} className="relative">
-                      <img
-                        src={item.public_url}
-                        alt=""
-                        className="h-20 w-20 rounded object-cover"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeMedia(i)}
-                        className="absolute -right-1 -top-1 rounded-full bg-destructive p-0.5 text-white"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <MediaStrip items={media} onChange={setMedia} />
             </div>
+
+            {validationErrors.length > 0 && (
+              <ul className="space-y-1 text-xs text-amber-600">
+                {validationErrors.map((msg) => (
+                  <li key={msg}>{msg}</li>
+                ))}
+              </ul>
+            )}
           </CardContent>
         </Card>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={handleSaveDraft} disabled={saving}>
             Save Draft
+          </Button>
+          <Button variant="secondary" onClick={handleSubmitForReview} disabled={saving}>
+            Submit for review
           </Button>
           <Button variant="secondary" onClick={handleSchedule} disabled={saving}>
             Schedule
@@ -243,17 +278,17 @@ export function PostComposer() {
       </div>
 
       <div className="space-y-4">
-        <h3 className="font-semibold">Preview</h3>
+        <h3 className="font-display font-semibold">Preview</h3>
         {publishFacebook && (
           <div>
             <p className="mb-2 text-xs text-muted-foreground">Facebook</p>
-            <FacebookPreview caption={caption} mediaUrl={primaryMediaUrl} />
+            <FacebookFeedPreview caption={caption} media={media} />
           </div>
         )}
         {publishInstagram && (
           <div>
             <p className="mb-2 text-xs text-muted-foreground">Instagram</p>
-            <InstagramPreview caption={caption} mediaUrl={primaryMediaUrl} />
+            <InstagramFeedPreview caption={caption} media={media} />
           </div>
         )}
       </div>

@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
     const tokenExpiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
 
     const pagesRes = await fetch(
-      `${META_GRAPH}/me/accounts?fields=id,name,access_token,instagram_business_account&access_token=${longToken}`
+      `${META_GRAPH}/me/accounts?fields=id,name,access_token,instagram_business_account,picture&access_token=${longToken}`
     );
     const pagesData = await pagesRes.json();
     if (pagesData.error) throw new Error(pagesData.error.message);
@@ -76,11 +76,15 @@ Deno.serve(async (req) => {
     const workspaceId = oauthState.workspace_id;
 
     for (const page of pagesData.data || []) {
+      const pagePictureUrl = page.picture?.data?.url || null;
+
       await service.from('social_accounts').upsert({
         workspace_id: workspaceId,
         platform: 'facebook',
         external_id: page.id,
         name: page.name,
+        username: page.name,
+        profile_picture_url: pagePictureUrl,
         access_token: page.access_token,
         page_access_token: page.access_token,
         page_id: page.id,
@@ -90,7 +94,7 @@ Deno.serve(async (req) => {
       const igAccount = page.instagram_business_account;
       if (igAccount?.id) {
         const igRes = await fetch(
-          `${META_GRAPH}/${igAccount.id}?fields=id,username&access_token=${page.access_token}`
+          `${META_GRAPH}/${igAccount.id}?fields=id,username,profile_picture_url&access_token=${page.access_token}`
         );
         const igData = await igRes.json();
 
@@ -99,6 +103,8 @@ Deno.serve(async (req) => {
           platform: 'instagram',
           external_id: igData.id,
           name: igData.username || `IG ${igData.id}`,
+          username: igData.username || null,
+          profile_picture_url: igData.profile_picture_url || null,
           access_token: page.access_token,
           page_access_token: page.access_token,
           page_id: page.id,

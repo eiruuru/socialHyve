@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
+import { Logo } from '@/components/brand/Logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,10 +35,22 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+    <div
+      className="flex min-h-screen items-center justify-center p-4"
+      style={{
+        background: `
+          radial-gradient(circle at 15% 18%, rgba(246,166,0,.22), transparent 55%),
+          radial-gradient(circle at 85% 0%, rgba(255,199,44,.28), transparent 45%),
+          var(--paper)
+        `,
+      }}
+    >
       <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>socialHyve</CardTitle>
+        <CardHeader className="text-center">
+          <div className="mb-4 flex justify-center">
+            <Logo />
+          </div>
+          <CardTitle className="font-display text-2xl">Welcome back</CardTitle>
           <CardDescription>Schedule posts to Facebook and Instagram</CardDescription>
         </CardHeader>
         <CardContent>
@@ -68,6 +81,9 @@ export default function LoginPage() {
               {isSignUp ? 'Already have an account? Sign in' : 'Need an account? Sign up'}
             </button>
           </form>
+          <p className="mt-4 text-center text-xs text-muted-foreground">
+            <Link to="/" className="hover:text-ink">← Back to home</Link>
+          </p>
         </CardContent>
       </Card>
     </div>

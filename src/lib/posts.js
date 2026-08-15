@@ -92,7 +92,7 @@ export async function disconnectCanva() {
   if (error) throw error;
 }
 
-export async function uploadMediaFile(postId, file) {
+export async function uploadMediaFile(postId, file, sortOrder = 0) {
   const workspaceId = await getCurrentWorkspaceId();
   const ext = file.name.split('.').pop();
   const path = `${workspaceId}/${postId}/${Date.now()}.${ext}`;
@@ -107,6 +107,41 @@ export async function uploadMediaFile(postId, file) {
     storage_path: path,
     public_url: urlData.publicUrl,
     mime_type: file.type,
-    sort_order: 0,
+    sort_order: sortOrder,
   });
+}
+
+export async function updateApprovalStatus(postId, approvalStatus) {
+  return updatePost(postId, { approval_status: approvalStatus });
+}
+
+export async function submitForReview(postId) {
+  const post = await getPost(postId);
+  if (post.status !== 'draft') {
+    throw new Error('Only draft posts can be submitted for review');
+  }
+  return updateApprovalStatus(postId, 'pending');
+}
+
+export async function listPostComments(postId) {
+  const { data, error } = await supabase
+    .from('post_comments')
+    .select('*')
+    .eq('post_id', postId)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+export async function addPostComment(postId, body) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('post_comments')
+    .insert({ post_id: postId, user_id: user.id, body })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
 }

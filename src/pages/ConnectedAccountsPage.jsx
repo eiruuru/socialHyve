@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { invokeFunction } from '@/lib/supabaseFunctions';
 import { listSocialAccounts, disconnectSocialAccount } from '@/lib/posts';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { PlatformChip } from '@/components/brand/PlatformChip';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function ConnectedAccountsPage() {
@@ -37,14 +37,15 @@ export default function ConnectedAccountsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Connected Accounts</h2>
+        <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Settings</p>
+        <h2 className="font-display text-2xl font-bold">Connected Accounts</h2>
         <p className="text-muted-foreground">Link your Facebook Page and Instagram Business account</p>
       </div>
 
       {connected === 'meta' && (
-        <div className="rounded-md bg-green-50 p-4 text-sm text-green-700">
-          Meta accounts connected successfully.
-          <button className="ml-2 underline" onClick={() => navigate('/app/settings/accounts')}>Dismiss</button>
+        <div className="rounded-hyve-md bg-[#DFF3E6] p-4 text-sm text-status-published">
+          You&apos;re connected. Ready to publish.
+          <button type="button" className="ml-2 underline" onClick={() => navigate('/app/settings/accounts')}>Dismiss</button>
         </div>
       )}
       {error && (
@@ -70,7 +71,7 @@ export default function ConnectedAccountsPage() {
               {fbAccounts.map((acc) => (
                 <div key={acc.id} className="flex items-center justify-between rounded-md border p-3">
                   <div className="flex items-center gap-3">
-                    <Badge variant="facebook">Facebook</Badge>
+                    <PlatformChip platform="facebook" />
                     <span className="font-medium">{acc.name}</span>
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => disconnect(acc.id)}>Disconnect</Button>
@@ -79,7 +80,7 @@ export default function ConnectedAccountsPage() {
               {igAccounts.map((acc) => (
                 <div key={acc.id} className="flex items-center justify-between rounded-md border p-3">
                   <div className="flex items-center gap-3">
-                    <Badge variant="instagram">Instagram</Badge>
+                    <PlatformChip platform="instagram" />
                     <span className="font-medium">@{acc.name}</span>
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => disconnect(acc.id)}>Disconnect</Button>

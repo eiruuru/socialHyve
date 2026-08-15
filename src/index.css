@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,29 +6,73 @@
 
 @layer base {
   :root {
-    --background: 220 20% 98%;
-    --foreground: 220 20% 10%;
+    /* Brand palette */
+    --honey: #F6A600;
+    --honey-dark: #C97F00;
+    --honey-light: #FFE8B0;
+    --amber-bright: #FFC72C;
+    --ink: #14110C;
+    --ink-soft: #221D14;
+    --paper: #FFFBF3;
+    --paper-alt: #F6F3EA;
+
+    /* Warm neutrals */
+    --n-50: #FBFAF7;
+    --n-100: #F3F1EA;
+    --n-200: #E7E2D5;
+    --n-300: #CFC7B3;
+    --n-400: #A69C82;
+    --n-500: #7C7259;
+    --n-600: #564E3B;
+    --n-700: #39331F;
+    --n-800: #241F13;
+
+    /* Status colors */
+    --s-draft: #8A8578;
+    --s-pending: #F6A600;
+    --s-approved: #2E9E5C;
+    --s-changes: #E0524F;
+    --s-scheduled: #5B6EE8;
+    --s-published: #1D6B44;
+
+    /* Platform */
+    --fb: #1877F2;
+
+    /* Radius */
+    --r-sm: 8px;
+    --r-md: 14px;
+    --r-lg: 22px;
+    --r-full: 999px;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px rgba(20, 17, 12, 0.06), 0 1px 1px rgba(20, 17, 12, 0.04);
+    --shadow-md: 0 8px 24px rgba(20, 17, 12, 0.08), 0 2px 6px rgba(20, 17, 12, 0.05);
+    --shadow-lg: 0 20px 48px rgba(20, 17, 12, 0.14);
+
+    /* shadcn mappings — paper bg, honey primary, ink text on primary */
+    --background: 40 100% 98%;
+    --foreground: 40 20% 7%;
     --card: 0 0% 100%;
-    --card-foreground: 220 20% 10%;
-    --primary: 262 83% 58%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 220 20% 10%;
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 10% 46%;
-    --accent: 262 83% 58%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;
+    --card-foreground: 40 20% 7%;
+    --primary: 40 100% 48%;
+    --primary-foreground: 40 20% 7%;
+    --secondary: 43 24% 94%;
+    --secondary-foreground: 40 20% 7%;
+    --muted: 43 24% 94%;
+    --muted-foreground: 40 12% 42%;
+    --accent: 43 24% 94%;
+    --accent-foreground: 40 20% 7%;
+    --destructive: 1 72% 59%;
     --destructive-foreground: 0 0% 98%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 262 83% 58%;
-    --radius: 0.625rem;
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 220 20% 10%;
-    --sidebar-primary: 262 83% 58%;
-    --sidebar-accent: 262 60% 96%;
-    --sidebar-border: 220 13% 91%;
+    --border: 43 20% 87%;
+    --input: 43 20% 87%;
+    --ring: 40 100% 48%;
+    --radius: 0.875rem;
+    --sidebar-background: 40 20% 7%;
+    --sidebar-foreground: 43 24% 94%;
+    --sidebar-primary: 40 100% 48%;
+    --sidebar-accent: 40 15% 14%;
+    --sidebar-border: 40 10% 18%;
   }
 
   * {
@@ -37,6 +81,13 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
+    line-height: 1.55;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: 'Baloo 2', system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.2px;
   }
 }

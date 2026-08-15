@@ -4,6 +4,12 @@ import { getServiceClient, META_GRAPH } from '../_shared/supabase.ts';
 const META_APP_ID = Deno.env.get('META_APP_ID') || '';
 const META_APP_SECRET = Deno.env.get('META_APP_SECRET') || '';
 
+type MediaItem = {
+  public_url?: string;
+  mime_type?: string;
+  sort_order?: number;
+};
+
 Deno.serve(async (req) => {
   const opt = handleOptions(req);
   if (opt) return opt;
@@ -67,15 +73,16 @@ async function publishPost(service: ReturnType<typeof getServiceClient>, postId:
 
   const fbAccount = accounts?.find((a) => a.platform === 'facebook');
   const igAccount = accounts?.find((a) => a.platform === 'instagram');
-  const media = post.post_media?.sort((a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order) || [];
-  const primaryMedia = media[0];
+  const media: MediaItem[] = (post.post_media || []).sort(
+    (a: MediaItem, b: MediaItem) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
+  );
 
   let hasError = false;
   const errors: string[] = [];
 
   if (post.publish_facebook && fbAccount) {
     try {
-      const externalId = await publishToFacebook(fbAccount, post.caption, primaryMedia);
+      const externalId = await publishToFacebook(fbAccount, post.caption, media, post.scheduled_at);
       await service.from('post_targets').upsert({
         post_id: postId,
         platform: 'facebook',
@@ -105,7 +112,7 @@ async function publishPost(service: ReturnType<typeof getServiceClient>, postId:
 
   if (post.publish_instagram && igAccount) {
     try {
-      const externalId = await publishToInstagram(igAccount, post.caption, primaryMedia, post.scheduled_at);
+      const externalId = await publishToInstagram(igAccount, post.caption, media, post.scheduled_at);
       await service.from('post_targets').upsert({
         post_id: postId,
         platform: 'instagram',
@@ -167,83 +174,194 @@ async function publishPost(service: ReturnType<typeof getServiceClient>, postId:
   return { postId, status: finalStatus, errors };
 }
 
+function isFutureSchedule(scheduledAt?: string | null): boolean {
+  if (!scheduledAt) return false;
+  const scheduleTime = new Date(scheduledAt);
+  return scheduleTime.getTime() > Date.now() + 10 * 60 * 1000;
+}
+
+function isVideoMedia(media: MediaItem): boolean {
+  return (media.mime_type || '').startsWith('video/');
+}
+
 async function publishToFacebook(
   account: Record<string, unknown>,
   caption: string,
-  media?: Record<string, unknown> | null
+  media: MediaItem[] = [],
+  scheduledAt?: string | null
 ): Promise<string> {
   const token = account.page_access_token || account.access_token;
   const pageId = account.page_id || account.external_id;
+  const futureSchedule = isFutureSchedule(scheduledAt);
 
-  if (media?.public_url) {
-    const isVideo = (media.mime_type as string)?.startsWith('video/');
+  if (media.length === 0) {
+    const params = new URLSearchParams({
+      access_token: token as string,
+      message: caption,
+    });
+    if (futureSchedule && scheduledAt) {
+      params.set('published', 'false');
+      params.set('scheduled_publish_time', String(Math.floor(new Date(scheduledAt).getTime() / 1000)));
+    }
+    const res = await fetch(`${META_GRAPH}/${pageId}/feed?${params}`, { method: 'POST' });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    return data.id;
+  }
+
+  if (media.length === 1) {
+    const item = media[0];
+    if (!item.public_url) throw new Error('Media URL missing');
+
+    const isVideo = isVideoMedia(item);
     const endpoint = isVideo ? `${META_GRAPH}/${pageId}/videos` : `${META_GRAPH}/${pageId}/photos`;
     const params = new URLSearchParams({
       access_token: token as string,
-      caption,
-      [isVideo ? 'file_url' : 'url']: media.public_url as string,
+      [isVideo ? 'file_url' : 'url']: item.public_url,
     });
+    if (caption) params.set(isVideo ? 'description' : 'caption', caption);
+    if (futureSchedule && scheduledAt) {
+      params.set('published', 'false');
+      params.set('scheduled_publish_time', String(Math.floor(new Date(scheduledAt).getTime() / 1000)));
+    }
     const res = await fetch(`${endpoint}?${params}`, { method: 'POST' });
     const data = await res.json();
     if (data.error) throw new Error(data.error.message);
     return data.id || data.post_id;
   }
 
-  const params = new URLSearchParams({
+  const mediaFbids: string[] = [];
+  for (const item of media) {
+    if (!item.public_url) continue;
+    const params = new URLSearchParams({
+      access_token: token as string,
+      url: item.public_url,
+      published: 'false',
+      temporary: 'true',
+    });
+    const res = await fetch(`${META_GRAPH}/${pageId}/photos?${params}`, { method: 'POST' });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    mediaFbids.push(data.id);
+  }
+
+  const feedParams = new URLSearchParams({
     access_token: token as string,
-    message: caption,
+    message: caption || '',
+    attached_media: JSON.stringify(mediaFbids.map((id) => ({ media_fbid: id }))),
   });
-  const res = await fetch(`${META_GRAPH}/${pageId}/feed?${params}`, { method: 'POST' });
-  const data = await res.json();
-  if (data.error) throw new Error(data.error.message);
-  return data.id;
+  if (futureSchedule && scheduledAt) {
+    feedParams.set('published', 'false');
+    feedParams.set('scheduled_publish_time', String(Math.floor(new Date(scheduledAt).getTime() / 1000)));
+  }
+
+  const feedRes = await fetch(`${META_GRAPH}/${pageId}/feed?${feedParams}`, { method: 'POST' });
+  const feedData = await feedRes.json();
+  if (feedData.error) throw new Error(feedData.error.message);
+  return feedData.id;
 }
 
 async function publishToInstagram(
   account: Record<string, unknown>,
   caption: string,
-  media?: Record<string, unknown> | null,
+  media: MediaItem[] = [],
   scheduledAt?: string | null
 ): Promise<string> {
   const token = account.page_access_token || account.access_token;
   const igUserId = account.ig_user_id || account.external_id;
 
-  if (!media?.public_url) throw new Error('Instagram requires media');
+  if (!media.length) throw new Error('Instagram requires media');
 
-  const isVideo = (media.mime_type as string)?.startsWith('video/');
-  const params: Record<string, string> = {
-    access_token: token as string,
-    caption,
-    [isVideo ? 'video_url' : 'image_url']: media.public_url as string,
-  };
+  const futureSchedule = isFutureSchedule(scheduledAt);
 
-  const scheduleTime = scheduledAt ? new Date(scheduledAt) : null;
-  const now = new Date();
-  const isFutureSchedule = scheduleTime && scheduleTime.getTime() > now.getTime() + 10 * 60 * 1000;
+  if (media.length === 1) {
+    const item = media[0];
+    if (!item.public_url) throw new Error('Media URL missing');
 
-  if (isFutureSchedule && scheduleTime) {
-    params.published = 'false';
-    params.scheduled_publish_time = String(Math.floor(scheduleTime.getTime() / 1000));
+    const isVideo = isVideoMedia(item);
+    const params: Record<string, string> = {
+      access_token: token as string,
+      caption,
+      [isVideo ? 'video_url' : 'image_url']: item.public_url,
+    };
+    if (isVideo) params.media_type = 'VIDEO';
+
+    if (futureSchedule && scheduledAt) {
+      params.published = 'false';
+      params.scheduled_publish_time = String(Math.floor(new Date(scheduledAt).getTime() / 1000));
+    }
+
+    const containerRes = await fetch(`${META_GRAPH}/${igUserId}/media`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(params),
+    });
+    const containerData = await containerRes.json();
+    if (containerData.error) throw new Error(containerData.error.message);
+
+    if (futureSchedule) return containerData.id;
+
+    const publishRes = await fetch(`${META_GRAPH}/${igUserId}/media_publish`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        access_token: token as string,
+        creation_id: containerData.id,
+      }),
+    });
+    const publishData = await publishRes.json();
+    if (publishData.error) throw new Error(publishData.error.message);
+    return publishData.id;
   }
 
-  const containerRes = await fetch(`${META_GRAPH}/${igUserId}/media`, {
+  const childIds: string[] = [];
+  for (const item of media) {
+    if (!item.public_url) continue;
+    const isVideo = isVideoMedia(item);
+    const params: Record<string, string> = {
+      access_token: token as string,
+      is_carousel_item: 'true',
+      [isVideo ? 'video_url' : 'image_url']: item.public_url,
+    };
+    if (isVideo) params.media_type = 'VIDEO';
+
+    const res = await fetch(`${META_GRAPH}/${igUserId}/media`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(params),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    childIds.push(data.id);
+  }
+
+  const carouselParams: Record<string, string> = {
+    access_token: token as string,
+    media_type: 'CAROUSEL',
+    children: childIds.join(','),
+    caption,
+  };
+  if (futureSchedule && scheduledAt) {
+    carouselParams.published = 'false';
+    carouselParams.scheduled_publish_time = String(Math.floor(new Date(scheduledAt).getTime() / 1000));
+  }
+
+  const carouselRes = await fetch(`${META_GRAPH}/${igUserId}/media`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams(params),
+    body: new URLSearchParams(carouselParams),
   });
-  const containerData = await containerRes.json();
-  if (containerData.error) throw new Error(containerData.error.message);
+  const carouselData = await carouselRes.json();
+  if (carouselData.error) throw new Error(carouselData.error.message);
 
-  if (isFutureSchedule) {
-    return containerData.id;
-  }
+  if (futureSchedule) return carouselData.id;
 
   const publishRes = await fetch(`${META_GRAPH}/${igUserId}/media_publish`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
       access_token: token as string,
-      creation_id: containerData.id,
+      creation_id: carouselData.id,
     }),
   });
   const publishData = await publishRes.json();

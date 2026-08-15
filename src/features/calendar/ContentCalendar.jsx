@@ -2,18 +2,10 @@ import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInte
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Badge } from '@/components/ui/badge';
+import { PostStatusBadges } from '@/features/queue/postStatus';
 import { Button } from '@/components/ui/button';
 import { TabsRoot, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
-
-const STATUS_VARIANT = {
-  draft: 'draft',
-  scheduled: 'scheduled',
-  publishing: 'publishing',
-  published: 'published',
-  failed: 'failed',
-};
 
 export function ContentCalendar({ posts = [] }) {
   const navigate = useNavigate();
@@ -42,9 +34,7 @@ export function ContentCalendar({ posts = [] }) {
       onClick={() => navigate(`/app/posts/${post.id}`)}
       className="mb-1 w-full truncate rounded px-1.5 py-0.5 text-left text-xs hover:opacity-80"
     >
-      <Badge variant={STATUS_VARIANT[post.status] || 'default'} className="mr-1 text-[10px]">
-        {post.status}
-      </Badge>
+      <PostStatusBadges post={post} className="inline" />
       {post.caption?.slice(0, 30) || 'Untitled'}
     </button>
   );
@@ -72,8 +62,8 @@ export function ContentCalendar({ posts = [] }) {
       </div>
 
       {view === 'month' ? (
-        <div className="rounded-lg border">
-          <div className="grid grid-cols-7 border-b bg-muted/50">
+        <div className="rounded-hyve-lg border border-neutral-200">
+          <div className="grid grid-cols-7 border-b border-neutral-200 bg-paper-alt">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
               <div key={d} className="p-2 text-center text-xs font-medium text-muted-foreground">{d}</div>
             ))}
@@ -85,8 +75,8 @@ export function ContentCalendar({ posts = [] }) {
                 <div
                   key={day.toISOString()}
                   className={cn(
-                    'min-h-[100px] border-b border-r p-2',
-                    !isSameMonth(day, currentDate) && 'bg-muted/30 text-muted-foreground'
+                    'min-h-[100px] border-b border-r border-neutral-200 p-2',
+                    !isSameMonth(day, currentDate) && 'bg-neutral-50 text-muted-foreground'
                   )}
                 >
                   <button
@@ -105,8 +95,8 @@ export function ContentCalendar({ posts = [] }) {
           </div>
         </div>
       ) : (
-        <div className="rounded-lg border">
-          <div className="grid grid-cols-7 border-b bg-muted/50">
+        <div className="rounded-hyve-lg border border-neutral-200">
+          <div className="grid grid-cols-7 border-b border-neutral-200 bg-paper-alt">
             {weekDays.map((day) => (
               <div key={day.toISOString()} className="p-2 text-center">
                 <div className="text-xs text-muted-foreground">{format(day, 'EEE')}</div>

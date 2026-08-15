@@ -33,7 +33,8 @@ export default function CanvaSettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Canva Integration</h2>
+        <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Settings</p>
+        <h2 className="font-display text-2xl font-bold">Canva Integration</h2>
         <p className="text-muted-foreground">Connect Canva to attach designs to your posts</p>
       </div>
 

@@ -18,6 +18,8 @@ export function PlatformPreviewTabs({
   currentPostId,
   facebookCaption,
   instagramCaption,
+  facebookAccountId = null,
+  instagramAccountId = null,
 }) {
   const clientCtx = useOptionalClient();
   const clientId = clientIdProp || clientCtx?.activeClient?.id;
@@ -45,7 +47,12 @@ export function PlatformPreviewTabs({
     if (platform === 'facebook') {
       return (
         <PreviewFrame platform="facebook" scheduledAt={scheduledAt} scheduleTimezone={scheduleTimezone}>
-          <FacebookFeedPreview caption={facebookCaption ?? caption} media={media} embedded />
+          <FacebookFeedPreview
+            caption={facebookCaption ?? caption}
+            media={media}
+            embedded
+            facebookAccountId={facebookAccountId}
+          />
         </PreviewFrame>
       );
     }
@@ -58,6 +65,7 @@ export function PlatformPreviewTabs({
         clientId={clientId}
         currentPostId={currentPostId}
         publishInstagram={publishInstagram}
+        instagramAccountId={instagramAccountId}
       />
     );
   };

@@ -4,8 +4,8 @@ import { MediaCarousel } from './MediaCarousel';
 import { normalizeMediaList, truncateCaption } from './mediaUtils';
 import { ProfileAvatar, usePreviewAccounts } from '../hooks/usePreviewAccounts';
 
-export function InstagramFeedPreview({ caption, media = [], embedded = false }) {
-  const { instagram } = usePreviewAccounts();
+export function InstagramFeedPreview({ caption, media = [], embedded = false, instagramAccountId = null }) {
+  const { instagram } = usePreviewAccounts({ instagramAccountId });
   const [expanded, setExpanded] = useState(false);
   const items = normalizeMediaList(media);
   const username = instagram.username?.replace('@', '') || 'your_account';

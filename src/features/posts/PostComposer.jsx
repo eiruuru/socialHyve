@@ -10,9 +10,11 @@ import {
   getPost,
   removePostMedia,
   deleteStorageObject,
+  listSocialAccounts,
 } from '@/lib/posts';
 import { invokeFunction } from '@/lib/supabaseFunctions';
 import { useClient } from '@/lib/clientContext';
+import { findLinkedInstagram, pickPrimaryAccount } from '@/lib/socialAccounts';
 import {
   getBrowserTimezone,
   resolveScheduleTimezone,
@@ -52,6 +54,8 @@ export function PostComposer({ editPostId = null }) {
   const { activeClient } = useClient();
   const isEditMode = !!editPostId;
   const hydratedRef = useRef(false);
+  const accountsInitializedRef = useRef(false);
+  const igManuallySetRef = useRef(false);
   const originalMediaIdsRef = useRef([]);
   const trackedStoragePathsRef = useRef(new Set());
 
@@ -63,6 +67,15 @@ export function PostComposer({ editPostId = null }) {
     enabled: isEditMode,
   });
 
+  const { data: socialAccounts = [] } = useQuery({
+    queryKey: ['social-accounts', activeClient?.id],
+    queryFn: listSocialAccounts,
+    enabled: !!activeClient?.id,
+  });
+
+  const fbAccounts = socialAccounts.filter((a) => a.platform === 'facebook');
+  const igAccounts = socialAccounts.filter((a) => a.platform === 'instagram');
+
   const [fineTuneOpen, setFineTuneOpen] = useState(false);
   const [draftPostId, setDraftPostId] = useState(editPostId);
   const [internalName, setInternalName] = useState('');
@@ -72,6 +85,8 @@ export function PostComposer({ editPostId = null }) {
   const [platformOverrides, setPlatformOverrides] = useState({});
   const [publishFacebook, setPublishFacebook] = useState(true);
   const [publishInstagram, setPublishInstagram] = useState(true);
+  const [facebookAccountId, setFacebookAccountId] = useState(null);
+  const [instagramAccountId, setInstagramAccountId] = useState(null);
   const [scheduleTimezone, setScheduleTimezone] = useState(defaultTimezone);
   const [scheduledAt, setScheduledAt] = useState('');
   const [media, setMedia] = useState([]);
@@ -109,6 +124,9 @@ export function PostComposer({ editPostId = null }) {
     setPlatformOverrides(existingPost.platform_overrides || {});
     setPublishFacebook(existingPost.publish_facebook ?? true);
     setPublishInstagram(existingPost.publish_instagram ?? true);
+    setFacebookAccountId(existingPost.facebook_account_id || null);
+    setInstagramAccountId(existingPost.instagram_account_id || null);
+    igManuallySetRef.current = Boolean(existingPost.instagram_account_id);
     setScheduleTimezone(tz);
     setScheduledAt(
       existingPost.scheduled_at ? utcToZonedLocalInput(existingPost.scheduled_at, tz) : '',
@@ -132,6 +150,34 @@ export function PostComposer({ editPostId = null }) {
     );
   }, [existingPost, activeClient?.default_timezone]);
 
+  useEffect(() => {
+    if (!socialAccounts.length || accountsInitializedRef.current) return;
+    accountsInitializedRef.current = true;
+    const primaryFb = pickPrimaryAccount(socialAccounts, 'facebook');
+    const primaryIg = pickPrimaryAccount(socialAccounts, 'instagram');
+    if (isEditMode && existingPost) {
+      setFacebookAccountId(existingPost.facebook_account_id || primaryFb?.id || null);
+      setInstagramAccountId(existingPost.instagram_account_id || primaryIg?.id || null);
+      return;
+    }
+    setFacebookAccountId(primaryFb?.id || null);
+    setInstagramAccountId(primaryIg?.id || null);
+  }, [socialAccounts, isEditMode, existingPost]);
+
+  const handleFacebookAccountChange = (nextId) => {
+    setFacebookAccountId(nextId);
+    if (igManuallySetRef.current) return;
+    const fb = fbAccounts.find((a) => a.id === nextId);
+    const linked = findLinkedInstagram(igAccounts, fb);
+    if (linked) setInstagramAccountId(linked.id);
+  };
+
+  const resolveAccountIdForPayload = (enabled, accountId, accounts) => {
+    if (!enabled) return null;
+    if (accountId && accounts.some((a) => a.id === accountId)) return accountId;
+    return accounts[0]?.id || null;
+  };
+
   const isPublished = existingPost?.status === 'published';
   const validationErrors = validatePost({ caption, media, publishInstagram, publishFacebook });
   const captionHint = publishInstagram
@@ -152,6 +198,8 @@ export function PostComposer({ editPostId = null }) {
     approval_status: nextApprovalStatus,
     publish_facebook: publishFacebook,
     publish_instagram: publishInstagram,
+    facebook_account_id: resolveAccountIdForPayload(publishFacebook, facebookAccountId, fbAccounts),
+    instagram_account_id: resolveAccountIdForPayload(publishInstagram, instagramAccountId, igAccounts),
     schedule_timezone: scheduleTimezone,
     scheduled_at: scheduledAtUtc,
   });
@@ -318,6 +366,13 @@ export function PostComposer({ editPostId = null }) {
           setPublishFacebook={setPublishFacebook}
           publishInstagram={publishInstagram}
           setPublishInstagram={setPublishInstagram}
+          fbAccounts={fbAccounts}
+          igAccounts={igAccounts}
+          facebookAccountId={facebookAccountId}
+          setFacebookAccountId={handleFacebookAccountChange}
+          instagramAccountId={instagramAccountId}
+          setInstagramAccountId={setInstagramAccountId}
+          onInstagramManualChange={() => { igManuallySetRef.current = true; }}
           scheduledAt={scheduledAt}
           setScheduledAt={setScheduledAt}
           scheduleTimezone={scheduleTimezone}
@@ -335,6 +390,8 @@ export function PostComposer({ editPostId = null }) {
             scheduleTimezone={scheduleTimezone}
             publishFacebook={publishFacebook}
             publishInstagram={publishInstagram}
+            facebookAccountId={facebookAccountId}
+            instagramAccountId={instagramAccountId}
             currentPostId={draftPostId}
             facebookCaption={fbCaption}
             instagramCaption={igCaption}

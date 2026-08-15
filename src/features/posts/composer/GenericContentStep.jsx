@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { OptimizationTips } from '@/features/posts/composer/OptimizationTips';
+import { AccountSelect } from '@/features/posts/composer/AccountSelect';
 import { formatTimezoneLabel } from '@/lib/scheduleTime';
 import { uploadDraftMediaFile } from '@/lib/posts';
 
@@ -27,6 +28,13 @@ export function GenericContentStep({
   setPublishFacebook,
   publishInstagram,
   setPublishInstagram,
+  fbAccounts = [],
+  igAccounts = [],
+  facebookAccountId,
+  setFacebookAccountId,
+  instagramAccountId,
+  setInstagramAccountId,
+  onInstagramManualChange,
   scheduledAt,
   setScheduledAt,
   scheduleTimezone,
@@ -164,6 +172,31 @@ export function GenericContentStep({
             </button>
           </div>
         </div>
+
+        {(publishFacebook && fbAccounts.length > 1) || (publishInstagram && igAccounts.length > 1) ? (
+          <div className="space-y-3">
+            <p className="text-sm font-medium">Post to</p>
+            {publishFacebook && (
+              <AccountSelect
+                accounts={fbAccounts}
+                value={facebookAccountId}
+                onChange={setFacebookAccountId}
+                platform="facebook"
+              />
+            )}
+            {publishInstagram && (
+              <AccountSelect
+                accounts={igAccounts}
+                value={instagramAccountId}
+                onChange={(id) => {
+                  onInstagramManualChange?.();
+                  setInstagramAccountId(id);
+                }}
+                platform="instagram"
+              />
+            )}
+          </div>
+        ) : null}
 
         <div>
           <label className="mb-1 block text-sm font-medium">Schedule</label>

@@ -1,32 +1,28 @@
 import { useQuery } from '@tanstack/react-query';
 import { listSocialAccounts } from '@/lib/posts';
 import { getActiveClientId } from '@/lib/clientContext';
-import { pickPrimaryPair } from '@/lib/socialAccounts';
+import { findAccountById, pickPrimaryAccount, toPreviewAccount } from '@/lib/socialAccounts';
 
-export function usePreviewAccounts() {
-  const clientId = getActiveClientId();
+export function usePreviewAccounts({
+  facebookAccountId = null,
+  instagramAccountId = null,
+  clientId: clientIdProp = null,
+} = {}) {
+  const clientId = clientIdProp || getActiveClientId();
   const { data: accounts = [] } = useQuery({
     queryKey: ['social-accounts', clientId],
     queryFn: listSocialAccounts,
+    enabled: !!clientId,
   });
 
-  const { facebook, instagram } = pickPrimaryPair(accounts);
+  const facebook = findAccountById(accounts, facebookAccountId, 'facebook')
+    || pickPrimaryAccount(accounts, 'facebook');
+  const instagram = findAccountById(accounts, instagramAccountId, 'instagram')
+    || pickPrimaryAccount(accounts, 'instagram');
 
   return {
-    facebook: facebook
-      ? {
-          name: facebook.name,
-          username: facebook.username || facebook.name,
-          profilePictureUrl: facebook.profile_picture_url,
-        }
-      : { name: 'Your Page', username: 'Your Page', profilePictureUrl: null },
-    instagram: instagram
-      ? {
-          name: instagram.username || instagram.name,
-          username: instagram.username || instagram.name?.replace('@', '') || 'your_account',
-          profilePictureUrl: instagram.profile_picture_url,
-        }
-      : { name: 'your_account', username: 'your_account', profilePictureUrl: null },
+    facebook: toPreviewAccount(facebook, 'facebook'),
+    instagram: toPreviewAccount(instagram, 'instagram'),
   };
 }
 

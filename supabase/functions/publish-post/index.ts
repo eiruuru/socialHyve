@@ -1,6 +1,6 @@
 import { handleOptions, jsonResponse } from '../_shared/cors.ts';
 import { getServiceClient, META_GRAPH } from '../_shared/supabase.ts';
-import { pickPrimaryAccount } from '../_shared/socialAccounts.ts';
+import { resolvePostAccounts } from '../_shared/socialAccounts.ts';
 
 const META_APP_ID = Deno.env.get('META_APP_ID') || '';
 const META_APP_SECRET = Deno.env.get('META_APP_SECRET') || '';
@@ -73,8 +73,7 @@ async function publishPost(service: ReturnType<typeof getServiceClient>, postId:
 
   const { data: accounts } = await accountQuery;
 
-  const fbAccount = pickPrimaryAccount(accounts || [], 'facebook');
-  const igAccount = pickPrimaryAccount(accounts || [], 'instagram');
+  const { facebook: fbAccount, instagram: igAccount } = resolvePostAccounts(post, accounts || []);
   const media: MediaItem[] = (post.post_media || []).sort(
     (a: MediaItem, b: MediaItem) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
   );
@@ -94,6 +93,7 @@ async function publishPost(service: ReturnType<typeof getServiceClient>, postId:
         external_post_id: externalId,
         permalink,
         error_message: null,
+        social_account_id: fbAccount.id,
       }, { onConflict: 'post_id,platform' });
     } catch (err) {
       hasError = true;
@@ -104,6 +104,7 @@ async function publishPost(service: ReturnType<typeof getServiceClient>, postId:
         platform: 'facebook',
         status: 'failed',
         error_message: msg,
+        social_account_id: fbAccount?.id || null,
       }, { onConflict: 'post_id,platform' });
     }
   } else if (post.publish_facebook) {
@@ -127,6 +128,7 @@ async function publishPost(service: ReturnType<typeof getServiceClient>, postId:
         external_post_id: externalId,
         permalink,
         error_message: null,
+        social_account_id: igAccount.id,
       }, { onConflict: 'post_id,platform' });
     } catch (err) {
       hasError = true;
@@ -137,6 +139,7 @@ async function publishPost(service: ReturnType<typeof getServiceClient>, postId:
         platform: 'instagram',
         status: 'failed',
         error_message: msg,
+        social_account_id: igAccount?.id || null,
       }, { onConflict: 'post_id,platform' });
     }
   } else if (post.publish_instagram) {

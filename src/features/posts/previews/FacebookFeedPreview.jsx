@@ -93,8 +93,8 @@ function FacebookMedia({ items }) {
   return <FacebookCollage items={items} />;
 }
 
-export function FacebookFeedPreview({ caption, media = [], embedded = false }) {
-  const { facebook } = usePreviewAccounts();
+export function FacebookFeedPreview({ caption, media = [], embedded = false, facebookAccountId = null }) {
+  const { facebook } = usePreviewAccounts({ facebookAccountId });
   const items = normalizeMediaList(media);
 
   return (

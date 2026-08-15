@@ -9,7 +9,9 @@ import {
   listPostActivity,
   createReviewLink,
   logPostActivity,
+  listSocialAccounts,
 } from '@/lib/posts';
+import { resolvePostAccounts, findAccountById } from '@/lib/socialAccounts';
 import { listOrganizationMembers, displayMember } from '@/lib/organization';
 import { invokeFunction } from '@/lib/supabaseFunctions';
 import { PlatformPreviewTabs } from '@/features/posts/previews/PlatformPreviewTabs';
@@ -57,6 +59,12 @@ export default function PostDetailPage() {
     queryFn: listOrganizationMembers,
   });
 
+  const { data: socialAccounts = [] } = useQuery({
+    queryKey: ['social-accounts', post?.client_id],
+    queryFn: listSocialAccounts,
+    enabled: !!post?.client_id,
+  });
+
   if (isLoading) return <p className="text-muted-foreground">Loading…</p>;
   if (!post) return <p className="text-destructive">Post not found</p>;
 
@@ -64,6 +72,21 @@ export default function PostDetailPage() {
   const hasArchivedMedia = (post.post_media || []).some((item) => item.archived_at);
   const approval = post.approval_status || 'draft';
   const overrides = post.platform_overrides || {};
+  const { facebook: resolvedFb, instagram: resolvedIg } = resolvePostAccounts(post, socialAccounts);
+
+  const accountLabel = (account, platform) => {
+    if (!account) return 'Not set';
+    return platform === 'instagram'
+      ? `@${account.username || account.name}`
+      : account.name;
+  };
+
+  const targetAccountLabel = (target) => {
+    const fromTarget = findAccountById(socialAccounts, target.social_account_id, target.platform);
+    if (fromTarget) return accountLabel(fromTarget, target.platform);
+    if (target.platform === 'facebook') return accountLabel(resolvedFb, 'facebook');
+    return accountLabel(resolvedIg, 'instagram');
+  };
 
   const handleDelete = async () => {
     if (!confirm('Delete this post?')) return;
@@ -299,11 +322,27 @@ export default function PostDetailPage() {
                   </div>
                 </div>
               )}
+              {(post.publish_facebook || post.publish_instagram) && (
+                <div className="space-y-1 text-sm">
+                  <p className="font-medium">Publish accounts</p>
+                  {post.publish_facebook && (
+                    <p className="text-muted-foreground">
+                      Facebook: {accountLabel(resolvedFb, 'facebook')}
+                    </p>
+                  )}
+                  {post.publish_instagram && (
+                    <p className="text-muted-foreground">
+                      Instagram: {accountLabel(resolvedIg, 'instagram')}
+                    </p>
+                  )}
+                </div>
+              )}
               <div className="space-y-2">
                 <p className="text-sm font-medium">Platform Results</p>
                 {(post.post_targets || []).map((target) => (
                   <div key={target.id} className="flex flex-wrap items-center gap-2 rounded-hyve-sm border p-2 text-sm">
                     <span className="capitalize">{target.platform}</span>
+                    <span className="text-muted-foreground">{targetAccountLabel(target)}</span>
                     <Badge variant={target.status}>{target.status}</Badge>
                     {target.permalink && target.status === 'published' && (
                       <a
@@ -362,6 +401,8 @@ export default function PostDetailPage() {
             scheduleTimezone={post.schedule_timezone}
             publishFacebook={post.publish_facebook}
             publishInstagram={post.publish_instagram}
+            facebookAccountId={post.facebook_account_id}
+            instagramAccountId={post.instagram_account_id}
             clientId={post.client_id}
             currentPostId={post.id}
             facebookCaption={overrides.facebook?.caption}

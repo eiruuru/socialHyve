@@ -33,6 +33,7 @@ export function InstagramPreviewPanel({
   clientId,
   currentPostId,
   publishInstagram = true,
+  instagramAccountId = null,
 }) {
   const [viewMode, setViewMode] = useState('post');
   const [contentFilter, setContentFilter] = useState('posts');
@@ -94,9 +95,9 @@ export function InstagramPreviewPanel({
 
   const content = viewMode === 'post' ? (
     contentFilter === 'reels' ? (
-      <InstagramReelsPreview caption={caption} media={media} />
+      <InstagramReelsPreview caption={caption} media={media} instagramAccountId={instagramAccountId} />
     ) : (
-      <InstagramFeedPreview caption={caption} media={media} embedded />
+      <InstagramFeedPreview caption={caption} media={media} embedded instagramAccountId={instagramAccountId} />
     )
   ) : contentFilter === 'reels' ? (
     <div className="flex aspect-[9/16] max-h-64 items-center justify-center text-sm text-muted-foreground">

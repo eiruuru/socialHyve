@@ -2,8 +2,8 @@ import { Heart, MessageCircle, MoreHorizontal, Music2, Send } from 'lucide-react
 import { ProfileAvatar, usePreviewAccounts } from '../hooks/usePreviewAccounts';
 import { isVideo, normalizeMediaList } from './mediaUtils';
 
-export function InstagramReelsPreview({ caption, media = [] }) {
-  const { instagram } = usePreviewAccounts();
+export function InstagramReelsPreview({ caption, media = [], instagramAccountId = null }) {
+  const { instagram } = usePreviewAccounts({ instagramAccountId });
   const items = normalizeMediaList(media);
   const first = items[0];
   const username = instagram.username?.replace('@', '') || 'your_account';

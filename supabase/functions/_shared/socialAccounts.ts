@@ -18,3 +18,26 @@ export function pickPrimaryPair(accounts: SocialAccount[] | null | undefined) {
     instagram: pickPrimaryAccount(accounts, 'instagram'),
   };
 }
+
+export function findAccountById(
+  accounts: SocialAccount[] | null | undefined,
+  accountId: string | null | undefined,
+  platform: string,
+) {
+  if (!accountId) return null;
+  const row = (accounts || []).find((a) => a.id === accountId);
+  if (!row || row.platform !== platform) return null;
+  return row;
+}
+
+export function resolvePostAccounts(
+  post: { facebook_account_id?: string | null; instagram_account_id?: string | null } | null | undefined,
+  accounts: SocialAccount[] | null | undefined,
+) {
+  return {
+    facebook: findAccountById(accounts, post?.facebook_account_id, 'facebook')
+      || pickPrimaryAccount(accounts, 'facebook'),
+    instagram: findAccountById(accounts, post?.instagram_account_id, 'instagram')
+      || pickPrimaryAccount(accounts, 'instagram'),
+  };
+}

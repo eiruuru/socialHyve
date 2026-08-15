@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createPost,
   addPostMedia,
@@ -53,6 +53,7 @@ function validatePost({ caption, media, publishInstagram, publishFacebook }) {
 
 export function PostComposer({ editPostId = null }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const presetDate = searchParams.get('date');
   const { activeClient } = useClient();
@@ -95,6 +96,7 @@ export function PostComposer({ editPostId = null }) {
   const [scheduledAt, setScheduledAt] = useState('');
   const [media, setMedia] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [saveNotice, setSaveNotice] = useState(null);
   const [publishProgress, setPublishProgress] = useState(null);
   const [approvalStatus, setApprovalStatus] = useState('draft');
 
@@ -316,6 +318,18 @@ export function PostComposer({ editPostId = null }) {
       navigate(`/app/posts/${id}`);
     });
 
+  const handleSaveChanges = () =>
+    runWithValidation(async () => {
+      const id = await ensureDraft();
+      if (existingPost?.status === 'scheduled' && scheduledAtUtc) {
+        await schedulePost(id, scheduledAtUtc);
+      }
+      await queryClient.invalidateQueries({ queryKey: ['post', id] });
+      await queryClient.invalidateQueries({ queryKey: ['posts'] });
+      setSaveNotice('Changes saved');
+      setTimeout(() => setSaveNotice(null), 4000);
+    });
+
   const handleSchedule = () =>
     runWithValidation(async () => {
       if (!scheduledAt) {
@@ -476,6 +490,12 @@ export function PostComposer({ editPostId = null }) {
         </div>
       </div>
 
+      {saveNotice && (
+        <div className="rounded-hyve-md bg-[#DFF3E6] px-4 py-3 text-sm text-status-published">
+          {saveNotice}
+        </div>
+      )}
+
       {publishProgress && (
         <PublishProgressPanel
           label={publishProgress.label}
@@ -488,9 +508,11 @@ export function PostComposer({ editPostId = null }) {
       <ComposerActionBar
         saving={saving}
         publishing={!!publishProgress}
+        isEditMode={isEditMode}
         scheduledAt={scheduledAt}
         scheduleTimezone={scheduleTimezone}
         onSaveDraft={handleSaveDraft}
+        onSaveChanges={handleSaveChanges}
         onSubmitForReview={handleSubmitForReview}
         onSchedule={handleSchedule}
         onPublishNow={handlePublishNow}

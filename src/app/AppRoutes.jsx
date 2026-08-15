@@ -22,7 +22,7 @@ function Lazy({ children }) {
 export function AppRoutes() {
   return (
     <Routes>
-      <Route path="/login" element={<Lazy><LoginPage /></Lazy>} />
+      <Route path="login" element={<Lazy><LoginPage /></Lazy>} />
       <Route element={<RequireAuth />}>
         <Route
           element={
@@ -31,7 +31,7 @@ export function AppRoutes() {
             </WorkspaceProvider>
           }
         >
-          <Route index element={<Navigate to="/app/calendar" replace />} />
+          <Route index element={<Navigate to="calendar" replace />} />
           <Route path="calendar" element={<Lazy><CalendarPage /></Lazy>} />
           <Route path="posts/new" element={<Lazy><PostComposerPage /></Lazy>} />
           <Route path="posts/:id" element={<Lazy><PostDetailPage /></Lazy>} />

@@ -10,7 +10,8 @@
     "lint": "eslint . --quiet",
     "smoke:check": "node scripts/smoke-check.mjs",
     "deploy:functions": "bash scripts/deploy-edge-functions.sh",
-    "setup:supabase": "bash scripts/setup-supabase.sh"
+    "setup:supabase": "bash scripts/setup-supabase.sh",
+    "setup:cron": "bash scripts/setup-cron.sh"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.6",

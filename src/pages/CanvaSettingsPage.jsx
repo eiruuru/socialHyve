@@ -1,26 +1,44 @@
-import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { invokeFunction } from '@/lib/supabaseFunctions';
 import { getCanvaConnection, disconnectCanva } from '@/lib/posts';
-import { useClient } from '@/lib/clientContext';
+import { getActiveClientId, useClient } from '@/lib/clientContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function CanvaSettingsPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { activeClient } = useClient();
+  const clientId = activeClient?.id || getActiveClientId();
   const connected = searchParams.get('connected');
   const error = searchParams.get('error');
 
-  const { data: connection, refetch, isLoading } = useQuery({
-    queryKey: ['canva-connection', activeClient?.id],
+  const { data: connection, refetch, isLoading, isFetching } = useQuery({
+    queryKey: ['canva-connection', clientId],
     queryFn: getCanvaConnection,
+    enabled: !!clientId,
   });
 
+  useEffect(() => {
+    if (connected !== 'canva') return;
+    queryClient.invalidateQueries({ queryKey: ['canva-connection'] });
+    refetch();
+  }, [connected, queryClient, refetch]);
+
+  const dismissBanner = () => {
+    navigate('/app/settings/canva', { replace: true });
+  };
+
   const connectCanva = async () => {
+    if (!clientId) {
+      alert('Select a client first.');
+      return;
+    }
     try {
-      const { url } = await invokeFunction('canvaOAuthStart', { clientId: activeClient?.id });
+      const { url } = await invokeFunction('canvaOAuthStart', { clientId });
       window.location.href = url;
     } catch (err) {
       alert(err.message);
@@ -29,8 +47,12 @@ export default function CanvaSettingsPage() {
 
   const disconnect = async () => {
     await disconnectCanva();
+    await queryClient.invalidateQueries({ queryKey: ['canva-connection'] });
     refetch();
   };
+
+  const showConnected = !!connection;
+  const showSuccessBanner = connected === 'canva' && showConnected;
 
   return (
     <div className="space-y-6">
@@ -40,15 +62,22 @@ export default function CanvaSettingsPage() {
         <p className="text-muted-foreground">Connect Canva for {activeClient?.name || 'this client'}</p>
       </div>
 
-      {connected === 'canva' && (
+      {showSuccessBanner && (
         <div className="rounded-md bg-green-50 p-4 text-sm text-green-700">
           Canva connected successfully.
-          <button className="ml-2 underline" onClick={() => navigate('/app/settings/canva')}>Dismiss</button>
+          <button type="button" className="ml-2 underline" onClick={dismissBanner}>Dismiss</button>
+        </div>
+      )}
+      {connected === 'canva' && !isLoading && !isFetching && !showConnected && (
+        <div className="rounded-md bg-amber-50 p-4 text-sm text-amber-800">
+          Authorization completed but no connection was saved. Try connecting again, or check that a client is selected.
+          <button type="button" className="ml-2 underline" onClick={dismissBanner}>Dismiss</button>
         </div>
       )}
       {error && (
         <div className="rounded-md bg-red-50 p-4 text-sm text-red-700">
           Connection error: {decodeURIComponent(error)}
+          <button type="button" className="ml-2 underline" onClick={dismissBanner}>Dismiss</button>
         </div>
       )}
 
@@ -60,9 +89,11 @@ export default function CanvaSettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {isLoading ? (
+          {!clientId ? (
+            <p className="text-sm text-muted-foreground">Select a client in the sidebar to connect Canva.</p>
+          ) : isLoading || isFetching ? (
             <p className="text-sm text-muted-foreground">Loading...</p>
-          ) : connection ? (
+          ) : showConnected ? (
             <div className="space-y-3">
               <p className="text-sm text-green-700">Canva is connected</p>
               <p className="text-xs text-muted-foreground">

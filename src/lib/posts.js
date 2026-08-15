@@ -107,18 +107,25 @@ export async function disconnectSocialAccount(id) {
 
 export async function getCanvaConnection() {
   const clientId = getActiveClientId();
-  let query = supabase.from('canva_connections').select('*');
-  if (clientId) query = query.eq('client_id', clientId);
-  const { data, error } = await query.maybeSingle();
+  if (!clientId) return null;
+
+  const { data, error } = await supabase
+    .from('canva_connections')
+    .select('*')
+    .eq('client_id', clientId)
+    .maybeSingle();
   if (error) throw error;
   return data;
 }
 
 export async function disconnectCanva() {
   const clientId = getActiveClientId();
-  let query = supabase.from('canva_connections').delete();
-  if (clientId) query = query.eq('client_id', clientId);
-  const { error } = await query;
+  if (!clientId) return;
+
+  const { error } = await supabase
+    .from('canva_connections')
+    .delete()
+    .eq('client_id', clientId);
   if (error) throw error;
 }
 

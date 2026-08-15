@@ -26,6 +26,51 @@ async function exchangeToken(code: string, codeVerifier: string) {
   return data;
 }
 
+async function saveCanvaConnection(
+  service: ReturnType<typeof getServiceClient>,
+  oauthState: { workspace_id: string; client_id: string | null },
+  tokens: { access_token: string; refresh_token: string; expires_in?: number },
+) {
+  const expiresAt = new Date(Date.now() + (tokens.expires_in || 3600) * 1000).toISOString();
+  const payload = {
+    workspace_id: oauthState.workspace_id,
+    client_id: oauthState.client_id,
+    access_token: tokens.access_token,
+    refresh_token: tokens.refresh_token,
+    token_expires_at: expiresAt,
+  };
+
+  if (oauthState.client_id) {
+    const { data: updated, error: updateErr } = await service
+      .from('canva_connections')
+      .update(payload)
+      .eq('client_id', oauthState.client_id)
+      .select('id');
+
+    if (updateErr) throw updateErr;
+
+    if (!updated?.length) {
+      const { error: insertErr } = await service.from('canva_connections').insert(payload);
+      if (insertErr) throw insertErr;
+    }
+    return;
+  }
+
+  const { data: updated, error: updateErr } = await service
+    .from('canva_connections')
+    .update(payload)
+    .eq('workspace_id', oauthState.workspace_id)
+    .is('client_id', null)
+    .select('id');
+
+  if (updateErr) throw updateErr;
+
+  if (!updated?.length) {
+    const { error: insertErr } = await service.from('canva_connections').insert(payload);
+    if (insertErr) throw insertErr;
+  }
+}
+
 Deno.serve(async (req) => {
   const opt = handleOptions(req);
   if (opt) return opt;
@@ -60,27 +105,10 @@ Deno.serve(async (req) => {
     await service.from('oauth_states').delete().eq('id', oauthState.id);
 
     const tokens = await exchangeToken(code, oauthState.code_verifier);
-    const expiresAt = new Date(Date.now() + (tokens.expires_in || 3600) * 1000).toISOString();
+    await saveCanvaConnection(service, oauthState, tokens);
 
-    if (oauthState.client_id) {
-      await service.from('canva_connections').upsert({
-        workspace_id: oauthState.workspace_id,
-        client_id: oauthState.client_id,
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
-        token_expires_at: expiresAt,
-      }, { onConflict: 'client_id' });
-    } else {
-      await service.from('canva_connections').upsert({
-        workspace_id: oauthState.workspace_id,
-        client_id: oauthState.client_id,
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
-        token_expires_at: expiresAt,
-      }, { onConflict: 'workspace_id' });
-    }
-
-    return redirectResponse(`${APP_URL}/app/settings/canva?connected=canva`);
+    const clientParam = oauthState.client_id ? `&clientId=${oauthState.client_id}` : '';
+    return redirectResponse(`${APP_URL}/app/settings/canva?connected=canva${clientParam}`);
   } catch (err) {
     const msg = encodeURIComponent((err as Error).message);
     return redirectResponse(`${APP_URL}/app/settings/canva?error=${msg}`);

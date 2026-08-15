@@ -3,8 +3,10 @@ import { getServiceClient, getWorkspaceForUser, randomString, requireUser } from
 
 const META_APP_ID = Deno.env.get('META_APP_ID') || '';
 const META_REDIRECT_URI = Deno.env.get('META_REDIRECT_URI') || '';
+const META_CONFIG_ID = Deno.env.get('META_CONFIG_ID') || '';
 
 const SCOPES = [
+  'business_management',
   'pages_show_list',
   'pages_read_engagement',
   'pages_manage_posts',
@@ -38,8 +40,12 @@ Deno.serve(async (req) => {
     authUrl.searchParams.set('client_id', META_APP_ID);
     authUrl.searchParams.set('redirect_uri', META_REDIRECT_URI);
     authUrl.searchParams.set('state', state);
-    authUrl.searchParams.set('scope', SCOPES);
     authUrl.searchParams.set('response_type', 'code');
+    if (META_CONFIG_ID) {
+      authUrl.searchParams.set('config_id', META_CONFIG_ID);
+    } else {
+      authUrl.searchParams.set('scope', SCOPES);
+    }
 
     return jsonResponse({ url: authUrl.toString() });
   } catch (err) {

@@ -101,14 +101,20 @@ This schedules:
 
 ## 7. Meta Developer App
 
-1. Create app at [developers.facebook.com](https://developers.facebook.com/)
-2. Add **Facebook Login** product
-3. Valid OAuth Redirect URI:
+1. Create a **Business** app at [developers.facebook.com](https://developers.facebook.com/)
+2. Add use cases: **Manage everything on your Page** and **Manage messaging & content on Instagram**
+3. Under **Facebook Login for Business → Configurations**, create a configuration that includes:
+   - `business_management` (required for Pages in Meta Business Manager)
+   - `pages_show_list`, `pages_read_engagement`, `pages_manage_posts`
+   - `instagram_basic`, `instagram_content_publish`
+4. Copy the configuration **Config ID** into `META_CONFIG_ID` in `.env`, then run `bash scripts/set-secrets.sh`
+5. Valid OAuth Redirect URI (Facebook Login for Business → Settings):
    ```
    https://YOUR_REF.supabase.co/functions/v1/meta-oauth-callback
    ```
-4. Permissions: `pages_show_list`, `pages_read_engagement`, `pages_manage_posts`, `instagram_basic`, `instagram_content_publish`
-5. Add your Facebook account as **App Tester** (dev mode)
+6. Add your Facebook account as **App Tester** (dev mode)
+
+Without `business_management`, `/me/accounts` returns empty when users opt in to Pages managed through Meta Business — even if they selected Pages in the consent screen.
 
 ## 8. Canva Connect App
 

@@ -1,5 +1,6 @@
 import { handleOptions, redirectResponse } from '../_shared/cors.ts';
 import { getServiceClient, META_GRAPH } from '../_shared/supabase.ts';
+import { fetchGrantedPages, getGrantedScopes } from '../_shared/metaPages.ts';
 
 const META_APP_ID = Deno.env.get('META_APP_ID') || '';
 const META_APP_SECRET = Deno.env.get('META_APP_SECRET') || '';
@@ -66,16 +67,15 @@ Deno.serve(async (req) => {
     const shortToken = await exchangeCode(code);
     const { token: longToken, expiresIn } = await getLongLivedToken(shortToken);
     const tokenExpiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
+    const appAccessToken = `${META_APP_ID}|${META_APP_SECRET}`;
 
-    const pagesRes = await fetch(
-      `${META_GRAPH}/me/accounts?fields=id,name,access_token,instagram_business_account,picture&access_token=${longToken}`
-    );
-    const pagesData = await pagesRes.json();
-    if (pagesData.error) throw new Error(pagesData.error.message);
-
-    const pages = pagesData.data || [];
+    const pages = await fetchGrantedPages(longToken, appAccessToken);
     if (!pages.length) {
-      return redirectResponse(`${APP_URL}/app/settings/accounts?error=${encodeURIComponent('No Facebook Pages found. Grant Page access during Meta login.')}`);
+      const scopes = await getGrantedScopes(longToken, appAccessToken);
+      const msg =
+        'No Facebook Pages found after login. Pages managed in Meta Business require the business_management permission. ' +
+        `Granted scopes: ${scopes}. Add business_management to your Login for Business configuration, set META_CONFIG_ID, and reconnect.`;
+      return redirectResponse(`${APP_URL}/app/settings/accounts?error=${encodeURIComponent(msg)}`);
     }
 
     const workspaceId = oauthState.workspace_id;

@@ -3,6 +3,7 @@ import { stampWorkspaceId, getCurrentWorkspaceId } from './workspace';
 import { getActiveClientId } from './clientContext';
 import { format } from 'date-fns';
 import { rescheduleUtcToDay, resolveScheduleTimezone } from './scheduleTime';
+import { findLinkedInstagram } from './socialAccounts';
 
 async function stampClientId(data) {
   const clientId = getActiveClientId();
@@ -162,16 +163,86 @@ export async function reschedulePostToDay(postId, targetDay, post, clientTimezon
 
 export async function listSocialAccounts() {
   const clientId = getActiveClientId();
-  let query = supabase.from('social_accounts').select('*').order('platform');
+  let query = supabase
+    .from('social_accounts')
+    .select('*')
+    .order('is_primary', { ascending: false })
+    .order('name', { ascending: true });
   if (clientId) query = query.eq('client_id', clientId);
   const { data, error } = await query;
   if (error) throw error;
   return data;
 }
 
+export async function setPrimarySocialAccount(accountId, options = {}) {
+  const clientId = getActiveClientId();
+  const { data: account, error: fetchErr } = await supabase
+    .from('social_accounts')
+    .select('*')
+    .eq('id', accountId)
+    .single();
+  if (fetchErr) throw fetchErr;
+  if (clientId && account.client_id !== clientId) {
+    throw new Error('Account does not belong to the active client');
+  }
+
+  const { error: clearErr } = await supabase
+    .from('social_accounts')
+    .update({ is_primary: false })
+    .eq('client_id', account.client_id)
+    .eq('platform', account.platform);
+  if (clearErr) throw clearErr;
+
+  const { data: updated, error: setErr } = await supabase
+    .from('social_accounts')
+    .update({ is_primary: true })
+    .eq('id', accountId)
+    .select()
+    .single();
+  if (setErr) throw setErr;
+
+  if (options.linkInstagram && account.platform === 'facebook' && account.page_id) {
+    const allAccounts = await listSocialAccounts();
+    const hasIgPrimary = allAccounts.some(
+      (a) => a.platform === 'instagram' && a.is_primary,
+    );
+    if (!hasIgPrimary) {
+      const linkedIg = findLinkedInstagram(allAccounts, account);
+      if (linkedIg) {
+        await setPrimarySocialAccount(linkedIg.id, { linkInstagram: false });
+      }
+    }
+  }
+
+  return updated;
+}
+
 export async function disconnectSocialAccount(id) {
+  const { data: account, error: fetchErr } = await supabase
+    .from('social_accounts')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (fetchErr) throw fetchErr;
+
   const { error } = await supabase.from('social_accounts').delete().eq('id', id);
   if (error) throw error;
+
+  if (account.is_primary && account.client_id) {
+    const { data: siblings } = await supabase
+      .from('social_accounts')
+      .select('id')
+      .eq('client_id', account.client_id)
+      .eq('platform', account.platform)
+      .order('created_at', { ascending: true })
+      .limit(1);
+    if (siblings?.[0]) {
+      await supabase
+        .from('social_accounts')
+        .update({ is_primary: true })
+        .eq('id', siblings[0].id);
+    }
+  }
 }
 
 export async function getCanvaConnection() {

@@ -1,5 +1,6 @@
 import { handleOptions, jsonResponse } from '../_shared/cors.ts';
 import { getServiceClient, META_GRAPH, requireUser } from '../_shared/supabase.ts';
+import { pickPrimaryAccount } from '../_shared/socialAccounts.ts';
 
 type IgMediaItem = {
   id?: string;
@@ -23,14 +24,14 @@ Deno.serve(async (req) => {
     if (!clientId) return jsonResponse({ error: 'clientId required' }, 400);
 
     const service = getServiceClient();
-    const { data: account, error: accountErr } = await service
+    const { data: accounts, error: accountErr } = await service
       .from('social_accounts')
       .select('*')
       .eq('client_id', clientId)
-      .eq('platform', 'instagram')
-      .maybeSingle();
+      .eq('platform', 'instagram');
 
     if (accountErr) throw accountErr;
+    const account = pickPrimaryAccount(accounts || [], 'instagram');
     if (!account) return jsonResponse({ media: [] });
 
     const igUserId = account.ig_user_id || account.external_id;

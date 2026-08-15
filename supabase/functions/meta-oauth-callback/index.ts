@@ -76,6 +76,17 @@ Deno.serve(async (req) => {
     const workspaceId = oauthState.workspace_id;
     const clientId = oauthState.client_id;
 
+    const { data: existingAccounts } = await service
+      .from('social_accounts')
+      .select('platform, is_primary')
+      .eq('client_id', clientId);
+
+    const hasPrimary = (platform: string) =>
+      (existingAccounts || []).some((a) => a.platform === platform && a.is_primary);
+
+    let firstFbExternalId: string | null = null;
+    let firstIgExternalId: string | null = null;
+
     for (const page of pagesData.data || []) {
       const pagePictureUrl = page.picture?.data?.url || null;
 
@@ -92,6 +103,8 @@ Deno.serve(async (req) => {
         page_id: page.id,
         token_expires_at: tokenExpiresAt,
       }, { onConflict: 'workspace_id,platform,external_id' });
+
+      if (!firstFbExternalId) firstFbExternalId = page.id;
 
       const igAccount = page.instagram_business_account;
       if (igAccount?.id) {
@@ -114,6 +127,33 @@ Deno.serve(async (req) => {
           ig_user_id: igData.id,
           token_expires_at: tokenExpiresAt,
         }, { onConflict: 'workspace_id,platform,external_id' });
+
+        if (!firstIgExternalId && page.id === firstFbExternalId) {
+          firstIgExternalId = igData.id;
+        }
+      }
+    }
+
+    const { data: clientAccounts } = await service
+      .from('social_accounts')
+      .select('*')
+      .eq('client_id', clientId);
+
+    if (!hasPrimary('facebook') && firstFbExternalId) {
+      const fbRow = (clientAccounts || []).find(
+        (a) => a.platform === 'facebook' && a.external_id === firstFbExternalId,
+      );
+      if (fbRow) {
+        await service.from('social_accounts').update({ is_primary: true }).eq('id', fbRow.id);
+      }
+    }
+
+    if (!hasPrimary('instagram') && firstIgExternalId) {
+      const igRow = (clientAccounts || []).find(
+        (a) => a.platform === 'instagram' && a.external_id === firstIgExternalId,
+      );
+      if (igRow) {
+        await service.from('social_accounts').update({ is_primary: true }).eq('id', igRow.id);
       }
     }
 

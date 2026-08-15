@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { listSocialAccounts } from '@/lib/posts';
 import { getActiveClientId } from '@/lib/clientContext';
+import { pickPrimaryPair } from '@/lib/socialAccounts';
 
 export function usePreviewAccounts() {
   const clientId = getActiveClientId();
@@ -9,8 +10,7 @@ export function usePreviewAccounts() {
     queryFn: listSocialAccounts,
   });
 
-  const facebook = accounts.find((a) => a.platform === 'facebook');
-  const instagram = accounts.find((a) => a.platform === 'instagram');
+  const { facebook, instagram } = pickPrimaryPair(accounts);
 
   return {
     facebook: facebook

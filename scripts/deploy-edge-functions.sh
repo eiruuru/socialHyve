@@ -11,7 +11,7 @@ if [ -f .env ]; then
   set +a
 fi
 
-SUPABASE_BIN=(npx supabase)
+SUPABASE_BIN=(npx -y supabase)
 
 PROJECT_REF="${SUPABASE_PROJECT_REF:-}"
 if [ -z "$PROJECT_REF" ] && [ -n "${VITE_SUPABASE_URL:-}" ]; then
@@ -23,14 +23,18 @@ if [ -z "$PROJECT_REF" ]; then
   exit 1
 fi
 
-if [ -z "${SUPABASE_ACCESS_TOKEN:-}" ] && [ ! -f "$HOME/.supabase/access-token" ]; then
-  echo "Not authenticated. Run: npx supabase login"
-  echo "Or add SUPABASE_ACCESS_TOKEN to .env"
-  exit 1
+# Verify auth — works with both old and new Supabase CLI token storage
+if ! "${SUPABASE_BIN[@]}" projects list >/dev/null 2>&1; then
+  if [ -z "${SUPABASE_ACCESS_TOKEN:-}" ]; then
+    echo "Not authenticated. Run: npx supabase login"
+    echo "Or add SUPABASE_ACCESS_TOKEN=sbp_... to .env"
+    exit 1
+  fi
+  export SUPABASE_ACCESS_TOKEN
 fi
 
 echo "Linking project $PROJECT_REF..."
-"${SUPABASE_BIN[@]}" link --project-ref "$PROJECT_REF"
+"${SUPABASE_BIN[@]}" link --project-ref "$PROJECT_REF" || true
 
 FUNCTIONS=(
   meta-oauth-start
@@ -45,7 +49,7 @@ FUNCTIONS=(
 
 for fn in "${FUNCTIONS[@]}"; do
   echo "Deploying $fn..."
-  "${SUPABASE_BIN[@]}" functions deploy "$fn"
+  "${SUPABASE_BIN[@]}" functions deploy "$fn" --project-ref "$PROJECT_REF"
 done
 
 echo "Setting Edge Function secrets..."

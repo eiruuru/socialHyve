@@ -53,6 +53,6 @@ if [ -n "${TOKEN_ENCRYPTION_KEY:-}" ]; then
 fi
 
 echo "Setting secrets on project $PROJECT_REF..."
-npx supabase secrets set "${args[@]}"
+npx -y supabase secrets set "${args[@]}" --project-ref "$PROJECT_REF"
 
 echo "Secrets updated."

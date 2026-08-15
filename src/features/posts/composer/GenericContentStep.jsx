@@ -6,6 +6,7 @@ import { IconTooltip } from '@/components/ui/IconTooltip';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { OptimizationTips } from '@/features/posts/composer/OptimizationTips';
 
 const LABEL_PRESETS = ['Campaign', 'Product launch', 'Evergreen', 'Promo', 'Event'];
 
@@ -98,6 +99,12 @@ export function GenericContentStep({
             rows={6}
           />
           <p className="mt-1 text-xs text-muted-foreground">{captionHint}</p>
+          <OptimizationTips
+            caption={caption}
+            media={media}
+            publishInstagram={publishInstagram}
+            scheduledAt={scheduledAt}
+          />
         </div>
 
         <div>

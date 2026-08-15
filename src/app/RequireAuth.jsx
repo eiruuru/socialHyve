@@ -1,6 +1,7 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { EmptyHiveState } from '@/components/EmptyHiveState';
+import { InviteAcceptanceGate } from './InviteAcceptanceGate';
 
 export function RequireAuth() {
   const { isAuthenticated, isLoadingAuth } = useAuth();
@@ -17,5 +18,9 @@ export function RequireAuth() {
     return <Navigate to="/app/login" replace />;
   }
 
-  return <Outlet />;
+  return (
+    <InviteAcceptanceGate>
+      <Outlet />
+    </InviteAcceptanceGate>
+  );
 }

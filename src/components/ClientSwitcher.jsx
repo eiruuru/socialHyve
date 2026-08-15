@@ -1,11 +1,13 @@
 import { ChevronDown } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useClient } from '@/lib/clientContext';
+import { useMembership } from '@/lib/membershipContext';
 import { cn } from '@/lib/utils';
 
 export function ClientSwitcher({ className }) {
   const queryClient = useQueryClient();
   const { clients, activeClient, setActiveClient, loading } = useClient();
+  const { isManager } = useMembership();
 
   if (loading) {
     return <div className={cn('h-9 animate-pulse rounded-hyve-sm bg-sidebar-accent', className)} />;
@@ -13,7 +15,9 @@ export function ClientSwitcher({ className }) {
 
   if (!clients.length) {
     return (
-      <p className={cn('text-xs text-neutral-400', className)}>No clients yet</p>
+      <p className={cn('text-xs text-neutral-400', className)}>
+        {isManager ? 'No clients assigned — ask your admin' : 'No clients yet'}
+      </p>
     );
   }
 

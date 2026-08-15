@@ -1,4 +1,77 @@
 import { supabase } from './supabase';
+import { invokeFunction } from './supabaseFunctions';
+
+export async function previewInvite(token, type) {
+  return invokeFunction('acceptInvite', { action: 'preview', token, type });
+}
+
+export async function acceptInvite(token, type) {
+  return invokeFunction('acceptInvite', { action: 'accept', token, type });
+}
+
+export async function sendInviteEmail(payload) {
+  return invokeFunction('sendInviteEmail', payload);
+}
+
+export async function getMembershipForUser() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const [{ data: orgMember }, { data: clientMembers }] = await Promise.all([
+    supabase
+      .from('organization_members')
+      .select('role, organization_id')
+      .eq('user_id', user.id)
+      .maybeSingle(),
+    supabase
+      .from('client_members')
+      .select('client_id, role, clients(id, name)')
+      .eq('user_id', user.id),
+  ]);
+
+  let orgRole = orgMember?.role || null;
+  if (!orgRole) {
+    const { data: owned } = await supabase
+      .from('organizations')
+      .select('id')
+      .eq('owner_id', user.id)
+      .maybeSingle();
+    if (owned) orgRole = 'owner';
+  }
+
+  return {
+    orgRole,
+    clientMemberships: (clientMembers || []).map((m) => ({
+      clientId: m.client_id,
+      role: m.role,
+      name: m.clients?.name,
+    })),
+  };
+}
+
+export async function listClientsForUser() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const org = await getOrganization();
+  if (org) {
+    const { data, error } = await supabase
+      .from('clients')
+      .select('*')
+      .eq('organization_id', org.id)
+      .order('name');
+    if (error) throw error;
+    return data;
+  }
+
+  const { data, error } = await supabase
+    .from('client_members')
+    .select('clients(*)')
+    .eq('user_id', user.id);
+  if (error) throw error;
+  return (data || []).map((row) => row.clients).filter(Boolean);
+}
+
 
 export function displayMember(member) {
   const profile = member?.profiles;
@@ -66,16 +139,7 @@ export async function getOrganization() {
 }
 
 export async function listClients() {
-  const org = await getOrganization();
-  if (!org) return [];
-
-  const { data, error } = await supabase
-    .from('clients')
-    .select('*')
-    .eq('organization_id', org.id)
-    .order('name');
-  if (error) throw error;
-  return data;
+  return listClientsForUser();
 }
 
 export async function createClient(name) {

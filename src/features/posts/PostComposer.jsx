@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Calendar, ClipboardCheck, Save, Send } from 'lucide-react';
 import {
   createPost,
@@ -7,6 +8,8 @@ import {
   schedulePost,
   uploadMediaFile,
   updatePost,
+  getPost,
+  removePostMedia,
 } from '@/lib/posts';
 import { invokeFunction } from '@/lib/supabaseFunctions';
 import { GenericContentStep } from '@/features/posts/composer/GenericContentStep';
@@ -36,13 +39,29 @@ function validatePost({ caption, media, publishInstagram, publishFacebook }) {
   return errors;
 }
 
-export function PostComposer() {
+function formatScheduledInput(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toISOString().slice(0, 16);
+}
+
+export function PostComposer({ editPostId = null }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const presetDate = searchParams.get('date');
+  const isEditMode = !!editPostId;
+  const hydratedRef = useRef(false);
+  const originalMediaIdsRef = useRef([]);
+
+  const { data: existingPost, isLoading: loadingPost } = useQuery({
+    queryKey: ['post', editPostId],
+    queryFn: () => getPost(editPostId),
+    enabled: isEditMode,
+  });
 
   const [fineTuneOpen, setFineTuneOpen] = useState(false);
-  const [draftPostId, setDraftPostId] = useState(null);
+  const [draftPostId, setDraftPostId] = useState(editPostId);
   const [internalName, setInternalName] = useState('');
   const [label, setLabel] = useState('');
   const [caption, setCaption] = useState('');
@@ -60,26 +79,63 @@ export function PostComposer() {
   });
   const [media, setMedia] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [approvalStatus, setApprovalStatus] = useState('draft');
 
+  useEffect(() => {
+    if (!existingPost || hydratedRef.current) return;
+    hydratedRef.current = true;
+    setDraftPostId(existingPost.id);
+    setInternalName(existingPost.internal_name || '');
+    setLabel(existingPost.label || '');
+    setCaption(existingPost.caption || '');
+    setFirstComment(existingPost.first_comment || '');
+    setPlatformOverrides(existingPost.platform_overrides || {});
+    setPublishFacebook(existingPost.publish_facebook ?? true);
+    setPublishInstagram(existingPost.publish_instagram ?? true);
+    setScheduledAt(formatScheduledInput(existingPost.scheduled_at));
+    setApprovalStatus(existingPost.approval_status || 'draft');
+    const sortedMedia = [...(existingPost.post_media || [])].sort(
+      (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
+    );
+    originalMediaIdsRef.current = sortedMedia.map((m) => m.id);
+    setMedia(sortedMedia.map((m, i) => ({
+      id: m.id,
+      source: m.source,
+      canva_design_id: m.canva_design_id,
+      storage_path: m.storage_path,
+      public_url: m.public_url,
+      mime_type: m.mime_type,
+      sort_order: i,
+    })));
+  }, [existingPost]);
+
+  const isPublished = existingPost?.status === 'published';
   const validationErrors = validatePost({ caption, media, publishInstagram, publishFacebook });
   const captionHint = publishInstagram
     ? `${caption.length}/${IG_CAPTION_LIMIT} (Instagram)`
     : `${caption.length}/${FB_CAPTION_LIMIT} (Facebook)`;
 
-  const buildPayload = (status, approvalStatus) => ({
+  const buildPayload = (status, nextApprovalStatus = approvalStatus) => ({
     caption,
     internal_name: internalName || null,
     label: label || null,
     first_comment: firstComment || null,
     platform_overrides: platformOverrides,
     status,
-    approval_status: approvalStatus,
+    approval_status: nextApprovalStatus,
     publish_facebook: publishFacebook,
     publish_instagram: publishInstagram,
     scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
   });
 
-  const saveMediaToPost = async (postId) => {
+  const syncMedia = async (postId) => {
+    const currentIds = new Set(media.filter((m) => m.id).map((m) => m.id));
+    for (const id of originalMediaIdsRef.current) {
+      if (!currentIds.has(id)) {
+        await removePostMedia(id);
+      }
+    }
+
     for (const item of media) {
       if (item.file) {
         await uploadMediaFile(postId, item.file, item.sort_order);
@@ -98,16 +154,21 @@ export function PostComposer() {
 
   const ensureDraft = async () => {
     if (draftPostId) {
-      await updatePost(draftPostId, buildPayload('draft', 'draft'));
+      await updatePost(draftPostId, buildPayload(existingPost?.status || 'draft'));
+      await syncMedia(draftPostId);
       return draftPostId;
     }
     const post = await createPost(buildPayload('draft', 'draft'));
-    await saveMediaToPost(post.id);
+    await syncMedia(post.id);
     setDraftPostId(post.id);
     return post.id;
   };
 
   const runWithValidation = async (action) => {
+    if (isPublished) {
+      alert('Published posts cannot be edited.');
+      return;
+    }
     if (validationErrors.length) {
       alert(validationErrors.join('\n'));
       return;
@@ -141,7 +202,7 @@ export function PostComposer() {
         return;
       }
       const id = await ensureDraft();
-      await updatePost(id, buildPayload('scheduled', 'draft'));
+      await updatePost(id, buildPayload('scheduled'));
       await schedulePost(id, scheduleDate.toISOString());
       navigate('/app/calendar');
     });
@@ -150,7 +211,7 @@ export function PostComposer() {
     runWithValidation(async () => {
       const id = await ensureDraft();
       await updatePost(id, {
-        ...buildPayload('scheduled', 'draft'),
+        ...buildPayload('scheduled'),
         scheduled_at: new Date().toISOString(),
       });
       await invokeFunction('publishPost', { postId: id });
@@ -166,6 +227,18 @@ export function PostComposer() {
 
   const fbCaption = platformOverrides.facebook?.caption ?? caption;
   const igCaption = platformOverrides.instagram?.caption ?? caption;
+
+  if (isEditMode && loadingPost) {
+    return <p className="text-muted-foreground">Loading post…</p>;
+  }
+
+  if (isEditMode && isPublished) {
+    return (
+      <div className="rounded-hyve-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        This post has been published and can no longer be edited in the composer.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

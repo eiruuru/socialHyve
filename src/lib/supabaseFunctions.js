@@ -10,12 +10,27 @@ const FUNCTION_MAP = {
   publishPost: 'publish-post',
   refreshTokens: 'refresh-tokens',
   reviewByToken: 'review-by-token',
+  acceptInvite: 'accept-invite',
+  sendInviteEmail: 'send-invite-email',
 };
+
+async function functionErrorMessage(error) {
+  if (!error) return 'Request failed';
+  if (error.context && typeof error.context.json === 'function') {
+    try {
+      const payload = await error.context.clone().json();
+      if (payload?.error) return payload.error;
+    } catch {
+      // fall through to generic message
+    }
+  }
+  return error.message || 'Request failed';
+}
 
 export async function invokeFunction(name, body = {}) {
   const fnName = FUNCTION_MAP[name] || name;
   const { data, error } = await supabase.functions.invoke(fnName, { body });
-  if (error) throw error;
+  if (error) throw new Error(await functionErrorMessage(error));
   return data;
 }
 

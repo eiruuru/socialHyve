@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Film, LayoutGrid, Square } from 'lucide-react';
 import { InstagramFeedPreview } from './InstagramFeedPreview';
 import { InstagramGridPreview } from './InstagramGridPreview';
+import { InstagramReelsPreview } from './InstagramReelsPreview';
 import { PreviewFrame } from './PreviewFrame';
 import { IconTooltip } from '@/components/ui/IconTooltip';
 import { cn } from '@/lib/utils';
@@ -66,7 +67,7 @@ export function InstagramPreviewPanel({
         active={contentFilter === 'reels'}
         onClick={() => setContentFilter('reels')}
         title="Reels"
-        description="Reels preview coming soon"
+        description="Preview as an Instagram Reel"
       >
         <Film className="h-4 w-4" />
       </IconToggle>
@@ -85,7 +86,11 @@ export function InstagramPreviewPanel({
   ) : null;
 
   const content = viewMode === 'post' ? (
-    <InstagramFeedPreview caption={caption} media={media} embedded />
+    contentFilter === 'reels' ? (
+      <InstagramReelsPreview caption={caption} media={media} />
+    ) : (
+      <InstagramFeedPreview caption={caption} media={media} embedded />
+    )
   ) : contentFilter === 'reels' ? (
     <div className="flex aspect-[9/16] max-h-64 items-center justify-center text-sm text-muted-foreground">
       Reels grid preview coming soon

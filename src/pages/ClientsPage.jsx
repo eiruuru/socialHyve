@@ -4,12 +4,13 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Pencil, Trash2 } from 'lucide-react';
 import { createClient, deleteClient, listClients, updateClient } from '@/lib/organization';
 import { useClient } from '@/lib/clientContext';
+import { useMembership } from '@/lib/membershipContext';
 import { Button } from '@/components/ui/button';
 import { IconTooltip } from '@/components/ui/IconTooltip';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-function ClientRow({ client, onUpdated, onDeleted }) {
+function ClientRow({ client, onUpdated, onDeleted, canManage }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(client.name);
   const [saving, setSaving] = useState(false);
@@ -76,16 +77,20 @@ function ClientRow({ client, onUpdated, onDeleted }) {
       </div>
       {!editing && (
         <div className="flex shrink-0 items-center gap-1">
-          <IconTooltip title="Rename" description="Change this client's display name">
-            <Button variant="ghost" size="icon" onClick={() => setEditing(true)} aria-label="Rename client">
-              <Pencil className="h-4 w-4" />
-            </Button>
-          </IconTooltip>
-          <IconTooltip title="Delete client" description="Permanently delete this client and all its data">
-            <Button variant="ghost" size="icon" onClick={handleDelete} aria-label="Delete client">
-              <Trash2 className="h-4 w-4 text-destructive" />
-            </Button>
-          </IconTooltip>
+          {canManage ? (
+            <>
+              <IconTooltip title="Rename" description="Change this client's display name">
+                <Button variant="ghost" size="icon" onClick={() => setEditing(true)} aria-label="Rename client">
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              </IconTooltip>
+              <IconTooltip title="Delete client" description="Permanently delete this client and all its data">
+                <Button variant="ghost" size="icon" onClick={handleDelete} aria-label="Delete client">
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </IconTooltip>
+            </>
+          ) : null}
           <Button variant="outline" size="sm" asChild>
             <Link to={`/app/clients/${client.id}/members`}>Members</Link>
           </Button>
@@ -98,6 +103,7 @@ function ClientRow({ client, onUpdated, onDeleted }) {
 export default function ClientsPage() {
   const queryClient = useQueryClient();
   const { refreshClients, setActiveClient } = useClient();
+  const { canManageClients } = useMembership();
   const [name, setName] = useState('');
   const [creating, setCreating] = useState(false);
 
@@ -146,6 +152,7 @@ export default function ClientsPage() {
         <p className="text-muted-foreground">Each client has its own calendar, accounts, and approval workflow</p>
       </div>
 
+      {canManageClients && (
       <Card>
         <CardHeader>
           <CardTitle>New client</CardTitle>
@@ -164,6 +171,7 @@ export default function ClientsPage() {
           </form>
         </CardContent>
       </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -182,6 +190,7 @@ export default function ClientsPage() {
                   client={client}
                   onUpdated={handleUpdated}
                   onDeleted={handleDeleted}
+                  canManage={canManageClients}
                 />
               ))}
             </ul>

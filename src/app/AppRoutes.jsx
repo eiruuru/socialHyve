@@ -4,12 +4,15 @@ import { RequireAuth } from './RequireAuth';
 import { AppLayout } from './AppLayout';
 import { WorkspaceProvider } from '@/lib/WorkspaceContext';
 import { ClientProvider } from '@/lib/clientContext';
+import { MembershipProvider } from '@/lib/membershipContext';
+import { ClientOnlyRedirect } from './ClientOnlyRedirect';
 import { EmptyHiveState } from '@/components/EmptyHiveState';
 
 const LoginPage = lazy(() => import('@/pages/LoginPage'));
 const CalendarPage = lazy(() => import('@/pages/CalendarPage'));
 const QueuePage = lazy(() => import('@/pages/QueuePage'));
 const PostComposerPage = lazy(() => import('@/pages/PostComposerPage'));
+const EditPostPage = lazy(() => import('@/pages/EditPostPage'));
 const PostDetailPage = lazy(() => import('@/pages/PostDetailPage'));
 const ConnectedAccountsPage = lazy(() => import('@/pages/ConnectedAccountsPage'));
 const CanvaSettingsPage = lazy(() => import('@/pages/CanvaSettingsPage'));
@@ -35,7 +38,10 @@ export function AppRoutes() {
           element={
             <WorkspaceProvider>
               <ClientProvider>
-                <AppLayout />
+                <MembershipProvider>
+                  <ClientOnlyRedirect />
+                  <AppLayout />
+                </MembershipProvider>
               </ClientProvider>
             </WorkspaceProvider>
           }
@@ -44,6 +50,7 @@ export function AppRoutes() {
           <Route path="queue" element={<Lazy><QueuePage /></Lazy>} />
           <Route path="calendar" element={<Lazy><CalendarPage /></Lazy>} />
           <Route path="posts/new" element={<Lazy><PostComposerPage /></Lazy>} />
+          <Route path="posts/:id/edit" element={<Lazy><EditPostPage /></Lazy>} />
           <Route path="posts/:id" element={<Lazy><PostDetailPage /></Lazy>} />
           <Route path="clients" element={<Lazy><ClientsPage /></Lazy>} />
           <Route path="clients/:clientId/members" element={<Lazy><ClientMembersPage /></Lazy>} />

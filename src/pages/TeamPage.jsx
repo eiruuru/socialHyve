@@ -1,20 +1,33 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/lib/AuthContext';
+import { useMembership } from '@/lib/membershipContext';
 import {
   inviteOrganizationMember,
   listOrganizationInvites,
   listOrganizationMembers,
   displayMember,
+  sendInviteEmail,
+  getOrganization,
 } from '@/lib/organization';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function TeamPage() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { canManageTeam, loading: membershipLoading } = useMembership();
   const queryClient = useQueryClient();
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('editor');
   const [inviting, setInviting] = useState(false);
+
+  useEffect(() => {
+    if (membershipLoading) return;
+    if (!canManageTeam) navigate('/app/calendar', { replace: true });
+  }, [canManageTeam, membershipLoading, navigate]);
 
   const { data: members = [] } = useQuery({
     queryKey: ['org-members'],
@@ -32,8 +45,21 @@ export default function TeamPage() {
     setInviting(true);
     try {
       const invite = await inviteOrganizationMember(email.trim(), role);
+      const org = await getOrganization();
       const link = `${window.location.origin}/app/login?invite=${invite.token}`;
       await navigator.clipboard.writeText(link);
+      try {
+        await sendInviteEmail({
+          type: 'organization',
+          token: invite.token,
+          email: email.trim(),
+          inviterName: user?.email,
+          targetName: org?.name,
+          role,
+        });
+      } catch {
+        // email optional
+      }
       alert(`Invite link copied to clipboard for ${email}`);
       setEmail('');
       queryClient.invalidateQueries({ queryKey: ['org-invites'] });

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/lib/AuthContext';
+import { useMembership } from '@/lib/membershipContext';
 import {
   inviteClientMember,
   listClientInvites,
@@ -11,6 +13,7 @@ import {
   assignManagerToClient,
   removeManagerFromClient,
   displayMember,
+  sendInviteEmail,
 } from '@/lib/organization';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +21,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function ClientMembersPage() {
   const { clientId } = useParams();
+  const { user } = useAuth();
+  const { canAssignManagers } = useMembership();
   const queryClient = useQueryClient();
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('approver');
@@ -65,6 +70,18 @@ export default function ClientMembersPage() {
       const invite = await inviteClientMember(clientId, email.trim(), role);
       const link = `${window.location.origin}/app/login?clientInvite=${invite.token}`;
       await navigator.clipboard.writeText(link);
+      try {
+        await sendInviteEmail({
+          type: 'client',
+          token: invite.token,
+          email: email.trim(),
+          inviterName: user?.email,
+          targetName: client?.name,
+          role,
+        });
+      } catch {
+        // email optional
+      }
       alert(`Client invite link copied for ${email}`);
       setEmail('');
       queryClient.invalidateQueries({ queryKey: ['client-invites', clientId] });
@@ -144,6 +161,7 @@ export default function ClientMembersPage() {
         </CardContent>
       </Card>
 
+      {canAssignManagers && (
       <Card>
         <CardHeader>
           <CardTitle>Assigned managers</CardTitle>
@@ -204,6 +222,7 @@ export default function ClientMembersPage() {
           )}
         </CardContent>
       </Card>
+      )}
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card>

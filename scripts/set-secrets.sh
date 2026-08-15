@@ -52,6 +52,14 @@ if [ -n "${TOKEN_ENCRYPTION_KEY:-}" ]; then
   args+=("TOKEN_ENCRYPTION_KEY=${TOKEN_ENCRYPTION_KEY}")
 fi
 
+if [ -n "${RESEND_API_KEY:-}" ]; then
+  args+=("RESEND_API_KEY=${RESEND_API_KEY}")
+fi
+
+if [ -n "${INVITE_FROM_EMAIL:-}" ]; then
+  args+=("INVITE_FROM_EMAIL=${INVITE_FROM_EMAIL}")
+fi
+
 echo "Setting secrets on project $PROJECT_REF..."
 npx -y supabase secrets set "${args[@]}" --project-ref "$PROJECT_REF"
 

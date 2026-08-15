@@ -1,6 +1,6 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Check, Link2, RefreshCw, RotateCcw, Trash2 } from 'lucide-react';
+import { ArrowLeft, Check, Link2, Pencil, RefreshCw, RotateCcw, Trash2 } from 'lucide-react';
 import {
   getPost,
   deletePost,
@@ -169,6 +169,15 @@ export default function PostDetailPage() {
               <Link2 className="h-4 w-4" />
             </Button>
           </IconTooltip>
+          {post.status !== 'published' && (
+            <IconTooltip title="Edit post" description="Open in the composer to edit">
+              <Button size="icon" variant="outline" asChild aria-label="Edit post">
+                <Link to={`/app/posts/${id}/edit`}>
+                  <Pencil className="h-4 w-4" />
+                </Link>
+              </Button>
+            </IconTooltip>
+          )}
           <IconTooltip title="Delete" description="Permanently remove this post">
             <Button size="icon" variant="destructive" onClick={handleDelete} aria-label="Delete">
               <Trash2 className="h-4 w-4" />

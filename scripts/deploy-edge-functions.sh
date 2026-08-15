@@ -45,6 +45,9 @@ FUNCTIONS=(
   canva-export-design
   publish-post
   refresh-tokens
+  review-by-token
+  accept-invite
+  send-invite-email
 )
 
 for fn in "${FUNCTIONS[@]}"; do

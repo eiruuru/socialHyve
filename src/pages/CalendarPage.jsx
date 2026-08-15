@@ -2,16 +2,41 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { listPosts } from '@/lib/posts';
 import { useClient } from '@/lib/clientContext';
+import { useMembership } from '@/lib/membershipContext';
 import { ContentCalendar } from '@/features/calendar/ContentCalendar';
+import { EmptyHiveState } from '@/components/EmptyHiveState';
 import { Button } from '@/components/ui/button';
 
 export default function CalendarPage() {
-  const { activeClient } = useClient();
+  const { activeClient, clients, loading: clientsLoading } = useClient();
+  const { isManager } = useMembership();
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ['posts', activeClient?.id],
     queryFn: () => listPosts(),
     enabled: !!activeClient,
   });
+
+  if (!clientsLoading && clients.length === 0) {
+    return (
+      <div className="space-y-4">
+        <EmptyHiveState
+          title={isManager ? 'No clients assigned yet' : 'No clients yet'}
+          description={
+            isManager
+              ? 'Ask your admin to assign you to a client so you can manage their calendar.'
+              : 'Create a client to start scheduling posts.'
+          }
+        />
+        {!isManager && (
+          <div className="flex justify-center">
+            <Button asChild>
+              <Link to="/app/clients">Go to Clients</Link>
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

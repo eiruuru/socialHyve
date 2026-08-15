@@ -110,7 +110,7 @@ export function PostQueueCard({
           {approval === 'approved' && post.status === 'draft' && (
             <Button size="sm" onClick={() => onPublish?.(post.id)}>Publish now</Button>
           )}
-          <Button size="sm" variant="outline" onClick={() => navigate(`/app/posts/${post.id}`)}>
+          <Button size="sm" variant="outline" onClick={() => navigate(`/app/posts/${post.id}/edit`)}>
             Edit
           </Button>
         </div>

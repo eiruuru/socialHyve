@@ -1,36 +1,71 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { Calendar, ClipboardCheck, FileText, Link2, LogOut, Palette, Users, Building2 } from 'lucide-react';
+import {
+  Calendar,
+  ClipboardCheck,
+  FileText,
+  Link2,
+  LogOut,
+  Palette,
+  Users,
+  Building2,
+  Eye,
+} from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
+import { useMembership } from '@/lib/membershipContext';
+import { useClient } from '@/lib/clientContext';
 import { Logo } from '@/components/brand/Logo';
 import { ClientSwitcher } from '@/components/ClientSwitcher';
 import { cn } from '@/lib/utils';
 
-const navItems = [
-  { to: '/app/queue', label: 'Queue', icon: ClipboardCheck },
-  { to: '/app/calendar', label: 'Calendar', icon: Calendar },
-  { to: '/app/posts/new', label: 'New Post', icon: FileText },
-  { to: '/app/clients', label: 'Clients', icon: Building2 },
-  { to: '/app/team', label: 'Team', icon: Users },
-  { to: '/app/settings/accounts', label: 'Accounts', icon: Link2 },
-  { to: '/app/settings/canva', label: 'Canva', icon: Palette },
+const allNavItems = [
+  { to: '/app/queue', label: 'Queue', icon: ClipboardCheck, show: (m) => m.isOrgTeam && !m.isClientOnly },
+  { to: '/app/calendar', label: 'Calendar', icon: Calendar, show: (m) => m.isOrgTeam && !m.isClientOnly },
+  { to: '/app/posts/new', label: 'New Post', icon: FileText, show: (m, c) => m.isOrgTeam && !m.isClientOnly && c.clients.length > 0 },
+  { to: '/app/clients', label: 'Clients', icon: Building2, show: (m) => m.isOrgTeam && !m.isClientOnly },
+  { to: '/app/team', label: 'Team', icon: Users, show: (m) => m.canManageTeam },
+  { to: '/app/settings/accounts', label: 'Accounts', icon: Link2, show: (m, c) => m.isOrgTeam && !m.isClientOnly && c.clients.length > 0 },
+  { to: '/app/settings/canva', label: 'Canva', icon: Palette, show: (m, c) => m.isOrgTeam && !m.isClientOnly && c.clients.length > 0 },
 ];
 
 export function AppLayout() {
   const { logout, user } = useAuth();
+  const membership = useMembership();
+  const clientCtx = useClient();
   const location = useLocation();
   const isWide = location.pathname.includes('/calendar');
+
+  const clientReviewItems = membership.isClientOnly
+    ? membership.clientMemberships.map((cm) => ({
+        to: `/app/client/${cm.clientId}/review`,
+        label: `${cm.name || 'Client'} review`,
+        icon: Eye,
+      }))
+    : [];
+
+  const navItems = membership.isClientOnly
+    ? clientReviewItems
+    : allNavItems.filter((item) => item.show(membership, clientCtx));
+
+  const roleDisplay = membership.roleLabel
+    ? membership.roleLabel.charAt(0).toUpperCase() + membership.roleLabel.slice(1)
+    : null;
 
   return (
     <div className="flex min-h-screen bg-paper">
       <aside className="flex w-60 shrink-0 flex-col bg-sidebar text-sidebar-foreground">
         <div className="border-b border-sidebar-border px-5 py-6">
           <Logo variant="dark" />
-          <div className="mt-4">
-            <ClientSwitcher />
-          </div>
+          {!membership.isClientOnly && (
+            <div className="mt-4">
+              <ClientSwitcher />
+            </div>
+          )}
           <p className="mt-2 truncate text-xs text-neutral-400">
             Signed in as {user?.email}
           </p>
+          {roleDisplay && (
+            <p className="mt-0.5 text-xs capitalize text-neutral-500">{roleDisplay}</p>
+          )}
         </div>
         <nav className="flex-1 space-y-1 p-4">
           {navItems.map(({ to, label, icon: Icon }) => (

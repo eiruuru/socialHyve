@@ -36,6 +36,9 @@ verify_jwt = true
 [functions.canva-export-design]
 verify_jwt = true
 
+[functions.canva-get-design]
+verify_jwt = true
+
 [functions.publish-post]
 verify_jwt = false
 

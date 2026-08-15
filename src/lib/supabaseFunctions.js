@@ -6,6 +6,7 @@ const FUNCTION_MAP = {
   canvaOAuthStart: 'canva-oauth-start',
   canvaOAuthCallback: 'canva-oauth-callback',
   canvaListDesigns: 'canva-list-designs',
+  canvaGetDesign: 'canva-get-design',
   canvaExportDesign: 'canva-export-design',
   publishPost: 'publish-post',
   refreshTokens: 'refresh-tokens',

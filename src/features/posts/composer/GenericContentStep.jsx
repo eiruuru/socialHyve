@@ -143,6 +143,7 @@ export function GenericContentStep({
                   <CanvaDesignPicker
                     iconOnly
                     onSelect={handleCanvaSelect}
+                    mediaCount={media.length}
                     disabled={media.length >= MAX_CAROUSEL_ITEMS}
                   />
                   <IconTooltip title="Upload media" description="Add images or videos from your device">

@@ -42,6 +42,7 @@ FUNCTIONS=(
   canva-oauth-start
   canva-oauth-callback
   canva-list-designs
+  canva-get-design
   canva-export-design
   publish-post
   refresh-tokens

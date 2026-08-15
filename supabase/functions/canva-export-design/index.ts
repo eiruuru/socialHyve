@@ -8,6 +8,59 @@ import {
   requireUser,
 } from '../_shared/supabase.ts';
 
+type FormatType = 'png' | 'jpg' | 'pdf' | 'gif' | 'mp4';
+
+function buildFormatPayload(formatType: FormatType, pages?: number[]) {
+  const pageList = pages?.length ? pages : undefined;
+
+  switch (formatType) {
+    case 'jpg':
+      return { type: 'jpg', quality: 90, ...(pageList ? { pages: pageList } : {}) };
+    case 'pdf':
+      return { type: 'pdf', ...(pageList ? { pages: pageList } : {}) };
+    case 'gif':
+      return { type: 'gif', ...(pageList ? { pages: pageList } : {}) };
+    case 'mp4':
+      return { type: 'mp4' };
+    default:
+      return { type: 'png', ...(pageList ? { pages: pageList } : {}) };
+  }
+}
+
+function mimeAndExt(formatType: FormatType) {
+  switch (formatType) {
+    case 'jpg':
+      return { mimeType: 'image/jpeg', ext: 'jpg' };
+    case 'pdf':
+      return { mimeType: 'application/pdf', ext: 'pdf' };
+    case 'gif':
+      return { mimeType: 'image/gif', ext: 'gif' };
+    case 'mp4':
+      return { mimeType: 'video/mp4', ext: 'mp4' };
+    default:
+      return { mimeType: 'image/png', ext: 'png' };
+  }
+}
+
+function normalizeDownloadUrls(urls: unknown[]): string[] {
+  return urls
+    .map((u) => (typeof u === 'string' ? u : (u as { url?: string })?.url))
+    .filter((u): u is string => typeof u === 'string' && u.length > 0);
+}
+
+function exportErrorMessage(statusData: Record<string, unknown>) {
+  const job = statusData.job as Record<string, unknown> | undefined;
+  const err = job?.error as { code?: string; message?: string } | undefined;
+  if (err?.message) return err.message;
+  if (err?.code === 'license_required') {
+    return 'Canva Pro or a license is required to export this design.';
+  }
+  if (err?.code === 'approval_required') {
+    return 'This design requires approval in Canva before it can be exported.';
+  }
+  return 'Canva export failed';
+}
+
 Deno.serve(async (req) => {
   const opt = handleOptions(req);
   if (opt) return opt;
@@ -15,7 +68,24 @@ Deno.serve(async (req) => {
   try {
     const { supabase, user } = await requireUser(req);
     const org = await getOrganizationForUser(supabase, user.id);
-    const { designId, format = 'png', postId, clientId } = await req.json();
+    const body = await req.json();
+    const {
+      designId,
+      formatType = 'png',
+      format,
+      pages,
+      postId,
+      clientId,
+    } = body as {
+      designId: string;
+      formatType?: FormatType;
+      format?: string;
+      pages?: number[];
+      postId?: string;
+      clientId?: string;
+    };
+
+    const resolvedFormat = (formatType || format || 'png') as FormatType;
 
     if (!designId) return jsonResponse({ error: 'designId required' }, 400);
 
@@ -50,11 +120,13 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         design_id: designId,
-        format: { type: format },
+        format: buildFormatPayload(resolvedFormat, pages),
       }),
     });
     const exportData = await exportRes.json();
-    if (!exportRes.ok) throw new Error(exportData.message || 'Export job creation failed');
+    if (!exportRes.ok) {
+      throw new Error(exportData.message || exportData.error || 'Export job creation failed');
+    }
 
     const jobId = exportData.job?.id;
     if (!jobId) throw new Error('No export job ID returned');
@@ -67,57 +139,70 @@ Deno.serve(async (req) => {
       });
       const statusData = await statusRes.json();
       if (statusData.job?.status === 'success') {
-        downloadUrls = (statusData.job?.urls || []).map((u: { url: string }) => u.url);
+        downloadUrls = normalizeDownloadUrls(statusData.job?.urls || []);
         break;
       }
       if (statusData.job?.status === 'failed') {
-        throw new Error(statusData.job?.error?.message || 'Canva export failed');
+        throw new Error(exportErrorMessage(statusData));
       }
     }
 
     if (!downloadUrls.length) throw new Error('Export timed out');
 
-    const fileRes = await fetch(downloadUrls[0]);
-    const fileBytes = new Uint8Array(await fileRes.arrayBuffer());
-    const mimeType = format === 'mp4' ? 'video/mp4' : format === 'jpg' ? 'image/jpeg' : 'image/png';
-    const ext = format === 'mp4' ? 'mp4' : format === 'jpg' ? 'jpg' : 'png';
+    const { mimeType, ext } = mimeAndExt(resolvedFormat);
     const pathPrefix = clientId ? `${org.id}/${clientId}` : org.id;
-    const storagePath = `${pathPrefix}/${postId || 'draft'}/${designId}.${ext}`;
+    const pageNumbers = pages?.length ? pages : downloadUrls.map((_, i) => i + 1);
+    const files: Array<{
+      publicUrl: string;
+      storagePath: string;
+      mimeType: string;
+      page: number;
+      canvaDesignId: string;
+    }> = [];
 
-    const { error: uploadErr } = await service.storage
-      .from('post-media')
-      .upload(storagePath, fileBytes, { contentType: mimeType, upsert: true });
+    for (let i = 0; i < downloadUrls.length; i++) {
+      const pageNum = pageNumbers[i] ?? i + 1;
+      const fileRes = await fetch(downloadUrls[i]);
+      if (!fileRes.ok) throw new Error(`Failed to download exported file (page ${pageNum})`);
+      const fileBytes = new Uint8Array(await fileRes.arrayBuffer());
+      const storagePath = `${pathPrefix}/${postId || 'draft'}/${designId}-p${pageNum}.${ext}`;
 
-    if (uploadErr) throw uploadErr;
+      const { error: uploadErr } = await service.storage
+        .from('post-media')
+        .upload(storagePath, fileBytes, { contentType: mimeType, upsert: true });
 
-    const { data: publicUrlData } = service.storage.from('post-media').getPublicUrl(storagePath);
+      if (uploadErr) throw uploadErr;
 
-    const mediaRecord = {
-      post_id: postId || null,
-      source: 'canva',
-      canva_design_id: designId,
-      storage_path: storagePath,
-      public_url: publicUrlData.publicUrl,
-      mime_type: mimeType,
-      sort_order: 0,
-    };
+      const { data: publicUrlData } = service.storage.from('post-media').getPublicUrl(storagePath);
 
-    if (postId) {
+      files.push({
+        publicUrl: publicUrlData.publicUrl,
+        storagePath,
+        mimeType,
+        page: pageNum,
+        canvaDesignId: designId,
+      });
+    }
+
+    if (postId && files.length === 1) {
       const { data: media, error: mediaErr } = await supabase
         .from('post_media')
-        .insert(mediaRecord)
+        .insert({
+          post_id: postId,
+          source: 'canva',
+          canva_design_id: designId,
+          storage_path: files[0].storagePath,
+          public_url: files[0].publicUrl,
+          mime_type: files[0].mimeType,
+          sort_order: 0,
+        })
         .select()
         .single();
       if (mediaErr) throw mediaErr;
-      return jsonResponse({ media, publicUrl: publicUrlData.publicUrl });
+      return jsonResponse({ files, media, publicUrl: files[0].publicUrl });
     }
 
-    return jsonResponse({
-      publicUrl: publicUrlData.publicUrl,
-      storagePath,
-      mimeType,
-      canvaDesignId: designId,
-    });
+    return jsonResponse({ files });
   } catch (err) {
     return jsonResponse({ error: (err as Error).message }, 400);
   }

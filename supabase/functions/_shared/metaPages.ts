@@ -73,11 +73,30 @@ export async function debugTokenType(
   token: string,
   appAccessToken: string,
 ): Promise<string | null> {
+  const info = await debugTokenInfo(token, appAccessToken);
+  return info.type;
+}
+
+export async function debugTokenInfo(
+  token: string,
+  appAccessToken: string,
+): Promise<{ type: string | null; profileId: string | null }> {
   const res = await fetch(
     `${META_GRAPH}/debug_token?input_token=${encodeURIComponent(token)}&access_token=${encodeURIComponent(appAccessToken)}`,
   );
   const data = await res.json();
-  return (data.data?.type as string) || null;
+  const debug = data.data as { type?: string; profile_id?: string } | undefined;
+  return {
+    type: debug?.type || null,
+    profileId: debug?.profile_id ? String(debug.profile_id) : null,
+  };
+}
+
+export function isValidPageTokenFor(
+  info: { type: string | null; profileId: string | null },
+  pageId: string,
+): boolean {
+  return info.type === 'PAGE' && info.profileId === String(pageId);
 }
 
 async function collectPagesForUser(userToken: string): Promise<Map<string, MetaPage>> {

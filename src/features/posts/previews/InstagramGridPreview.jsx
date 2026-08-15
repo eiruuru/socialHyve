@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 
 const PIPELINE_STATUSES = ['draft', 'scheduled', 'failed', 'publishing'];
 const MAX_GRID_POSTS = 12;
+const GRID_ROWS = MAX_GRID_POSTS / 3;
 
 function isInstagramPost(post) {
   return post.publish_instagram === true;
@@ -161,7 +162,10 @@ export function InstagramGridPreview({
   ]);
 
   return (
-    <div className="max-h-80 overflow-y-auto overscroll-contain">
+    <div
+      className="w-full overflow-y-auto overscroll-contain"
+      style={{ aspectRatio: `3 / ${GRID_ROWS}`, minHeight: '32rem' }}
+    >
       <div className="grid grid-cols-3 gap-px bg-neutral-200">
         {gridPosts.map((post) =>
           post.placeholder ? (

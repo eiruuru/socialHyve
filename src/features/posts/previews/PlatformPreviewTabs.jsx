@@ -57,6 +57,7 @@ export function PlatformPreviewTabs({
         scheduleTimezone={scheduleTimezone}
         clientId={clientId}
         currentPostId={currentPostId}
+        publishInstagram={publishInstagram}
       />
     );
   };

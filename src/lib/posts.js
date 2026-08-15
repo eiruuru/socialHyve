@@ -1,6 +1,8 @@
 import { supabase } from './supabase';
 import { stampWorkspaceId, getCurrentWorkspaceId } from './workspace';
 import { getActiveClientId } from './clientContext';
+import { format } from 'date-fns';
+import { rescheduleUtcToDay, resolveScheduleTimezone } from './scheduleTime';
 
 async function stampClientId(data) {
   const clientId = getActiveClientId();
@@ -129,6 +131,33 @@ export async function schedulePost(postId, scheduledAt) {
     last_error: null,
   }, { onConflict: 'post_id' });
   return post;
+}
+
+export async function reschedulePostToDay(postId, targetDay, post, clientTimezone) {
+  const timeZone = resolveScheduleTimezone({
+    postTimezone: post.schedule_timezone,
+    clientTimezone,
+  });
+  const scheduledAt = rescheduleUtcToDay(post.scheduled_at, timeZone, targetDay);
+  if (!scheduledAt) throw new Error('Could not compute new schedule time');
+
+  const updated = await updatePost(postId, { scheduled_at: scheduledAt });
+  await logPostActivity(
+    postId,
+    'rescheduled',
+    `Rescheduled to ${format(targetDay, 'MMM d, yyyy')}`,
+  );
+
+  if (post.status === 'scheduled') {
+    await supabase.from('publish_jobs').upsert({
+      post_id: postId,
+      attempts: 0,
+      next_run_at: scheduledAt,
+      last_error: null,
+    }, { onConflict: 'post_id' });
+  }
+
+  return updated;
 }
 
 export async function listSocialAccounts() {

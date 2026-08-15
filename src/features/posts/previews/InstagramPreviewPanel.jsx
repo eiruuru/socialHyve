@@ -32,6 +32,7 @@ export function InstagramPreviewPanel({
   scheduleTimezone,
   clientId,
   currentPostId,
+  publishInstagram = true,
 }) {
   const [viewMode, setViewMode] = useState('post');
   const [contentFilter, setContentFilter] = useState('posts');
@@ -76,14 +77,19 @@ export function InstagramPreviewPanel({
   );
 
   const footer = viewMode === 'grid' ? (
-    <label className="flex items-center gap-2 text-xs text-muted-foreground">
-      <input
-        type="checkbox"
-        checked={showFuturePosts}
-        onChange={(e) => setShowFuturePosts(e.target.checked)}
-      />
-      Show future socialHyve posts
-    </label>
+    <div className="space-y-1">
+      <label className="flex items-center gap-2 text-xs text-muted-foreground">
+        <input
+          type="checkbox"
+          checked={showFuturePosts}
+          onChange={(e) => setShowFuturePosts(e.target.checked)}
+        />
+        Show future scheduled posts
+      </label>
+      <p className="text-[11px] text-muted-foreground/80">
+        Drafts always appear. Facebook-only posts are excluded.
+      </p>
+    </div>
   ) : null;
 
   const content = viewMode === 'post' ? (
@@ -103,6 +109,7 @@ export function InstagramPreviewPanel({
       scheduledAt={scheduledAt}
       media={media}
       showFuturePosts={showFuturePosts}
+      publishInstagram={publishInstagram}
     />
   );
 

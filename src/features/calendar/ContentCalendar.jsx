@@ -14,8 +14,10 @@ import {
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useClient } from '@/lib/clientContext';
-import { CalendarPostCard } from './CalendarPostCard';
+import { reschedulePostToDay } from '@/lib/posts';
+import { CalendarPostCard, isPostDraggable } from './CalendarPostCard';
 import { Button } from '@/components/ui/button';
 import { IconTooltip } from '@/components/ui/IconTooltip';
 import { TabsRoot, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -34,9 +36,13 @@ function mondayEndWeek(date) {
 
 export function ContentCalendar({ posts = [] }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { activeClient } = useClient();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState('month');
+  const [draggingPostId, setDraggingPostId] = useState(null);
+  const [dropTargetDay, setDropTargetDay] = useState(null);
+  const [rescheduling, setRescheduling] = useState(false);
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
@@ -58,6 +64,43 @@ export function ContentCalendar({ posts = [] }) {
     if (!db) return -1;
     return compareAsc(new Date(da), new Date(db));
   });
+
+  const handleDragStart = (_e, post) => {
+    setDraggingPostId(post.id);
+  };
+
+  const handleDragEnd = () => {
+    setDraggingPostId(null);
+    setDropTargetDay(null);
+  };
+
+  const handleDropOnDay = async (day, e) => {
+    e.preventDefault();
+    setDropTargetDay(null);
+
+    const postId = e.dataTransfer.getData('text/plain') || draggingPostId;
+    if (!postId || rescheduling) return;
+
+    const post = posts.find((p) => p.id === postId);
+    if (!post || !isPostDraggable(post)) return;
+
+    const currentDate = post.scheduled_at || post.created_at;
+    if (currentDate && isSameDay(new Date(currentDate), day)) {
+      setDraggingPostId(null);
+      return;
+    }
+
+    setRescheduling(true);
+    try {
+      await reschedulePostToDay(postId, day, post, activeClient?.default_timezone);
+      await queryClient.invalidateQueries({ queryKey: ['posts', activeClient?.id] });
+    } catch (err) {
+      console.error('Failed to reschedule post:', err);
+    } finally {
+      setRescheduling(false);
+      setDraggingPostId(null);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -99,13 +142,29 @@ export function ContentCalendar({ posts = [] }) {
           <div className="grid grid-cols-7">
             {days.map((day) => {
               const dayPosts = getPostsForDay(day);
+              const isDropTarget = dropTargetDay && isSameDay(dropTargetDay, day);
               return (
                 <div
                   key={day.toISOString()}
                   className={cn(
-                    'min-h-[180px] border-b border-r border-neutral-200 p-2',
-                    !isSameMonth(day, currentDate) && 'bg-neutral-50 text-muted-foreground'
+                    'min-h-[180px] border-b border-r border-neutral-200 p-2 transition-colors',
+                    !isSameMonth(day, currentDate) && 'bg-neutral-50 text-muted-foreground',
+                    isDropTarget && 'bg-honey-light/30 ring-2 ring-inset ring-honey',
                   )}
+                  onDragOver={(e) => {
+                    if (!draggingPostId) return;
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    setDropTargetDay(day);
+                  }}
+                  onDragLeave={(e) => {
+                    if (!e.currentTarget.contains(e.relatedTarget)) {
+                      setDropTargetDay((current) =>
+                        current && isSameDay(current, day) ? null : current,
+                      );
+                    }
+                  }}
+                  onDrop={(e) => handleDropOnDay(day, e)}
                 >
                   <button
                     type="button"
@@ -115,7 +174,14 @@ export function ContentCalendar({ posts = [] }) {
                     {format(day, 'd')}
                   </button>
                   {dayPosts.map((post) => (
-                    <CalendarPostCard key={post.id} post={post} />
+                    <CalendarPostCard
+                      key={post.id}
+                      post={post}
+                      draggable={isPostDraggable(post)}
+                      isDragging={draggingPostId === post.id}
+                      onDragStart={handleDragStart}
+                      onDragEnd={handleDragEnd}
+                    />
                   ))}
                 </div>
               );
@@ -128,14 +194,14 @@ export function ContentCalendar({ posts = [] }) {
             <p className="text-sm text-muted-foreground">No posts scheduled.</p>
           ) : (
             sortedPosts.map((post) => (
-              <div key={post.id} className="flex items-start gap-4 rounded-hyve-md border p-3">
-                <div className="w-28 shrink-0 text-sm text-muted-foreground">
+              <div key={post.id} className="flex items-center gap-4 rounded-hyve-md border p-3">
+                <div className="w-36 shrink-0 text-sm text-muted-foreground">
                   {post.scheduled_at
                     ? format(new Date(post.scheduled_at), 'MMM d, yyyy · h:mm a')
                     : 'Unscheduled'}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <CalendarPostCard post={post} className="mb-0 border-0 shadow-none" />
+                  <CalendarPostCard post={post} layout="horizontal" className="mb-0 border-0 shadow-none" />
                 </div>
               </div>
             ))

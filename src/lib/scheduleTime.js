@@ -105,3 +105,24 @@ export function formatScheduledLabel(iso, timeZone) {
 export function resolveScheduleTimezone({ postTimezone, clientTimezone }) {
   return postTimezone || clientTimezone || getBrowserTimezone();
 }
+
+export function rescheduleUtcToDay(iso, timeZone, targetDay) {
+  if (!targetDay || Number.isNaN(targetDay.getTime())) return null;
+
+  const pad = (n) => String(n).padStart(2, '0');
+  const targetDate = `${targetDay.getFullYear()}-${pad(targetDay.getMonth() + 1)}-${pad(targetDay.getDate())}`;
+
+  let hour = 9;
+  let minute = 0;
+
+  if (iso) {
+    const date = new Date(iso);
+    if (!Number.isNaN(date.getTime())) {
+      const parts = partsInTimeZone(date, timeZone);
+      hour = parts.hour;
+      minute = parts.minute;
+    }
+  }
+
+  return zonedLocalToUtc(`${targetDate}T${pad(hour)}:${pad(minute)}`, timeZone);
+}

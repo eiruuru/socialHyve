@@ -6,11 +6,19 @@ import { invokeFunction } from '@/lib/supabaseFunctions';
 import { normalizeMediaList, isVideo } from './mediaUtils';
 import { cn } from '@/lib/utils';
 
+const PIPELINE_STATUSES = ['draft', 'scheduled', 'failed', 'publishing'];
+
+function isInstagramPost(post) {
+  return post.publish_instagram === true;
+}
+
 function GridCell({ post, isCurrent }) {
   const media = normalizeMediaList(post.post_media || []);
   const thumb = media[0];
   const isCarousel = post.isCarousel || media.length > 1;
   const hasVideo = thumb && isVideo(thumb.mime_type);
+  const statusBadge =
+    post.status === 'draft' ? 'Draft' : post.status === 'scheduled' ? 'Scheduled' : null;
 
   const content = thumb?.public_url ? (
     hasVideo ? (
@@ -41,6 +49,11 @@ function GridCell({ post, isCurrent }) {
           {hasVideo ? <Clapperboard className="h-3 w-3" /> : <Layers className="h-3 w-3" />}
         </div>
       )}
+      {statusBadge && (
+        <div className="absolute bottom-1 left-1 rounded bg-black/60 px-1 py-0.5 text-[10px] font-medium text-white">
+          {statusBadge}
+        </div>
+      )}
     </Wrapper>
   );
 }
@@ -51,14 +64,15 @@ export function InstagramGridPreview({
   scheduledAt,
   media = [],
   showFuturePosts = true,
+  publishInstagram = true,
 }) {
   const { data: siblingPosts = [] } = useQuery({
-    queryKey: ['ig-grid-posts', clientId, showFuturePosts],
+    queryKey: ['ig-grid-posts', clientId],
     queryFn: () =>
       listPosts({
         clientId,
         publishInstagram: true,
-        includeFuture: showFuturePosts,
+        includeFuture: true,
       }),
     enabled: !!clientId,
   });
@@ -73,35 +87,51 @@ export function InstagramGridPreview({
   const igLivePosts = igLiveData?.media || [];
 
   const gridPosts = useMemo(() => {
-    const statuses = showFuturePosts
-      ? ['published', 'scheduled', 'draft']
-      : ['published'];
-
+    const currentScheduledMs = scheduledAt ? new Date(scheduledAt).getTime() : null;
     const composingId = currentPostId || '__composing__';
-    let posts = siblingPosts.filter((p) =>
-      statuses.includes(p.status) || (showFuturePosts && p.status === 'draft'),
-    );
 
-    if (media.length > 0 && !posts.some((p) => p.id === currentPostId || p.id === composingId)) {
-      posts.push({
-        id: composingId,
-        scheduled_at: scheduledAt || new Date().toISOString(),
-        post_media: media.map((m, i) => ({ ...m, sort_order: i })),
-        isComposing: true,
+    let posts = siblingPosts.filter((p) => {
+      if (!isInstagramPost(p)) return false;
+      if (p.status === 'published') return true;
+      if (PIPELINE_STATUSES.includes(p.status)) return true;
+      return false;
+    });
+
+    if (
+      !showFuturePosts &&
+      currentScheduledMs != null &&
+      !Number.isNaN(currentScheduledMs)
+    ) {
+      posts = posts.filter((p) => {
+        if (p.status === 'draft') return true;
+        if (p.status !== 'scheduled') return true;
+        const scheduledMs = p.scheduled_at ? new Date(p.scheduled_at).getTime() : null;
+        if (scheduledMs == null || Number.isNaN(scheduledMs)) return true;
+        return scheduledMs <= currentScheduledMs;
       });
-    } else if (currentPostId && media.length > 0) {
-      posts = posts.map((p) =>
-        p.id === currentPostId
-          ? { ...p, post_media: media.map((m, i) => ({ ...m, sort_order: i })), isComposing: false }
-          : p,
-      );
     }
 
-    if (showFuturePosts) {
-      const existingIds = new Set(posts.map((p) => p.id));
-      for (const igPost of igLivePosts) {
-        if (!existingIds.has(igPost.id)) posts.push(igPost);
+    if (publishInstagram) {
+      if (media.length > 0 && !posts.some((p) => p.id === currentPostId || p.id === composingId)) {
+        posts.push({
+          id: composingId,
+          scheduled_at: scheduledAt || new Date().toISOString(),
+          post_media: media.map((m, i) => ({ ...m, sort_order: i })),
+          isComposing: true,
+          publish_instagram: true,
+        });
+      } else if (currentPostId && media.length > 0) {
+        posts = posts.map((p) =>
+          p.id === currentPostId
+            ? { ...p, post_media: media.map((m, i) => ({ ...m, sort_order: i })), isComposing: false }
+            : p,
+        );
       }
+    }
+
+    const existingIds = new Set(posts.map((p) => p.id));
+    for (const igPost of igLivePosts) {
+      if (!existingIds.has(igPost.id)) posts.push(igPost);
     }
 
     posts.sort((a, b) => {
@@ -116,7 +146,15 @@ export function InstagramGridPreview({
     }
 
     return result.slice(0, 9);
-  }, [siblingPosts, igLivePosts, currentPostId, scheduledAt, media, showFuturePosts]);
+  }, [
+    siblingPosts,
+    igLivePosts,
+    currentPostId,
+    scheduledAt,
+    media,
+    showFuturePosts,
+    publishInstagram,
+  ]);
 
   return (
     <div className="grid grid-cols-3 gap-px bg-neutral-200">

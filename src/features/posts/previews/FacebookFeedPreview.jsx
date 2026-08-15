@@ -36,10 +36,10 @@ function FacebookCollage({ items }) {
 
   if (count === 3) {
     return (
-      <div className="grid grid-cols-2 gap-0.5">
-        <CollageTile item={items[0]} className="row-span-2 min-h-[240px] h-full w-full" />
-        <CollageTile item={items[1]} className="aspect-square w-full" />
-        <CollageTile item={items[2]} className="aspect-square w-full" />
+      <div className="grid aspect-square grid-cols-3 grid-rows-2 gap-0.5">
+        <CollageTile item={items[0]} className="col-span-2 row-span-2 h-full w-full" />
+        <CollageTile item={items[1]} className="col-start-3 row-start-1 h-full w-full" />
+        <CollageTile item={items[2]} className="col-start-3 row-start-2 h-full w-full" />
       </div>
     );
   }

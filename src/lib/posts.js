@@ -169,6 +169,26 @@ export async function disconnectCanva() {
   if (error) throw error;
 }
 
+export async function uploadDraftMediaFile(file) {
+  const workspaceId = await getCurrentWorkspaceId();
+  const clientId = getActiveClientId();
+  const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
+  const pathPrefix = clientId ? `${workspaceId}/${clientId}` : workspaceId;
+  const path = `${pathPrefix}/draft/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+  const { error: uploadErr } = await supabase.storage
+    .from('post-media')
+    .upload(path, file, { upsert: true, contentType: file.type || undefined });
+  if (uploadErr) throw uploadErr;
+
+  const { data: urlData } = supabase.storage.from('post-media').getPublicUrl(path);
+  return {
+    storage_path: path,
+    public_url: urlData.publicUrl,
+    mime_type: file.type || 'application/octet-stream',
+  };
+}
+
 export async function uploadMediaFile(postId, file, sortOrder = 0) {
   const workspaceId = await getCurrentWorkspaceId();
   const ext = file.name.split('.').pop();

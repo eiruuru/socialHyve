@@ -1,9 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { invokeFunction } from '@/lib/supabaseFunctions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ProgressBar } from '@/components/ui/ProgressBar';
 import { FORMAT_OPTIONS, parsePageRange, validatePages } from './pageRange';
+
+const IMPORT_STAGES = [
+  'Preparing export…',
+  'Exporting from Canva…',
+  'Downloading pages…',
+  'Saving to your media library…',
+];
 
 export function CanvaImportStep({
   design,
@@ -15,6 +23,7 @@ export function CanvaImportStep({
   const [formatType, setFormatType] = useState('png');
   const [pagesInput, setPagesInput] = useState('');
   const [importing, setImporting] = useState(false);
+  const [importStage, setImportStage] = useState(0);
   const [error, setError] = useState('');
 
   const { data: meta, isLoading } = useQuery({
@@ -28,9 +37,23 @@ export function CanvaImportStep({
   const title = meta?.title || design?.title || 'Untitled';
   const showPagesField = pageCount > 1 && formatType !== 'mp4';
 
+  useEffect(() => {
+    if (!importing) {
+      setImportStage(0);
+      return undefined;
+    }
+
+    const interval = window.setInterval(() => {
+      setImportStage((prev) => (prev < IMPORT_STAGES.length - 1 ? prev + 1 : prev));
+    }, 2200);
+
+    return () => window.clearInterval(interval);
+  }, [importing]);
+
   const handleImport = async () => {
     setError('');
     setImporting(true);
+    setImportStage(0);
     try {
       let pages = null;
       if (showPagesField && pagesInput.trim()) {
@@ -100,6 +123,7 @@ export function CanvaImportStep({
             <select
               value={formatType}
               onChange={(e) => setFormatType(e.target.value)}
+              disabled={importing}
               className="h-10 w-full rounded-hyve-sm border border-input bg-background px-3 text-sm"
             >
               {FORMAT_OPTIONS.map((opt) => (
@@ -115,6 +139,7 @@ export function CanvaImportStep({
                 placeholder="e.g. 1-5, 8, 11-13"
                 value={pagesInput}
                 onChange={(e) => setPagesInput(e.target.value)}
+                disabled={importing}
               />
               <p className="mt-1 text-xs text-muted-foreground">
                 Leave blank to import all {pageCount} pages. Each page becomes a carousel item.
@@ -126,6 +151,16 @@ export function CanvaImportStep({
             <p className="text-xs text-muted-foreground">
               {remainingSlots} carousel slot{remainingSlots === 1 ? '' : 's'} remaining.
             </p>
+          )}
+
+          {importing && (
+            <div className="space-y-2 rounded-md border border-honey/30 bg-honey-light/30 p-3">
+              <ProgressBar indeterminate />
+              <p className="text-sm font-medium text-ink">{IMPORT_STAGES[importStage]}</p>
+              <p className="text-xs text-muted-foreground">
+                Multi-page exports can take up to a minute.
+              </p>
+            </div>
           )}
 
           {error && (

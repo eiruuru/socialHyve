@@ -5,7 +5,9 @@ import { PlatformChip } from '@/components/brand/PlatformChip';
 import { StatusBadge } from '@/components/brand/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { getPostDisplayBadges } from './postStatus';
+import { getScheduleUrgency } from './scheduleUrgency';
 import { normalizeMediaList, isVideo } from '@/features/posts/previews/mediaUtils';
+import { formatScheduledLabel, resolveScheduleTimezone } from '@/lib/scheduleTime';
 import { cn } from '@/lib/utils';
 
 function PostThumb({ post, className }) {
@@ -45,6 +47,9 @@ export function PostQueueCard({
   const [rejectNote, setRejectNote] = useState('');
   const badges = getPostDisplayBadges(post);
   const approval = post.approval_status || 'draft';
+  const scheduleUrgency = getScheduleUrgency(post.scheduled_at);
+  const scheduleTimezone = resolveScheduleTimezone({ postTimezone: post.schedule_timezone });
+  const cardBorderClass = scheduleUrgency?.borderClass ?? 'border border-neutral-200';
 
   const handleReject = () => {
     if (!rejectNote.trim()) {
@@ -121,12 +126,25 @@ export function PostQueueCard({
       <p className={cn('text-sm text-ink', variant === 'list' ? 'truncate' : 'line-clamp-2')}>
         {post.caption || post.internal_name || 'Untitled post'}
       </p>
+      {post.scheduled_at && (
+        <div className={cn('mt-1.5 space-y-0.5 text-xs', scheduleUrgency?.textClass ?? 'text-muted-foreground')}>
+          <p className="font-medium">
+            Scheduled for {formatScheduledLabel(post.scheduled_at, scheduleTimezone)}
+          </p>
+          {scheduleUrgency && (
+            <p>{scheduleUrgency.urgencyLabel}</p>
+          )}
+        </div>
+      )}
     </>
   );
 
   if (variant === 'grid') {
     return (
-      <div className="flex h-full flex-col overflow-hidden rounded-hyve-md border border-neutral-200 bg-white">
+      <div className={cn(
+        'flex h-full flex-col overflow-hidden rounded-hyve-md bg-white',
+        cardBorderClass,
+      )}>
         <button
           type="button"
           onClick={() => navigate(`/app/posts/${post.id}`)}
@@ -144,7 +162,10 @@ export function PostQueueCard({
   }
 
   return (
-    <div className="grid grid-cols-[72px_1fr_auto] items-center gap-3.5 rounded-hyve-md border border-neutral-200 bg-white p-4">
+    <div className={cn(
+      'grid grid-cols-[72px_1fr_auto] items-center gap-3.5 rounded-hyve-md bg-white p-4',
+      cardBorderClass,
+    )}>
       <div className="h-[72px] w-[72px] shrink-0 overflow-hidden">
         <PostThumb post={post} />
       </div>

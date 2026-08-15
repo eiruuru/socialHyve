@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
       'fields',
       'id,media_type,media_url,thumbnail_url,timestamp,permalink,children{media_type,media_url,thumbnail_url}',
     );
-    url.searchParams.set('limit', '6');
+    url.searchParams.set('limit', '12');
     url.searchParams.set('access_token', token);
 
     const res = await fetch(url);

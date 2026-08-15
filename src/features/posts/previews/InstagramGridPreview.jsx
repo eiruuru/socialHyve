@@ -7,6 +7,7 @@ import { normalizeMediaList, isVideo } from './mediaUtils';
 import { cn } from '@/lib/utils';
 
 const PIPELINE_STATUSES = ['draft', 'scheduled', 'failed', 'publishing'];
+const MAX_GRID_POSTS = 12;
 
 function isInstagramPost(post) {
   return post.publish_instagram === true;
@@ -140,12 +141,15 @@ export function InstagramGridPreview({
       return db - da;
     });
 
-    const result = posts.slice(0, 9);
-    while (result.length < 6) {
-      result.push({ id: `placeholder-${result.length}`, placeholder: true });
+    const result = posts.slice(0, MAX_GRID_POSTS);
+    if (result.length === 0) {
+      return Array.from({ length: 3 }, (_, index) => ({
+        id: `placeholder-${index}`,
+        placeholder: true,
+      }));
     }
 
-    return result.slice(0, 9);
+    return result;
   }, [
     siblingPosts,
     igLivePosts,
@@ -157,18 +161,20 @@ export function InstagramGridPreview({
   ]);
 
   return (
-    <div className="grid grid-cols-3 gap-px bg-neutral-200">
-      {gridPosts.map((post) =>
-        post.placeholder ? (
-          <div key={post.id} className="aspect-square bg-neutral-100" />
-        ) : (
-          <GridCell
-            key={post.id}
-            post={post}
-            isCurrent={post.id === currentPostId || post.isComposing}
-          />
-        ),
-      )}
+    <div className="max-h-80 overflow-y-auto overscroll-contain">
+      <div className="grid grid-cols-3 gap-px bg-neutral-200">
+        {gridPosts.map((post) =>
+          post.placeholder ? (
+            <div key={post.id} className="aspect-square bg-neutral-100" />
+          ) : (
+            <GridCell
+              key={post.id}
+              post={post}
+              isCurrent={post.id === currentPostId || post.isComposing}
+            />
+          ),
+        )}
+      </div>
     </div>
   );
 }

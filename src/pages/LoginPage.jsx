@@ -18,7 +18,7 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(searchParams.get('signup') === '1');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [invitePreview, setInvitePreview] = useState(null);

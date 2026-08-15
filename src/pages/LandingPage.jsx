@@ -58,10 +58,10 @@ export default function LandingPage() {
           <Logo />
           <div className="flex gap-3">
             <Button variant="outline" asChild>
-              <Link to="/login">Sign in</Link>
+              <Link to="/app/login">Sign in</Link>
             </Button>
             <Button asChild>
-              <Link to="/login">Get started free</Link>
+              <Link to="/app/login?signup=1">Get started free</Link>
             </Button>
           </div>
         </div>
@@ -91,10 +91,10 @@ export default function LandingPage() {
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button size="lg" asChild>
-              <Link to="/login">Get started free →</Link>
+              <Link to="/app/login?signup=1">Get started free →</Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
-              <Link to="/login">See how it works</Link>
+              <Link to="/app/login">See how it works</Link>
             </Button>
           </div>
         </div>

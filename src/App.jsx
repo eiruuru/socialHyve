@@ -30,6 +30,7 @@ export default function App() {
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<Navigate to="/app/login" replace />} />
               <Route path="/review/:token" element={<ReviewLinkPage />} />
               <Route path="/app/*" element={<AppRoutes />} />
               <Route path="*" element={<Navigate to="/" replace />} />

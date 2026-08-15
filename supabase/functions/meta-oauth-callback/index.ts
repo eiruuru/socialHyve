@@ -73,24 +73,33 @@ Deno.serve(async (req) => {
     const pagesData = await pagesRes.json();
     if (pagesData.error) throw new Error(pagesData.error.message);
 
+    const pages = pagesData.data || [];
+    if (!pages.length) {
+      return redirectResponse(`${APP_URL}/app/settings/accounts?error=${encodeURIComponent('No Facebook Pages found. Grant Page access during Meta login.')}`);
+    }
+
     const workspaceId = oauthState.workspace_id;
     const clientId = oauthState.client_id;
 
-    const { data: existingAccounts } = await service
+    let existingAccounts: { platform: string; is_primary?: boolean }[] = [];
+    const { data: primaryRows, error: primaryErr } = await service
       .from('social_accounts')
       .select('platform, is_primary')
       .eq('client_id', clientId);
+    if (!primaryErr) {
+      existingAccounts = primaryRows || [];
+    }
 
     const hasPrimary = (platform: string) =>
-      (existingAccounts || []).some((a) => a.platform === platform && a.is_primary);
+      existingAccounts.some((a) => a.platform === platform && a.is_primary);
 
     let firstFbExternalId: string | null = null;
     let firstIgExternalId: string | null = null;
 
-    for (const page of pagesData.data || []) {
+    for (const page of pages) {
       const pagePictureUrl = page.picture?.data?.url || null;
 
-      await service.from('social_accounts').upsert({
+      const { error: fbErr } = await service.from('social_accounts').upsert({
         workspace_id: workspaceId,
         client_id: clientId,
         platform: 'facebook',
@@ -103,6 +112,7 @@ Deno.serve(async (req) => {
         page_id: page.id,
         token_expires_at: tokenExpiresAt,
       }, { onConflict: 'workspace_id,platform,external_id' });
+      if (fbErr) throw fbErr;
 
       if (!firstFbExternalId) firstFbExternalId = page.id;
 
@@ -113,7 +123,7 @@ Deno.serve(async (req) => {
         );
         const igData = await igRes.json();
 
-        await service.from('social_accounts').upsert({
+        const { error: igErr } = await service.from('social_accounts').upsert({
           workspace_id: workspaceId,
           client_id: clientId,
           platform: 'instagram',
@@ -127,6 +137,7 @@ Deno.serve(async (req) => {
           ig_user_id: igData.id,
           token_expires_at: tokenExpiresAt,
         }, { onConflict: 'workspace_id,platform,external_id' });
+        if (igErr) throw igErr;
 
         if (!firstIgExternalId && page.id === firstFbExternalId) {
           firstIgExternalId = igData.id;
@@ -144,7 +155,11 @@ Deno.serve(async (req) => {
         (a) => a.platform === 'facebook' && a.external_id === firstFbExternalId,
       );
       if (fbRow) {
-        await service.from('social_accounts').update({ is_primary: true }).eq('id', fbRow.id);
+        const { error: fbPrimaryErr } = await service
+          .from('social_accounts')
+          .update({ is_primary: true })
+          .eq('id', fbRow.id);
+        if (fbPrimaryErr && !primaryErr) throw fbPrimaryErr;
       }
     }
 
@@ -153,7 +168,11 @@ Deno.serve(async (req) => {
         (a) => a.platform === 'instagram' && a.external_id === firstIgExternalId,
       );
       if (igRow) {
-        await service.from('social_accounts').update({ is_primary: true }).eq('id', igRow.id);
+        const { error: igPrimaryErr } = await service
+          .from('social_accounts')
+          .update({ is_primary: true })
+          .eq('id', igRow.id);
+        if (igPrimaryErr && !primaryErr) throw igPrimaryErr;
       }
     }
 

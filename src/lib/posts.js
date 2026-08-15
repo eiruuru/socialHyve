@@ -163,15 +163,16 @@ export async function reschedulePostToDay(postId, targetDay, post, clientTimezon
 
 export async function listSocialAccounts() {
   const clientId = getActiveClientId();
-  let query = supabase
-    .from('social_accounts')
-    .select('*')
-    .order('is_primary', { ascending: false })
-    .order('name', { ascending: true });
+  let query = supabase.from('social_accounts').select('*');
   if (clientId) query = query.eq('client_id', clientId);
   const { data, error } = await query;
   if (error) throw error;
-  return data;
+  return (data || []).slice().sort((a, b) => {
+    if (Boolean(a.is_primary) !== Boolean(b.is_primary)) {
+      return a.is_primary ? -1 : 1;
+    }
+    return (a.name || '').localeCompare(b.name || '');
+  });
 }
 
 export async function setPrimarySocialAccount(accountId, options = {}) {

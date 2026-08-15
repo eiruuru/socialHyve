@@ -21,6 +21,9 @@ Deno.serve(async (req) => {
     const { supabase, user } = await requireUser(req);
     const workspace = await getWorkspaceForUser(supabase, user.id);
     const clientId = body.clientId as string | undefined;
+    if (!clientId) {
+      return jsonResponse({ error: 'clientId required' }, 400);
+    }
     const state = randomString(32);
 
     const service = getServiceClient();

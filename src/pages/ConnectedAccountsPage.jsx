@@ -18,13 +18,19 @@ export default function ConnectedAccountsPage() {
   const error = searchParams.get('error');
   const [pickerOpen, setPickerOpen] = useState(false);
 
-  const { data: accounts = [], refetch, isLoading } = useQuery({
+  const { data: accounts = [], refetch, isLoading, isError, error: queryError } = useQuery({
     queryKey: ['social-accounts', activeClient?.id],
     queryFn: listSocialAccounts,
   });
 
   const fbAccounts = accounts.filter((a) => a.platform === 'facebook');
   const igAccounts = accounts.filter((a) => a.platform === 'instagram');
+
+  useEffect(() => {
+    if (connected === 'meta') {
+      refetch();
+    }
+  }, [connected, refetch]);
 
   useEffect(() => {
     if (connected === 'meta' && fbAccounts.length > 1) {
@@ -37,8 +43,12 @@ export default function ConnectedAccountsPage() {
   };
 
   const connectMeta = async () => {
+    if (!activeClient?.id) {
+      alert('Select a client before connecting Meta.');
+      return;
+    }
     try {
-      const { url } = await invokeFunction('metaOAuthStart', { clientId: activeClient?.id });
+      const { url } = await invokeFunction('metaOAuthStart', { clientId: activeClient.id });
       window.location.href = url;
     } catch (err) {
       alert(err.message);
@@ -96,10 +106,22 @@ export default function ConnectedAccountsPage() {
         </p>
       </div>
 
-      {connected === 'meta' && fbAccounts.length <= 1 && (
+      {connected === 'meta' && !isLoading && accounts.length > 0 && fbAccounts.length <= 1 && (
         <div className="rounded-hyve-md bg-[#DFF3E6] p-4 text-sm text-status-published">
           You&apos;re connected. Ready to publish.
           <button type="button" className="ml-2 underline" onClick={clearConnectParams}>Dismiss</button>
+        </div>
+      )}
+      {connected === 'meta' && !isLoading && !isError && accounts.length === 0 && (
+        <div className="rounded-md bg-amber-50 p-4 text-sm text-amber-900">
+          Meta authorization succeeded, but no Facebook Pages were imported for {activeClient?.name || 'this client'}.
+          Make sure your Meta account manages at least one Page, then try connecting again.
+          <button type="button" className="ml-2 underline" onClick={clearConnectParams}>Dismiss</button>
+        </div>
+      )}
+      {isError && (
+        <div className="rounded-md bg-red-50 p-4 text-sm text-red-700">
+          Could not load connected accounts: {queryError?.message || 'Unknown error'}
         </div>
       )}
       {error && (

@@ -246,6 +246,17 @@ export async function disconnectSocialAccount(id) {
   }
 }
 
+export async function disconnectAllSocialAccounts() {
+  const clientId = getActiveClientId();
+  if (!clientId) throw new Error('No active client selected');
+
+  const { error } = await supabase
+    .from('social_accounts')
+    .delete()
+    .eq('client_id', clientId);
+  if (error) throw error;
+}
+
 export async function getCanvaConnection() {
   const clientId = getActiveClientId();
   if (!clientId) return null;

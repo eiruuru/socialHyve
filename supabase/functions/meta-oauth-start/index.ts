@@ -46,6 +46,9 @@ Deno.serve(async (req) => {
     } else {
       authUrl.searchParams.set('scope', SCOPES);
     }
+    if (body.rerequest) {
+      authUrl.searchParams.set('auth_type', 'rerequest');
+    }
 
     return jsonResponse({ url: authUrl.toString() });
   } catch (err) {

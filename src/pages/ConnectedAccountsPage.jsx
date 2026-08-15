@@ -2,7 +2,12 @@ import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { invokeFunction } from '@/lib/supabaseFunctions';
-import { listSocialAccounts, disconnectSocialAccount, setPrimarySocialAccount } from '@/lib/posts';
+import {
+  listSocialAccounts,
+  disconnectSocialAccount,
+  disconnectAllSocialAccounts,
+  setPrimarySocialAccount,
+} from '@/lib/posts';
 import { useClient } from '@/lib/clientContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +22,7 @@ export default function ConnectedAccountsPage() {
   const connected = searchParams.get('connected');
   const error = searchParams.get('error');
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   const { data: accounts = [], refetch, isLoading, isError, error: queryError } = useQuery({
     queryKey: ['social-accounts', activeClient?.id],
@@ -25,6 +31,7 @@ export default function ConnectedAccountsPage() {
 
   const fbAccounts = accounts.filter((a) => a.platform === 'facebook');
   const igAccounts = accounts.filter((a) => a.platform === 'instagram');
+  const hasAccounts = accounts.length > 0;
 
   useEffect(() => {
     if (connected === 'meta') {
@@ -42,53 +49,98 @@ export default function ConnectedAccountsPage() {
     navigate('/app/settings/accounts', { replace: true });
   };
 
-  const connectMeta = async () => {
+  const startMetaOAuth = async ({ rerequest = false } = {}) => {
     if (!activeClient?.id) {
       alert('Select a client before connecting Meta.');
       return;
     }
+    setBusy(true);
     try {
-      const { url } = await invokeFunction('metaOAuthStart', { clientId: activeClient.id });
+      const { url } = await invokeFunction('metaOAuthStart', {
+        clientId: activeClient.id,
+        rerequest,
+      });
       window.location.href = url;
     } catch (err) {
       alert(err.message);
+      setBusy(false);
     }
   };
 
-  const disconnect = async (id) => {
-    await disconnectSocialAccount(id);
-    refetch();
+  const disconnect = async (acc) => {
+    const label = acc.platform === 'instagram'
+      ? `@${acc.username || acc.name}`
+      : acc.name;
+    if (!confirm(`Disconnect ${label} from ${activeClient?.name || 'this client'}?`)) return;
+    setBusy(true);
+    try {
+      await disconnectSocialAccount(acc.id);
+      await refetch();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const disconnectAll = async () => {
+    if (!confirm(
+      `Disconnect all Meta accounts from ${activeClient?.name || 'this client'}? `
+      + 'You can reconnect anytime to refresh tokens.',
+    )) return;
+    setBusy(true);
+    try {
+      await disconnectAllSocialAccounts();
+      await refetch();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setBusy(false);
+    }
   };
 
   const setDefault = async (id) => {
     const account = accounts.find((a) => a.id === id);
-    await setPrimarySocialAccount(id, {
-      linkInstagram: account?.platform === 'facebook',
-    });
-    refetch();
+    setBusy(true);
+    try {
+      await setPrimarySocialAccount(id, {
+        linkInstagram: account?.platform === 'facebook',
+      });
+      await refetch();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setBusy(false);
+    }
   };
 
   const renderAccountRow = (acc, platform) => {
     const label = platform === 'instagram' ? `@${acc.username || acc.name}` : acc.name;
     return (
-      <div key={acc.id} className="flex items-center justify-between rounded-md border p-3">
-        <div className="flex items-center gap-3">
+      <div key={acc.id} className="flex items-center justify-between gap-3 rounded-md border p-3">
+        <div className="flex min-w-0 items-center gap-3">
           {acc.profile_picture_url ? (
-            <img src={acc.profile_picture_url} alt="" className="h-8 w-8 rounded-full object-cover" />
+            <img src={acc.profile_picture_url} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
           ) : null}
           <PlatformChip platform={platform} />
-          <span className="font-medium">{label}</span>
+          <span className="truncate font-medium">{label}</span>
           {acc.is_primary && (
             <Badge variant="published">Default</Badge>
           )}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           {!acc.is_primary && (
-            <Button variant="outline" size="sm" onClick={() => setDefault(acc.id)}>
-              Set as default
+            <Button variant="outline" size="sm" onClick={() => setDefault(acc.id)} disabled={busy}>
+              Set default
             </Button>
           )}
-          <Button variant="ghost" size="sm" onClick={() => disconnect(acc.id)}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-red-700 hover:bg-red-50 hover:text-red-800"
+            onClick={() => disconnect(acc)}
+            disabled={busy}
+          >
             Disconnect
           </Button>
         </div>
@@ -127,6 +179,11 @@ export default function ConnectedAccountsPage() {
       {error && (
         <div className="rounded-md bg-red-50 p-4 text-sm text-red-700">
           Connection error: {decodeURIComponent(error)}
+          <div className="mt-2">
+            <Button size="sm" variant="outline" onClick={() => startMetaOAuth({ rerequest: true })} disabled={busy}>
+              Try reconnecting
+            </Button>
+          </div>
         </div>
       )}
 
@@ -138,7 +195,28 @@ export default function ConnectedAccountsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Button onClick={connectMeta}>Connect Meta Account</Button>
+          <div className="flex flex-wrap gap-2">
+            {hasAccounts ? (
+              <>
+                <Button onClick={() => startMetaOAuth({ rerequest: true })} disabled={busy}>
+                  Reconnect Meta
+                </Button>
+                <Button variant="outline" onClick={disconnectAll} disabled={busy}>
+                  Disconnect all
+                </Button>
+              </>
+            ) : (
+              <Button onClick={() => startMetaOAuth()} disabled={busy}>
+                Connect Meta Account
+              </Button>
+            )}
+          </div>
+          {hasAccounts && (
+            <p className="text-xs text-muted-foreground">
+              Reconnect runs Meta login again and refreshes tokens for the Pages you select.
+              Pick the same Pages to keep your current setup.
+            </p>
+          )}
 
           {isLoading ? (
             <p className="text-sm text-muted-foreground">Loading accounts...</p>

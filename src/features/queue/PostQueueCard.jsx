@@ -33,6 +33,36 @@ function PostThumb({ post, className }) {
   );
 }
 
+function UrgencyBadge({ scheduleUrgency, className }) {
+  if (!scheduleUrgency) return null;
+
+  return (
+    <div
+      className={cn(
+        'pointer-events-none absolute z-10 rounded-full px-2 py-0.5 text-[10px] font-semibold leading-tight shadow-sm',
+        scheduleUrgency.badgeClass,
+        className,
+      )}
+      title={scheduleUrgency.urgencyLabel}
+    >
+      {scheduleUrgency.shortLabel}
+    </div>
+  );
+}
+
+function ScheduleSection({ post, scheduleTimezone }) {
+  if (!post.scheduled_at) return null;
+
+  return (
+    <div className="mt-4 border-t border-neutral-200 pt-3">
+      <p className="text-xs leading-relaxed text-muted-foreground">
+        <span className="font-medium text-ink">Scheduled · </span>
+        {formatScheduledLabel(post.scheduled_at, scheduleTimezone)}
+      </p>
+    </div>
+  );
+}
+
 export function PostQueueCard({
   post,
   authorEmail,
@@ -64,7 +94,7 @@ export function PostQueueCard({
   const actionButtons = showActions && (
     <div className={cn(
       'flex shrink-0 items-center gap-2',
-      variant === 'grid' && 'mt-auto w-full pt-2',
+      variant === 'grid' && 'mt-4 w-full border-t border-neutral-200 pt-3',
     )}>
       {approval === 'pending' && (
         <>
@@ -96,7 +126,7 @@ export function PostQueueCard({
   );
 
   const rejectForm = rejectOpen && (
-    <div className="mt-2 space-y-2">
+    <div className="mt-3 space-y-2">
       <textarea
         className="w-full rounded-hyve-sm border border-neutral-200 p-2 text-sm"
         rows={2}
@@ -113,7 +143,7 @@ export function PostQueueCard({
 
   const metaRow = (
     <>
-      <div className="mb-1.5 flex flex-wrap items-center gap-2">
+      <div className="mb-2 flex flex-wrap items-center gap-2 pr-14">
         {post.publish_instagram && <PlatformChip platform="instagram" />}
         {post.publish_facebook && <PlatformChip platform="facebook" />}
         {badges.map((b) => (
@@ -121,38 +151,30 @@ export function PostQueueCard({
         ))}
       </div>
       {authorEmail && variant === 'list' && (
-        <p className="text-xs text-neutral-500">Posted by {authorEmail}</p>
+        <p className="mb-1 text-xs text-neutral-500">Posted by {authorEmail}</p>
       )}
-      <p className={cn('text-sm text-ink', variant === 'list' ? 'truncate' : 'line-clamp-2')}>
+      <p className={cn('text-sm leading-relaxed text-ink', variant === 'list' ? 'line-clamp-2' : 'line-clamp-3')}>
         {post.caption || post.internal_name || 'Untitled post'}
       </p>
-      {post.scheduled_at && (
-        <div className={cn('mt-1.5 space-y-0.5 text-xs', scheduleUrgency?.textClass ?? 'text-muted-foreground')}>
-          <p className="font-medium">
-            Scheduled for {formatScheduledLabel(post.scheduled_at, scheduleTimezone)}
-          </p>
-          {scheduleUrgency && (
-            <p>{scheduleUrgency.urgencyLabel}</p>
-          )}
-        </div>
-      )}
+      <ScheduleSection post={post} scheduleTimezone={scheduleTimezone} />
     </>
   );
 
   if (variant === 'grid') {
     return (
       <div className={cn(
-        'flex h-full flex-col overflow-hidden rounded-hyve-md bg-white',
+        'relative flex h-full flex-col overflow-hidden rounded-hyve-md bg-white',
         cardBorderClass,
       )}>
+        <UrgencyBadge scheduleUrgency={scheduleUrgency} className="right-2 top-2" />
         <button
           type="button"
           onClick={() => navigate(`/app/posts/${post.id}`)}
-          className="aspect-square w-full overflow-hidden bg-neutral-100"
+          className="relative aspect-square w-full overflow-hidden bg-neutral-100"
         >
           <PostThumb post={post} className="rounded-none" />
         </button>
-        <div className="flex flex-1 flex-col p-3">
+        <div className="relative flex flex-1 flex-col p-4">
           {metaRow}
           {rejectForm}
           {actionButtons}
@@ -163,19 +185,20 @@ export function PostQueueCard({
 
   return (
     <div className={cn(
-      'grid grid-cols-[72px_1fr_auto] items-center gap-3.5 rounded-hyve-md bg-white p-4',
+      'relative grid grid-cols-[72px_1fr_auto] items-start gap-4 rounded-hyve-md bg-white p-5',
       cardBorderClass,
     )}>
       <div className="h-[72px] w-[72px] shrink-0 overflow-hidden">
         <PostThumb post={post} />
       </div>
 
-      <div className="min-w-0">
+      <div className="relative min-w-0 pr-2">
+        <UrgencyBadge scheduleUrgency={scheduleUrgency} className="right-0 top-0" />
         {metaRow}
         {rejectForm}
       </div>
 
-      {actionButtons}
+      <div className="self-center">{actionButtons}</div>
     </div>
   );
 }

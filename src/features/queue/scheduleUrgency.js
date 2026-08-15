@@ -11,29 +11,37 @@ export function getScheduleUrgency(scheduledAt) {
   if (daysUntil < 0) {
     return {
       urgencyLabel: 'Past scheduled time',
+      shortLabel: 'Past due',
       borderClass: 'border-2 border-red-500',
-      textClass: 'text-red-700',
+      badgeClass: 'bg-red-600 text-white',
+      textClass: 'text-muted-foreground',
     };
   }
   if (daysUntil < 2) {
     return {
       urgencyLabel: 'Less than 2 days — approve soon',
+      shortLabel: '<2 days',
       borderClass: 'border-2 border-red-500',
-      textClass: 'text-red-700',
+      badgeClass: 'bg-red-600 text-white',
+      textClass: 'text-muted-foreground',
     };
   }
   if (daysUntil < 5) {
     return {
       urgencyLabel: 'Less than 5 days',
+      shortLabel: '<5 days',
       borderClass: 'border-2 border-amber-400',
-      textClass: 'text-amber-800',
+      badgeClass: 'bg-amber-500 text-white',
+      textClass: 'text-muted-foreground',
     };
   }
 
   const daysLabel = Math.ceil(daysUntil);
   return {
     urgencyLabel: `${daysLabel} day${daysLabel === 1 ? '' : 's'} until scheduled`,
+    shortLabel: `${daysLabel}d`,
     borderClass: 'border-2 border-emerald-400',
-    textClass: 'text-emerald-800',
+    badgeClass: 'bg-emerald-600 text-white',
+    textClass: 'text-muted-foreground',
   };
 }

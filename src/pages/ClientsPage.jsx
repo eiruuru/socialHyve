@@ -5,6 +5,8 @@ import { Pencil, Trash2 } from 'lucide-react';
 import { createClient, deleteClient, listClients, updateClient } from '@/lib/organization';
 import { useClient } from '@/lib/clientContext';
 import { useMembership } from '@/lib/membershipContext';
+import { TimezoneSelect } from '@/components/schedule/TimezoneSelect';
+import { formatTimezoneLabel, getBrowserTimezone } from '@/lib/scheduleTime';
 import { Button } from '@/components/ui/button';
 import { IconTooltip } from '@/components/ui/IconTooltip';
 import { Input } from '@/components/ui/input';
@@ -13,17 +15,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 function ClientRow({ client, onUpdated, onDeleted, canManage }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(client.name);
+  const [timezone, setTimezone] = useState(client.default_timezone || getBrowserTimezone());
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
-    if (!name.trim() || name.trim() === client.name) {
+    const nameChanged = name.trim() && name.trim() !== client.name;
+    const tzChanged = timezone !== (client.default_timezone || getBrowserTimezone());
+    if (!nameChanged && !tzChanged) {
       setEditing(false);
       setName(client.name);
+      setTimezone(client.default_timezone || getBrowserTimezone());
       return;
     }
     setSaving(true);
     try {
-      await updateClient(client.id, { name: name.trim() });
+      await updateClient(client.id, {
+        ...(nameChanged ? { name: name.trim() } : {}),
+        default_timezone: timezone,
+      });
       onUpdated();
       setEditing(false);
     } catch (err) {
@@ -46,32 +55,62 @@ function ClientRow({ client, onUpdated, onDeleted, canManage }) {
     }
   };
 
+  const startEditing = () => {
+    setName(client.name);
+    setTimezone(client.default_timezone || getBrowserTimezone());
+    setEditing(true);
+  };
+
   return (
     <li className="flex items-center justify-between gap-3 py-3">
       <div className="min-w-0 flex-1">
         {editing ? (
-          <div className="flex gap-2">
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="max-w-xs"
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleSave();
-                if (e.key === 'Escape') { setEditing(false); setName(client.name); }
-              }}
-            />
-            <Button size="sm" onClick={handleSave} disabled={saving}>
-              {saving ? 'Saving…' : 'Save'}
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => { setEditing(false); setName(client.name); }}>
-              Cancel
-            </Button>
+          <div className="space-y-2">
+            <div className="flex flex-wrap gap-2">
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="max-w-xs"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSave();
+                  if (e.key === 'Escape') {
+                    setEditing(false);
+                    setName(client.name);
+                    setTimezone(client.default_timezone || getBrowserTimezone());
+                  }
+                }}
+              />
+              <TimezoneSelect
+                value={timezone}
+                onChange={setTimezone}
+                className="max-w-xs"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={handleSave} disabled={saving}>
+                {saving ? 'Saving…' : 'Save'}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setEditing(false);
+                  setName(client.name);
+                  setTimezone(client.default_timezone || getBrowserTimezone());
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
           </div>
         ) : (
           <>
             <p className="font-medium">{client.name}</p>
             <p className="text-xs text-muted-foreground">{client.slug}</p>
+            <p className="text-xs text-muted-foreground">
+              Timezone: {formatTimezoneLabel(client.default_timezone || getBrowserTimezone())}
+            </p>
           </>
         )}
       </div>
@@ -79,8 +118,8 @@ function ClientRow({ client, onUpdated, onDeleted, canManage }) {
         <div className="flex shrink-0 items-center gap-1">
           {canManage ? (
             <>
-              <IconTooltip title="Rename" description="Change this client's display name">
-                <Button variant="ghost" size="icon" onClick={() => setEditing(true)} aria-label="Rename client">
+              <IconTooltip title="Edit client" description="Change name and default timezone">
+                <Button variant="ghost" size="icon" onClick={startEditing} aria-label="Edit client">
                   <Pencil className="h-4 w-4" />
                 </Button>
               </IconTooltip>

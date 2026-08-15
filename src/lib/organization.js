@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { invokeFunction } from './supabaseFunctions';
+import { getBrowserTimezone } from './scheduleTime';
 
 export async function previewInvite(token, type) {
   return invokeFunction('acceptInvite', { action: 'preview', token, type });
@@ -150,7 +151,12 @@ export async function createClient(name) {
   const slug = await uniqueSlug(org.id, baseSlug);
   const { data, error } = await supabase
     .from('clients')
-    .insert({ organization_id: org.id, name, slug })
+    .insert({
+      organization_id: org.id,
+      name,
+      slug,
+      default_timezone: getBrowserTimezone(),
+    })
     .select()
     .single();
   if (error) throw error;

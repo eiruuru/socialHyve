@@ -46,3 +46,41 @@ SELECT cron.schedule(
   );
   $$
 );
+
+-- Media archive: daily 4am UTC (published posts older than 30 days)
+SELECT cron.unschedule('socialhyve-archive-media')
+WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'socialhyve-archive-media');
+
+SELECT cron.schedule(
+  'socialhyve-archive-media',
+  '0 4 * * *',
+  $$
+  SELECT net.http_post(
+    url := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'supabase_url' LIMIT 1) || '/functions/v1/cleanup-post-media',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'service_role_key' LIMIT 1)
+    ),
+    body := '{"mode":"archive"}'::jsonb
+  );
+  $$
+);
+
+-- Orphan media sweep: weekly Sunday 4am UTC (abandoned draft imports older than 7 days)
+SELECT cron.unschedule('socialhyve-orphan-media')
+WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'socialhyve-orphan-media');
+
+SELECT cron.schedule(
+  'socialhyve-orphan-media',
+  '0 4 * * 0',
+  $$
+  SELECT net.http_post(
+    url := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'supabase_url' LIMIT 1) || '/functions/v1/cleanup-post-media',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'service_role_key' LIMIT 1)
+    ),
+    body := '{"mode":"orphans"}'::jsonb
+  );
+  $$
+);

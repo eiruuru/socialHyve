@@ -13,6 +13,7 @@ export function PlatformPreviewTabs({
   publishFacebook = true,
   publishInstagram = true,
   scheduledAt,
+  scheduleTimezone,
   clientId: clientIdProp,
   currentPostId,
   facebookCaption,
@@ -43,7 +44,7 @@ export function PlatformPreviewTabs({
   const renderPreview = (platform) => {
     if (platform === 'facebook') {
       return (
-        <PreviewFrame platform="facebook" scheduledAt={scheduledAt}>
+        <PreviewFrame platform="facebook" scheduledAt={scheduledAt} scheduleTimezone={scheduleTimezone}>
           <FacebookFeedPreview caption={facebookCaption ?? caption} media={media} embedded />
         </PreviewFrame>
       );
@@ -53,6 +54,7 @@ export function PlatformPreviewTabs({
         caption={instagramCaption ?? caption}
         media={media}
         scheduledAt={scheduledAt}
+        scheduleTimezone={scheduleTimezone}
         clientId={clientId}
         currentPostId={currentPostId}
       />

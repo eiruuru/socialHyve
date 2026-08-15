@@ -1,7 +1,25 @@
 import { Globe, MessageCircle, Share2, ThumbsUp } from 'lucide-react';
-import { MediaCarousel } from './MediaCarousel';
 import { normalizeMediaList, isVideo } from './mediaUtils';
 import { ProfileAvatar, usePreviewAccounts } from '../hooks/usePreviewAccounts';
+import { cn } from '@/lib/utils';
+
+function CollageTile({ item, className, overlay }) {
+  const video = isVideo(item.mime_type);
+  return (
+    <div className={cn('relative overflow-hidden bg-neutral-900', className)}>
+      {video ? (
+        <video src={item.public_url} className="h-full w-full object-cover" muted playsInline />
+      ) : (
+        <img src={item.public_url} alt="" className="h-full w-full object-cover" />
+      )}
+      {overlay && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+          <span className="text-2xl font-bold text-white">{overlay}</span>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function FacebookCollage({ items }) {
   const count = items.length;
@@ -10,7 +28,7 @@ function FacebookCollage({ items }) {
     return (
       <div className="grid grid-cols-2 gap-0.5">
         {items.map((item, i) => (
-          <img key={i} src={item.public_url} alt="" className="aspect-square w-full object-cover" />
+          <CollageTile key={i} item={item} className="aspect-square w-full" />
         ))}
       </div>
     );
@@ -19,24 +37,42 @@ function FacebookCollage({ items }) {
   if (count === 3) {
     return (
       <div className="grid grid-cols-2 gap-0.5">
-        <img src={items[0].public_url} alt="" className="row-span-2 h-full min-h-[240px] w-full object-cover" />
-        <img src={items[1].public_url} alt="" className="aspect-square w-full object-cover" />
-        <img src={items[2].public_url} alt="" className="aspect-square w-full object-cover" />
+        <CollageTile item={items[0]} className="row-span-2 min-h-[240px] h-full w-full" />
+        <CollageTile item={items[1]} className="aspect-square w-full" />
+        <CollageTile item={items[2]} className="aspect-square w-full" />
       </div>
     );
   }
 
   if (count === 4) {
     return (
-      <div className="grid grid-cols-2 gap-0.5">
-        {items.map((item, i) => (
-          <img key={i} src={item.public_url} alt="" className="aspect-square w-full object-cover" />
-        ))}
+      <div className="grid min-h-[320px] grid-cols-3 grid-rows-3 gap-0.5">
+        <CollageTile item={items[0]} className="col-span-2 row-span-3 h-full w-full" />
+        <CollageTile item={items[1]} className="col-start-3 row-start-1 h-full w-full" />
+        <CollageTile item={items[2]} className="col-start-3 row-start-2 h-full w-full" />
+        <CollageTile item={items[3]} className="col-start-3 row-start-3 h-full w-full" />
       </div>
     );
   }
 
-  return null;
+  const extra = count - 5;
+  return (
+    <div className="flex flex-col gap-0.5">
+      <div className="grid grid-cols-2 gap-0.5">
+        <CollageTile item={items[0]} className="h-[200px] w-full" />
+        <CollageTile item={items[1]} className="h-[200px] w-full" />
+      </div>
+      <div className="grid grid-cols-3 gap-0.5">
+        <CollageTile item={items[2]} className="aspect-square w-full" />
+        <CollageTile item={items[3]} className="aspect-square w-full" />
+        <CollageTile
+          item={items[4]}
+          className="aspect-square w-full"
+          overlay={extra > 0 ? `+${extra}` : null}
+        />
+      </div>
+    </div>
+  );
 }
 
 function FacebookMedia({ items }) {
@@ -54,11 +90,7 @@ function FacebookMedia({ items }) {
     return <img src={item.public_url} alt="" className="max-h-[500px] w-full object-cover" />;
   }
 
-  if (items.length >= 2 && items.length <= 4) {
-    return <FacebookCollage items={items} />;
-  }
-
-  return <MediaCarousel items={items} platform="facebook" showCounter aspectClassName="aspect-[4/3]" />;
+  return <FacebookCollage items={items} />;
 }
 
 export function FacebookFeedPreview({ caption, media = [], embedded = false }) {

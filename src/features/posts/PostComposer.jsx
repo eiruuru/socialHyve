@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Calendar, ClipboardCheck, Save, Send } from 'lucide-react';
 import {
   createPost,
   addPostMedia,
@@ -10,14 +9,21 @@ import {
   updatePost,
   getPost,
   removePostMedia,
+  deleteStorageObject,
 } from '@/lib/posts';
 import { invokeFunction } from '@/lib/supabaseFunctions';
+import { useClient } from '@/lib/clientContext';
+import {
+  getBrowserTimezone,
+  resolveScheduleTimezone,
+  utcToZonedLocalInput,
+  zonedLocalToUtc,
+} from '@/lib/scheduleTime';
 import { GenericContentStep } from '@/features/posts/composer/GenericContentStep';
+import { ComposerActionBar } from '@/features/posts/composer/ComposerActionBar';
 import { FineTunePanel } from '@/features/posts/composer/FineTunePanel';
 import { PlatformPreviewTabs } from '@/features/posts/previews/PlatformPreviewTabs';
 import { MAX_CAROUSEL_ITEMS } from '@/features/posts/MediaStrip';
-import { Button } from '@/components/ui/button';
-import { IconTooltip } from '@/components/ui/IconTooltip';
 
 const IG_CAPTION_LIMIT = 2200;
 const FB_CAPTION_LIMIT = 63206;
@@ -39,20 +45,17 @@ function validatePost({ caption, media, publishInstagram, publishFacebook }) {
   return errors;
 }
 
-function formatScheduledInput(iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  return d.toISOString().slice(0, 16);
-}
-
 export function PostComposer({ editPostId = null }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const presetDate = searchParams.get('date');
+  const { activeClient } = useClient();
   const isEditMode = !!editPostId;
   const hydratedRef = useRef(false);
   const originalMediaIdsRef = useRef([]);
+  const trackedStoragePathsRef = useRef(new Set());
+
+  const defaultTimezone = activeClient?.default_timezone || getBrowserTimezone();
 
   const { data: existingPost, isLoading: loadingPost } = useQuery({
     queryKey: ['post', editPostId],
@@ -69,21 +72,35 @@ export function PostComposer({ editPostId = null }) {
   const [platformOverrides, setPlatformOverrides] = useState({});
   const [publishFacebook, setPublishFacebook] = useState(true);
   const [publishInstagram, setPublishInstagram] = useState(true);
-  const [scheduledAt, setScheduledAt] = useState(() => {
-    if (presetDate) {
-      const d = new Date(presetDate);
-      d.setHours(12, 0, 0, 0);
-      return d.toISOString().slice(0, 16);
-    }
-    return '';
-  });
+  const [scheduleTimezone, setScheduleTimezone] = useState(defaultTimezone);
+  const [scheduledAt, setScheduledAt] = useState('');
   const [media, setMedia] = useState([]);
   const [saving, setSaving] = useState(false);
   const [approvalStatus, setApprovalStatus] = useState('draft');
 
   useEffect(() => {
+    if (isEditMode) return;
+    setScheduleTimezone(activeClient?.default_timezone || getBrowserTimezone());
+  }, [activeClient?.id, activeClient?.default_timezone, isEditMode]);
+
+  useEffect(() => {
+    if (presetDate && !scheduledAt) {
+      const tz = activeClient?.default_timezone || getBrowserTimezone();
+      const d = new Date(presetDate);
+      if (!Number.isNaN(d.getTime())) {
+        d.setHours(12, 0, 0, 0);
+        setScheduledAt(utcToZonedLocalInput(d.toISOString(), tz));
+      }
+    }
+  }, [presetDate, activeClient?.default_timezone, scheduledAt]);
+
+  useEffect(() => {
     if (!existingPost || hydratedRef.current) return;
     hydratedRef.current = true;
+    const tz = resolveScheduleTimezone({
+      postTimezone: existingPost.schedule_timezone,
+      clientTimezone: activeClient?.default_timezone,
+    });
     setDraftPostId(existingPost.id);
     setInternalName(existingPost.internal_name || '');
     setLabel(existingPost.label || '');
@@ -92,10 +109,13 @@ export function PostComposer({ editPostId = null }) {
     setPlatformOverrides(existingPost.platform_overrides || {});
     setPublishFacebook(existingPost.publish_facebook ?? true);
     setPublishInstagram(existingPost.publish_instagram ?? true);
-    setScheduledAt(formatScheduledInput(existingPost.scheduled_at));
+    setScheduleTimezone(tz);
+    setScheduledAt(
+      existingPost.scheduled_at ? utcToZonedLocalInput(existingPost.scheduled_at, tz) : '',
+    );
     setApprovalStatus(existingPost.approval_status || 'draft');
     const sortedMedia = [...(existingPost.post_media || [])].sort(
-      (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
+      (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
     );
     originalMediaIdsRef.current = sortedMedia.map((m) => m.id);
     setMedia(sortedMedia.map((m, i) => ({
@@ -107,13 +127,20 @@ export function PostComposer({ editPostId = null }) {
       mime_type: m.mime_type,
       sort_order: i,
     })));
-  }, [existingPost]);
+    trackedStoragePathsRef.current = new Set(
+      sortedMedia.map((m) => m.storage_path).filter(Boolean),
+    );
+  }, [existingPost, activeClient?.default_timezone]);
 
   const isPublished = existingPost?.status === 'published';
   const validationErrors = validatePost({ caption, media, publishInstagram, publishFacebook });
   const captionHint = publishInstagram
     ? `${caption.length}/${IG_CAPTION_LIMIT} (Instagram)`
     : `${caption.length}/${FB_CAPTION_LIMIT} (Facebook)`;
+
+  const scheduledAtUtc = scheduledAt
+    ? zonedLocalToUtc(scheduledAt, scheduleTimezone)
+    : null;
 
   const buildPayload = (status, nextApprovalStatus = approvalStatus) => ({
     caption,
@@ -125,11 +152,14 @@ export function PostComposer({ editPostId = null }) {
     approval_status: nextApprovalStatus,
     publish_facebook: publishFacebook,
     publish_instagram: publishInstagram,
-    scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
+    schedule_timezone: scheduleTimezone,
+    scheduled_at: scheduledAtUtc,
   });
 
   const syncMedia = async (postId) => {
     const currentIds = new Set(media.filter((m) => m.id).map((m) => m.id));
+    const currentPaths = new Set(media.filter((m) => m.storage_path).map((m) => m.storage_path));
+
     for (const id of originalMediaIdsRef.current) {
       if (!currentIds.has(id)) {
         await removePostMedia(id);
@@ -150,6 +180,34 @@ export function PostComposer({ editPostId = null }) {
         });
       }
     }
+
+    originalMediaIdsRef.current = media.filter((m) => m.id).map((m) => m.id);
+    for (const path of [...trackedStoragePathsRef.current]) {
+      if (!currentPaths.has(path)) {
+        await deleteStorageObject(path);
+        trackedStoragePathsRef.current.delete(path);
+      }
+    }
+    for (const path of currentPaths) {
+      trackedStoragePathsRef.current.add(path);
+    }
+  };
+
+  const handleMediaChange = (nextOrUpdater) => {
+    setMedia((prev) => {
+      const next = typeof nextOrUpdater === 'function' ? nextOrUpdater(prev) : nextOrUpdater;
+      const nextPaths = new Set(next.filter((m) => m.storage_path).map((m) => m.storage_path));
+      for (const item of prev) {
+        if (item.storage_path && !item.id && !nextPaths.has(item.storage_path)) {
+          void deleteStorageObject(item.storage_path);
+          trackedStoragePathsRef.current.delete(item.storage_path);
+        }
+      }
+      for (const path of nextPaths) {
+        trackedStoragePathsRef.current.add(path);
+      }
+      return next;
+    });
   };
 
   const ensureDraft = async () => {
@@ -195,7 +253,11 @@ export function PostComposer({ editPostId = null }) {
         alert('Please set a schedule date and time');
         return;
       }
-      const scheduleDate = new Date(scheduledAt);
+      if (!scheduledAtUtc) {
+        alert('Invalid schedule time');
+        return;
+      }
+      const scheduleDate = new Date(scheduledAtUtc);
       const minSchedule = new Date(Date.now() + 10 * 60 * 1000);
       if (scheduleDate < minSchedule) {
         alert('Schedule time must be at least 10 minutes in the future');
@@ -203,16 +265,17 @@ export function PostComposer({ editPostId = null }) {
       }
       const id = await ensureDraft();
       await updatePost(id, buildPayload('scheduled'));
-      await schedulePost(id, scheduleDate.toISOString());
+      await schedulePost(id, scheduledAtUtc);
       navigate('/app/calendar');
     });
 
   const handlePublishNow = () =>
     runWithValidation(async () => {
       const id = await ensureDraft();
+      const nowIso = new Date().toISOString();
       await updatePost(id, {
         ...buildPayload('scheduled'),
-        scheduled_at: new Date().toISOString(),
+        scheduled_at: nowIso,
       });
       await invokeFunction('publishPost', { postId: id });
       navigate(`/app/posts/${id}`);
@@ -257,8 +320,10 @@ export function PostComposer({ editPostId = null }) {
           setPublishInstagram={setPublishInstagram}
           scheduledAt={scheduledAt}
           setScheduledAt={setScheduledAt}
+          scheduleTimezone={scheduleTimezone}
+          setScheduleTimezone={setScheduleTimezone}
           media={media}
-          setMedia={setMedia}
+          setMedia={handleMediaChange}
           validationErrors={validationErrors}
         />
 
@@ -266,7 +331,8 @@ export function PostComposer({ editPostId = null }) {
           <PlatformPreviewTabs
             caption={caption}
             media={media}
-            scheduledAt={scheduledAt}
+            scheduledAt={scheduledAtUtc || scheduledAt}
+            scheduleTimezone={scheduleTimezone}
             publishFacebook={publishFacebook}
             publishInstagram={publishInstagram}
             currentPostId={draftPostId}
@@ -275,6 +341,16 @@ export function PostComposer({ editPostId = null }) {
           />
         </div>
       </div>
+
+      <ComposerActionBar
+        saving={saving}
+        scheduledAt={scheduledAt}
+        scheduleTimezone={scheduleTimezone}
+        onSaveDraft={handleSaveDraft}
+        onSubmitForReview={handleSubmitForReview}
+        onSchedule={handleSchedule}
+        onPublishNow={handlePublishNow}
+      />
 
       <FineTunePanel
         open={fineTuneOpen}
@@ -288,54 +364,6 @@ export function PostComposer({ editPostId = null }) {
         publishFacebook={publishFacebook}
         publishInstagram={publishInstagram}
       />
-
-      <div className="sticky bottom-0 -mx-8 border-t bg-paper/95 px-8 py-4 backdrop-blur">
-        <div className="flex items-center gap-2">
-          <IconTooltip title="Save draft" description="Keep your work without publishing">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleSaveDraft}
-              disabled={saving}
-              aria-label="Save draft"
-            >
-              <Save className="h-4 w-4" />
-            </Button>
-          </IconTooltip>
-          <IconTooltip title="Submit for review" description="Send to the approval queue">
-            <Button
-              variant="secondary"
-              size="icon"
-              onClick={handleSubmitForReview}
-              disabled={saving}
-              aria-label="Submit for review"
-            >
-              <ClipboardCheck className="h-4 w-4" />
-            </Button>
-          </IconTooltip>
-          <IconTooltip title="Schedule" description="Publish automatically at the set time">
-            <Button
-              variant="secondary"
-              size="icon"
-              onClick={handleSchedule}
-              disabled={saving}
-              aria-label="Schedule"
-            >
-              <Calendar className="h-4 w-4" />
-            </Button>
-          </IconTooltip>
-          <IconTooltip title="Publish now" description="Post immediately to connected accounts">
-            <Button
-              size="icon"
-              onClick={handlePublishNow}
-              disabled={saving}
-              aria-label="Publish now"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
-          </IconTooltip>
-        </div>
-      </div>
     </div>
   );
 }

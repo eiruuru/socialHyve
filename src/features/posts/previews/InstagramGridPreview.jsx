@@ -2,41 +2,46 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Clapperboard, Layers } from 'lucide-react';
 import { listPosts } from '@/lib/posts';
-import { isVideo } from './mediaUtils';
+import { invokeFunction } from '@/lib/supabaseFunctions';
+import { normalizeMediaList, isVideo } from './mediaUtils';
 import { cn } from '@/lib/utils';
 
-function GridCell({ post, isCurrent, onClick }) {
-  const media = (post.post_media || []).sort(
-    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
-  );
+function GridCell({ post, isCurrent }) {
+  const media = normalizeMediaList(post.post_media || []);
   const thumb = media[0];
-  const isCarousel = media.length > 1;
+  const isCarousel = post.isCarousel || media.length > 1;
   const hasVideo = thumb && isVideo(thumb.mime_type);
 
+  const content = thumb?.public_url ? (
+    hasVideo ? (
+      <video src={thumb.public_url} className="h-full w-full object-cover" muted />
+    ) : (
+      <img src={thumb.public_url} alt="" className="h-full w-full object-cover" />
+    )
+  ) : (
+    <div className="flex h-full items-center justify-center text-xs text-neutral-400">No media</div>
+  );
+
+  const Wrapper = post.permalink ? 'a' : 'div';
+  const linkProps = post.permalink
+    ? { href: post.permalink, target: '_blank', rel: 'noopener noreferrer' }
+    : {};
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <Wrapper
+      {...linkProps}
       className={cn(
-        'relative aspect-square overflow-hidden bg-neutral-200',
-        isCurrent && 'ring-2 ring-honey ring-inset'
+        'relative block aspect-square overflow-hidden bg-neutral-200',
+        isCurrent && 'ring-2 ring-honey ring-inset',
       )}
     >
-      {thumb?.public_url ? (
-        isVideo(thumb.mime_type) ? (
-          <video src={thumb.public_url} className="h-full w-full object-cover" muted />
-        ) : (
-          <img src={thumb.public_url} alt="" className="h-full w-full object-cover" />
-        )
-      ) : (
-        <div className="flex h-full items-center justify-center text-xs text-neutral-400">No media</div>
-      )}
+      {content}
       {(isCarousel || hasVideo) && (
         <div className="absolute right-1 top-1 rounded bg-black/60 p-0.5 text-white">
           {hasVideo ? <Clapperboard className="h-3 w-3" /> : <Layers className="h-3 w-3" />}
         </div>
       )}
-    </button>
+    </Wrapper>
   );
 }
 
@@ -58,39 +63,60 @@ export function InstagramGridPreview({
     enabled: !!clientId,
   });
 
+  const { data: igLiveData } = useQuery({
+    queryKey: ['ig-live-media', clientId],
+    queryFn: () => invokeFunction('metaListIgMedia', { clientId }),
+    enabled: !!clientId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const igLivePosts = igLiveData?.media || [];
+
   const gridPosts = useMemo(() => {
     const statuses = showFuturePosts
       ? ['published', 'scheduled', 'draft']
       : ['published'];
 
+    const composingId = currentPostId || '__composing__';
     let posts = siblingPosts.filter((p) =>
-      statuses.includes(p.status) || (showFuturePosts && p.status === 'draft')
+      statuses.includes(p.status) || (showFuturePosts && p.status === 'draft'),
     );
 
-    if (currentPostId && !posts.some((p) => p.id === currentPostId)) {
-      posts = [
-        ...posts,
-        {
-          id: currentPostId,
-          scheduled_at: scheduledAt,
-          post_media: media.map((m, i) => ({ ...m, sort_order: i })),
-        },
-      ];
+    if (media.length > 0 && !posts.some((p) => p.id === currentPostId || p.id === composingId)) {
+      posts.push({
+        id: composingId,
+        scheduled_at: scheduledAt || new Date().toISOString(),
+        post_media: media.map((m, i) => ({ ...m, sort_order: i })),
+        isComposing: true,
+      });
+    } else if (currentPostId && media.length > 0) {
+      posts = posts.map((p) =>
+        p.id === currentPostId
+          ? { ...p, post_media: media.map((m, i) => ({ ...m, sort_order: i })), isComposing: false }
+          : p,
+      );
+    }
+
+    if (showFuturePosts) {
+      const existingIds = new Set(posts.map((p) => p.id));
+      for (const igPost of igLivePosts) {
+        if (!existingIds.has(igPost.id)) posts.push(igPost);
+      }
     }
 
     posts.sort((a, b) => {
-      const da = new Date(a.scheduled_at || a.created_at || 0).getTime();
-      const db = new Date(b.scheduled_at || b.created_at || 0).getTime();
+      const da = new Date(a.scheduled_at || a.timestamp || a.created_at || 0).getTime();
+      const db = new Date(b.scheduled_at || b.timestamp || b.created_at || 0).getTime();
       return db - da;
     });
 
-    const minCells = 6;
-    while (posts.length < minCells) {
-      posts.push({ id: `placeholder-${posts.length}`, placeholder: true });
+    const result = posts.slice(0, 9);
+    while (result.length < 6) {
+      result.push({ id: `placeholder-${result.length}`, placeholder: true });
     }
 
-    return posts.slice(0, 9);
-  }, [siblingPosts, currentPostId, scheduledAt, media, showFuturePosts]);
+    return result.slice(0, 9);
+  }, [siblingPosts, igLivePosts, currentPostId, scheduledAt, media, showFuturePosts]);
 
   return (
     <div className="grid grid-cols-3 gap-px bg-neutral-200">
@@ -101,9 +127,9 @@ export function InstagramGridPreview({
           <GridCell
             key={post.id}
             post={post}
-            isCurrent={post.id === currentPostId}
+            isCurrent={post.id === currentPostId || post.isComposing}
           />
-        )
+        ),
       )}
     </div>
   );

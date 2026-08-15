@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Palette } from 'lucide-react';
+import { CanvaIcon } from '@/components/icons/CanvaIcon';
 import { invokeFunction } from '@/lib/supabaseFunctions';
 import { getCanvaConnection } from '@/lib/posts';
 import { useClient } from '@/lib/clientContext';
@@ -110,7 +110,7 @@ export function CanvaDesignPicker({ onSelect, disabled, iconOnly = false, mediaC
           className={cn(iconOnly && 'h-9 w-9 shrink-0')}
         >
           <Link to="/app/settings/canva" aria-label="Connect Canva">
-            {iconOnly ? <Palette className="h-4 w-4" /> : 'Connect Canva'}
+            {iconOnly ? <CanvaIcon className="h-4 w-4" /> : 'Connect Canva'}
           </Link>
         </Button>
       </IconTooltip>
@@ -129,7 +129,7 @@ export function CanvaDesignPicker({ onSelect, disabled, iconOnly = false, mediaC
             aria-label="Add from Canva"
             className={cn(iconOnly && 'h-9 w-9 shrink-0')}
           >
-            {iconOnly ? <Palette className="h-4 w-4" /> : 'Add from Canva'}
+            {iconOnly ? <CanvaIcon className="h-4 w-4" /> : 'Add from Canva'}
           </Button>
         </DialogTrigger>
       </IconTooltip>

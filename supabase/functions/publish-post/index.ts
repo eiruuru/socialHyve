@@ -84,11 +84,14 @@ async function publishPost(service: ReturnType<typeof getServiceClient>, postId:
   if (post.publish_facebook && fbAccount) {
     try {
       const externalId = await publishToFacebook(fbAccount, post.caption, media, post.scheduled_at);
+      const token = (fbAccount.page_access_token || fbAccount.access_token) as string;
+      const permalink = await fetchMetaPermalink(externalId, token);
       await service.from('post_targets').upsert({
         post_id: postId,
         platform: 'facebook',
         status: 'published',
         external_post_id: externalId,
+        permalink,
         error_message: null,
       }, { onConflict: 'post_id,platform' });
     } catch (err) {
@@ -114,11 +117,14 @@ async function publishPost(service: ReturnType<typeof getServiceClient>, postId:
   if (post.publish_instagram && igAccount) {
     try {
       const externalId = await publishToInstagram(igAccount, post.caption, media, post.scheduled_at);
+      const token = (igAccount.page_access_token || igAccount.access_token) as string;
+      const permalink = await fetchMetaPermalink(externalId, token);
       await service.from('post_targets').upsert({
         post_id: postId,
         platform: 'instagram',
         status: 'published',
         external_post_id: externalId,
+        permalink,
         error_message: null,
       }, { onConflict: 'post_id,platform' });
     } catch (err) {
@@ -183,6 +189,20 @@ function isFutureSchedule(scheduledAt?: string | null): boolean {
 
 function isVideoMedia(media: MediaItem): boolean {
   return (media.mime_type || '').startsWith('video/');
+}
+
+async function fetchMetaPermalink(externalPostId: string, token: string): Promise<string | null> {
+  try {
+    const url = new URL(`${META_GRAPH}/${externalPostId}`);
+    url.searchParams.set('fields', 'permalink,permalink_url');
+    url.searchParams.set('access_token', token);
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.error) return null;
+    return (data.permalink || data.permalink_url || null) as string | null;
+  } catch {
+    return null;
+  }
 }
 
 async function publishToFacebook(

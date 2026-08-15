@@ -59,7 +59,34 @@ export async function updatePost(id, updates) {
   return data;
 }
 
+export async function deleteStorageObject(storagePath) {
+  if (!storagePath) return;
+  const { error } = await supabase.storage.from('post-media').remove([storagePath]);
+  if (error) throw error;
+}
+
+export async function deleteStorageObjects(storagePaths) {
+  const paths = [...new Set(storagePaths.filter(Boolean))];
+  if (!paths.length) return;
+  const { error } = await supabase.storage.from('post-media').remove(paths);
+  if (error) throw error;
+}
+
 export async function deletePost(id) {
+  const { data: mediaRows, error: mediaErr } = await supabase
+    .from('post_media')
+    .select('storage_path, preview_storage_path, original_storage_path')
+    .eq('post_id', id);
+  if (mediaErr) throw mediaErr;
+
+  await deleteStorageObjects(
+    (mediaRows || []).flatMap((row) => [
+      row.storage_path,
+      row.preview_storage_path,
+      row.original_storage_path,
+    ]),
+  );
+
   const { error } = await supabase.from('posts').delete().eq('id', id);
   if (error) throw error;
 }
@@ -75,6 +102,19 @@ export async function addPostMedia(postId, media) {
 }
 
 export async function removePostMedia(id) {
+  const { data: row, error: fetchErr } = await supabase
+    .from('post_media')
+    .select('storage_path, preview_storage_path, original_storage_path')
+    .eq('id', id)
+    .maybeSingle();
+  if (fetchErr) throw fetchErr;
+
+  await deleteStorageObjects([
+    row?.storage_path,
+    row?.preview_storage_path,
+    row?.original_storage_path,
+  ]);
+
   const { error } = await supabase.from('post_media').delete().eq('id', id);
   if (error) throw error;
 }

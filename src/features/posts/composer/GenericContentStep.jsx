@@ -2,11 +2,13 @@ import { Upload } from 'lucide-react';
 import { CanvaDesignPicker } from '@/features/integrations/canva/CanvaDesignPicker';
 import { MediaStrip, MAX_CAROUSEL_ITEMS } from '@/features/posts/MediaStrip';
 import { PlatformChip } from '@/components/brand/PlatformChip';
+import { TimezoneSelect } from '@/components/schedule/TimezoneSelect';
 import { IconTooltip } from '@/components/ui/IconTooltip';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { OptimizationTips } from '@/features/posts/composer/OptimizationTips';
+import { formatTimezoneLabel } from '@/lib/scheduleTime';
 
 const LABEL_PRESETS = ['Campaign', 'Product launch', 'Evergreen', 'Promo', 'Event'];
 
@@ -24,6 +26,8 @@ export function GenericContentStep({
   setPublishInstagram,
   scheduledAt,
   setScheduledAt,
+  scheduleTimezone,
+  setScheduleTimezone,
   media,
   setMedia,
   validationErrors,
@@ -129,11 +133,20 @@ export function GenericContentStep({
 
         <div>
           <label className="mb-1 block text-sm font-medium">Schedule</label>
-          <Input
-            type="datetime-local"
-            value={scheduledAt}
-            onChange={(e) => setScheduledAt(e.target.value)}
-          />
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Input
+              type="datetime-local"
+              value={scheduledAt}
+              onChange={(e) => setScheduledAt(e.target.value)}
+            />
+            <TimezoneSelect
+              value={scheduleTimezone}
+              onChange={setScheduleTimezone}
+            />
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Posts at this time in {formatTimezoneLabel(scheduleTimezone)}
+          </p>
         </div>
 
         <div className="space-y-2">

@@ -44,7 +44,9 @@ FUNCTIONS=(
   canva-list-designs
   canva-get-design
   canva-export-design
+  meta-list-ig-media
   publish-post
+  cleanup-post-media
   refresh-tokens
   review-by-token
   accept-invite

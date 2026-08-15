@@ -1,9 +1,9 @@
-import { format } from 'date-fns';
+import { formatScheduledLabel } from '@/lib/scheduleTime';
 
-export function PreviewFrame({ platform, scheduledAt, toolbar, footer, children }) {
+export function PreviewFrame({ platform, scheduledAt, scheduleTimezone, toolbar, footer, children }) {
   const platformLabel = platform === 'facebook' ? 'Facebook Preview' : 'Instagram Preview';
   const dateLabel = scheduledAt
-    ? format(new Date(scheduledAt), 'MMM d, yyyy - h:mm a')
+    ? formatScheduledLabel(scheduledAt, scheduleTimezone)
     : null;
 
   return (

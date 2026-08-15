@@ -42,7 +42,13 @@ verify_jwt = true
 [functions.publish-post]
 verify_jwt = false
 
+[functions.meta-list-ig-media]
+verify_jwt = true
+
 [functions.refresh-tokens]
+verify_jwt = false
+
+[functions.cleanup-post-media]
 verify_jwt = false
 
 [functions.review-by-token]

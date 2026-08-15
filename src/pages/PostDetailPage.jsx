@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { IconTooltip } from '@/components/ui/IconTooltip';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatScheduledLabel } from '@/lib/scheduleTime';
 
 const APPROVAL_OPTIONS = [
   { value: 'draft', label: 'Draft' },
@@ -60,6 +61,7 @@ export default function PostDetailPage() {
   if (!post) return <p className="text-destructive">Post not found</p>;
 
   const mediaItems = normalizeMediaList(post.post_media || []);
+  const hasArchivedMedia = (post.post_media || []).some((item) => item.archived_at);
   const approval = post.approval_status || 'draft';
   const overrides = post.platform_overrides || {};
 
@@ -260,7 +262,10 @@ export default function PostDetailPage() {
               <ul className="mt-1 space-y-0.5">
                 {scheduleSummary.map(({ platform, at }) => (
                   <li key={platform}>
-                    {platform}: {at ? new Date(at).toLocaleString() : 'Not set'}
+                    {platform}:{' '}
+                    {at
+                      ? formatScheduledLabel(at, post.schedule_timezone)
+                      : 'Not set'}
                   </li>
                 ))}
               </ul>
@@ -279,22 +284,37 @@ export default function PostDetailPage() {
                 </p>
               )}
               {mediaItems.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {mediaItems.map((item, i) => (
-                    item.mime_type?.startsWith('video') ? (
-                      <video key={i} src={item.public_url} className="h-20 w-20 rounded object-cover" muted />
-                    ) : (
-                      <img key={i} src={item.public_url} alt="" className="h-20 w-20 rounded object-cover" />
-                    )
-                  ))}
+                <div className="space-y-2">
+                  {hasArchivedMedia && (
+                    <Badge variant="secondary">Archived preview</Badge>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    {mediaItems.map((item, i) => (
+                      item.mime_type?.startsWith('video') ? (
+                        <video key={i} src={item.public_url} className="h-20 w-20 rounded object-cover" muted />
+                      ) : (
+                        <img key={i} src={item.public_url} alt="" className="h-20 w-20 rounded object-cover" />
+                      )
+                    ))}
+                  </div>
                 </div>
               )}
               <div className="space-y-2">
                 <p className="text-sm font-medium">Platform Results</p>
                 {(post.post_targets || []).map((target) => (
-                  <div key={target.id} className="flex items-center justify-between rounded-hyve-sm border p-2 text-sm">
+                  <div key={target.id} className="flex flex-wrap items-center gap-2 rounded-hyve-sm border p-2 text-sm">
                     <span className="capitalize">{target.platform}</span>
                     <Badge variant={target.status}>{target.status}</Badge>
+                    {target.permalink && target.status === 'published' && (
+                      <a
+                        href={target.permalink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-honey-dark underline"
+                      >
+                        View on {target.platform}
+                      </a>
+                    )}
                     {target.error_message && (
                       <span className="text-xs text-red-600">{target.error_message}</span>
                     )}
@@ -339,6 +359,7 @@ export default function PostDetailPage() {
             caption={post.caption}
             media={mediaItems}
             scheduledAt={post.scheduled_at}
+            scheduleTimezone={post.schedule_timezone}
             publishFacebook={post.publish_facebook}
             publishInstagram={post.publish_instagram}
             clientId={post.client_id}

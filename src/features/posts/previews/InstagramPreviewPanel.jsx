@@ -29,6 +29,7 @@ export function InstagramPreviewPanel({
   caption,
   media,
   scheduledAt,
+  scheduleTimezone,
   clientId,
   currentPostId,
 }) {
@@ -109,6 +110,7 @@ export function InstagramPreviewPanel({
     <PreviewFrame
       platform="instagram"
       scheduledAt={scheduledAt}
+      scheduleTimezone={scheduleTimezone}
       toolbar={toolbar}
       footer={footer}
     >

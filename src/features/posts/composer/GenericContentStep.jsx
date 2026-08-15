@@ -2,7 +2,6 @@ import { Upload } from 'lucide-react';
 import { CanvaDesignPicker } from '@/features/integrations/canva/CanvaDesignPicker';
 import { MediaStrip, MAX_CAROUSEL_ITEMS } from '@/features/posts/MediaStrip';
 import { PlatformChip } from '@/components/brand/PlatformChip';
-import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,8 +25,7 @@ export function GenericContentStep({
   media,
   setMedia,
   validationErrors,
-  onNext,
-  saving,
+  fineTunePanel,
 }) {
   const handleCanvaSelect = (item) => {
     if (media.length >= MAX_CAROUSEL_ITEMS) return;
@@ -64,7 +62,7 @@ export function GenericContentStep({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-display">Step 1 — Content</CardTitle>
+        <CardTitle className="font-display">Content</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
@@ -166,6 +164,8 @@ export function GenericContentStep({
           <MediaStrip items={media} onChange={setMedia} />
         </div>
 
+        {fineTunePanel}
+
         {validationErrors.length > 0 && (
           <ul className="space-y-1 text-xs text-amber-600">
             {validationErrors.map((msg) => (
@@ -173,10 +173,6 @@ export function GenericContentStep({
             ))}
           </ul>
         )}
-
-        <Button onClick={onNext} disabled={saving}>
-          {saving ? 'Saving…' : 'Next — Fine-tune'}
-        </Button>
       </CardContent>
     </Card>
   );

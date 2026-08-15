@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Calendar, ClipboardCheck, Save, Send } from 'lucide-react';
 import {
   createPost,
   addPostMedia,
@@ -9,8 +10,10 @@ import {
 } from '@/lib/posts';
 import { invokeFunction } from '@/lib/supabaseFunctions';
 import { GenericContentStep } from '@/features/posts/composer/GenericContentStep';
-import { FineTuneStep } from '@/features/posts/composer/FineTuneStep';
+import { FineTunePanel } from '@/features/posts/composer/FineTunePanel';
+import { PlatformPreviewTabs } from '@/features/posts/previews/PlatformPreviewTabs';
 import { MAX_CAROUSEL_ITEMS } from '@/features/posts/MediaStrip';
+import { Button } from '@/components/ui/button';
 
 const IG_CAPTION_LIMIT = 2200;
 const FB_CAPTION_LIMIT = 63206;
@@ -37,7 +40,7 @@ export function PostComposer() {
   const [searchParams] = useSearchParams();
   const presetDate = searchParams.get('date');
 
-  const [step, setStep] = useState(1);
+  const [fineTuneOpen, setFineTuneOpen] = useState(false);
   const [draftPostId, setDraftPostId] = useState(null);
   const [internalName, setInternalName] = useState('');
   const [label, setLabel] = useState('');
@@ -118,12 +121,6 @@ export function PostComposer() {
     }
   };
 
-  const handleNext = () =>
-    runWithValidation(async () => {
-      await ensureDraft();
-      setStep(2);
-    });
-
   const handleSaveDraft = () =>
     runWithValidation(async () => {
       const id = await ensureDraft();
@@ -166,15 +163,12 @@ export function PostComposer() {
       navigate('/app/queue');
     });
 
+  const fbCaption = platformOverrides.facebook?.caption ?? caption;
+  const igCaption = platformOverrides.instagram?.caption ?? caption;
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <span className={step === 1 ? 'font-semibold text-ink' : ''}>1. Content</span>
-        <span>→</span>
-        <span className={step === 2 ? 'font-semibold text-ink' : ''}>2. Fine-tune</span>
-      </div>
-
-      {step === 1 ? (
+      <div className="grid gap-6 lg:grid-cols-2">
         <GenericContentStep
           internalName={internalName}
           setInternalName={setInternalName}
@@ -192,30 +186,79 @@ export function PostComposer() {
           media={media}
           setMedia={setMedia}
           validationErrors={validationErrors}
-          onNext={handleNext}
-          saving={saving}
+          fineTunePanel={
+            <FineTunePanel
+              open={fineTuneOpen}
+              onOpenChange={setFineTuneOpen}
+              caption={caption}
+              platformOverrides={platformOverrides}
+              setPlatformOverrides={setPlatformOverrides}
+              firstComment={firstComment}
+              setFirstComment={setFirstComment}
+              scheduledAt={scheduledAt}
+              publishFacebook={publishFacebook}
+              publishInstagram={publishInstagram}
+            />
+          }
         />
-      ) : (
-        <FineTuneStep
-          step={step}
-          setStep={setStep}
-          caption={caption}
-          platformOverrides={platformOverrides}
-          setPlatformOverrides={setPlatformOverrides}
-          firstComment={firstComment}
-          setFirstComment={setFirstComment}
-          scheduledAt={scheduledAt}
-          publishFacebook={publishFacebook}
-          publishInstagram={publishInstagram}
-          media={media}
-          postId={draftPostId}
-          saving={saving}
-          onSaveDraft={handleSaveDraft}
-          onSubmitForReview={handleSubmitForReview}
-          onSchedule={handleSchedule}
-          onPublishNow={handlePublishNow}
-        />
-      )}
+
+        <div className="lg:sticky lg:top-8 lg:self-start">
+          <PlatformPreviewTabs
+            caption={caption}
+            media={media}
+            scheduledAt={scheduledAt}
+            publishFacebook={publishFacebook}
+            publishInstagram={publishInstagram}
+            currentPostId={draftPostId}
+            facebookCaption={fbCaption}
+            instagramCaption={igCaption}
+          />
+        </div>
+      </div>
+
+      <div className="sticky bottom-0 -mx-8 border-t bg-paper/95 px-8 py-4 backdrop-blur">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleSaveDraft}
+            disabled={saving}
+            title="Save draft"
+            aria-label="Save draft"
+          >
+            <Save className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="secondary"
+            size="icon"
+            onClick={handleSubmitForReview}
+            disabled={saving}
+            title="Submit for review"
+            aria-label="Submit for review"
+          >
+            <ClipboardCheck className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="secondary"
+            size="icon"
+            onClick={handleSchedule}
+            disabled={saving}
+            title="Schedule"
+            aria-label="Schedule"
+          >
+            <Calendar className="h-4 w-4" />
+          </Button>
+          <Button
+            size="icon"
+            onClick={handlePublishNow}
+            disabled={saving}
+            title="Publish now"
+            aria-label="Publish now"
+          >
+            <Send className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Calendar, ClipboardCheck, FileText, Link2, LogOut, Palette, Users, Building2 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { Logo } from '@/components/brand/Logo';
@@ -17,16 +17,20 @@ const navItems = [
 
 export function AppLayout() {
   const { logout, user } = useAuth();
+  const location = useLocation();
+  const isWide = location.pathname.includes('/calendar');
 
   return (
     <div className="flex min-h-screen bg-paper">
-      <aside className="flex w-60 flex-col bg-sidebar text-sidebar-foreground">
+      <aside className="flex w-60 shrink-0 flex-col bg-sidebar text-sidebar-foreground">
         <div className="border-b border-sidebar-border px-5 py-6">
           <Logo variant="dark" />
           <div className="mt-4">
             <ClientSwitcher />
           </div>
-          <p className="mt-2 truncate text-xs text-neutral-400">{user?.email}</p>
+          <p className="mt-2 truncate text-xs text-neutral-400">
+            Signed in as {user?.email}
+          </p>
         </div>
         <nav className="flex-1 space-y-1 p-4">
           {navItems.map(({ to, label, icon: Icon }) => (
@@ -59,7 +63,7 @@ export function AppLayout() {
         </div>
       </aside>
       <main className="flex-1 overflow-auto bg-paper">
-        <div className="mx-auto max-w-6xl p-8">
+        <div className={cn('mx-auto p-8', isWide ? 'max-w-none' : 'max-w-6xl')}>
           <Outlet />
         </div>
       </main>

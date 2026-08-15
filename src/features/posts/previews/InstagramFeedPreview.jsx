@@ -4,7 +4,7 @@ import { MediaCarousel } from './MediaCarousel';
 import { normalizeMediaList, truncateCaption } from './mediaUtils';
 import { ProfileAvatar, usePreviewAccounts } from '../hooks/usePreviewAccounts';
 
-export function InstagramFeedPreview({ caption, media = [] }) {
+export function InstagramFeedPreview({ caption, media = [], embedded = false }) {
   const { instagram } = usePreviewAccounts();
   const [expanded, setExpanded] = useState(false);
   const items = normalizeMediaList(media);
@@ -13,7 +13,7 @@ export function InstagramFeedPreview({ caption, media = [] }) {
   const displayCaption = expanded || !isTruncated ? caption : truncated;
 
   return (
-    <div className="mx-auto w-full max-w-[390px] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+    <div className={embedded ? 'bg-white' : 'mx-auto w-full max-w-[390px] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm'}>
       <div className="flex items-center justify-between px-3 py-2.5">
         <div className="flex items-center gap-2.5">
           <ProfileAvatar account={instagram} platform="instagram" className="h-8 w-8" />

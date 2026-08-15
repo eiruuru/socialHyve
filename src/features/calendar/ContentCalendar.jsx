@@ -98,7 +98,7 @@ export function ContentCalendar({ posts = [] }) {
                 <div
                   key={day.toISOString()}
                   className={cn(
-                    'min-h-[140px] border-b border-r border-neutral-200 p-2',
+                    'min-h-[180px] border-b border-r border-neutral-200 p-2',
                     !isSameMonth(day, currentDate) && 'bg-neutral-50 text-muted-foreground'
                   )}
                 >

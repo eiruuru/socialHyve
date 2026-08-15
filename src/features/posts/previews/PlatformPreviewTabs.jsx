@@ -43,36 +43,35 @@ export function PlatformPreviewTabs({
     if (platform === 'facebook') {
       return (
         <PreviewFrame platform="facebook" scheduledAt={scheduledAt}>
-          <FacebookFeedPreview caption={facebookCaption ?? caption} media={media} />
+          <FacebookFeedPreview caption={facebookCaption ?? caption} media={media} embedded />
         </PreviewFrame>
       );
     }
     return (
-      <PreviewFrame platform="instagram" scheduledAt={scheduledAt}>
-        <InstagramPreviewPanel
-          caption={instagramCaption ?? caption}
-          media={media}
-          scheduledAt={scheduledAt}
-          clientId={clientId}
-          currentPostId={currentPostId}
-        />
-      </PreviewFrame>
+      <InstagramPreviewPanel
+        caption={instagramCaption ?? caption}
+        media={media}
+        scheduledAt={scheduledAt}
+        clientId={clientId}
+        currentPostId={currentPostId}
+      />
     );
   };
 
-  const tabButton = (platform, Icon, label) => (
+  const tabButton = (platform, Icon) => (
     <button
       type="button"
       onClick={() => setTab(platform)}
+      title={platform === 'facebook' ? 'Facebook' : 'Instagram'}
+      aria-label={platform === 'facebook' ? 'Facebook preview' : 'Instagram preview'}
       className={cn(
-        'flex flex-1 items-center justify-center gap-2 border-b-2 pb-2 text-sm font-medium transition-colors',
+        'flex flex-1 items-center justify-center border-b-2 pb-2 transition-colors',
         tab === platform
           ? 'border-honey text-ink'
           : 'border-transparent text-muted-foreground hover:text-ink'
       )}
     >
-      <Icon className="h-4 w-4" />
-      {label}
+      <Icon className="h-5 w-5" />
     </button>
   );
 
@@ -82,9 +81,9 @@ export function PlatformPreviewTabs({
 
   return (
     <div>
-      <div className="mb-4 flex gap-4">
-        {showFacebook && tabButton('facebook', Facebook, 'Facebook')}
-        {showInstagram && tabButton('instagram', Instagram, 'Instagram')}
+      <div className="mb-3 flex gap-4">
+        {showFacebook && tabButton('facebook', Facebook)}
+        {showInstagram && tabButton('instagram', Instagram)}
       </div>
       {renderPreview(tab)}
     </div>

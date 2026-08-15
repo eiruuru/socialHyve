@@ -30,37 +30,35 @@ export function CalendarPostCard({ post, className }) {
         className
       )}
     >
-      <div className="flex gap-2 p-1.5">
-        <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded bg-neutral-100">
-          {thumb?.public_url ? (
-            isVideo(thumb.mime_type) ? (
-              <video src={thumb.public_url} className="h-full w-full object-cover" muted />
-            ) : (
-              <img src={thumb.public_url} alt="" className="h-full w-full object-cover" />
-            )
+      <div className="relative h-14 w-full bg-neutral-100">
+        {thumb?.public_url ? (
+          isVideo(thumb.mime_type) ? (
+            <video src={thumb.public_url} className="h-full w-full object-cover" muted />
           ) : (
-            <div className="flex h-full items-center justify-center text-[10px] text-neutral-400">—</div>
-          )}
-          {isCarousel && (
-            <span className="absolute bottom-0 right-0 rounded-tl bg-black/50 px-0.5 text-[8px] text-white">
-              +
-            </span>
-          )}
+            <img src={thumb.public_url} alt="" className="h-full w-full object-cover" />
+          )
+        ) : (
+          <div className="flex h-full items-center justify-center text-[10px] text-neutral-400">No media</div>
+        )}
+        {isCarousel && (
+          <span className="absolute bottom-0.5 right-0.5 rounded bg-black/50 px-1 text-[8px] text-white">
+            +
+          </span>
+        )}
+      </div>
+      <div className="space-y-0.5 p-1.5">
+        <p className="truncate text-xs font-medium leading-tight">{title}</p>
+        {timeLabel && (
+          <p className="text-[10px] text-muted-foreground">{timeLabel}</p>
+        )}
+        <div className="flex items-center gap-1">
+          {badges.map((b) => (
+            <StatusBadge key={b.variant} variant={b.variant} label={b.label} className="scale-90 origin-left" />
+          ))}
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-xs font-medium leading-tight">{title}</p>
-          {timeLabel && (
-            <p className="text-[10px] text-muted-foreground">{timeLabel}</p>
-          )}
-          <div className="mt-0.5 flex items-center gap-1">
-            {badges.map((b) => (
-              <StatusBadge key={b.variant} variant={b.variant} label={b.label} className="scale-90 origin-left" />
-            ))}
-          </div>
-          <div className="mt-0.5 flex gap-0.5">
-            {post.publish_facebook && <PlatformChip platform="facebook" className="scale-75 origin-left" />}
-            {post.publish_instagram && <PlatformChip platform="instagram" className="scale-75 origin-left" />}
-          </div>
+        <div className="flex gap-1 pt-0.5">
+          {post.publish_facebook && <PlatformChip platform="facebook" iconOnly />}
+          {post.publish_instagram && <PlatformChip platform="instagram" iconOnly />}
         </div>
       </div>
     </button>

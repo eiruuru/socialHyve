@@ -1,5 +1,33 @@
 import { supabase } from './supabase';
 
+export function displayMember(member) {
+  const profile = member?.profiles;
+  if (profile?.full_name) return profile.full_name;
+  if (profile?.email) return profile.email;
+  return 'Unknown';
+}
+
+function slugify(name) {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'client';
+}
+
+async function uniqueSlug(orgId, baseSlug, excludeClientId = null) {
+  let slug = baseSlug;
+  let n = 2;
+  for (;;) {
+    let query = supabase
+      .from('clients')
+      .select('id')
+      .eq('organization_id', orgId)
+      .eq('slug', slug);
+    if (excludeClientId) query = query.neq('id', excludeClientId);
+    const { data } = await query.maybeSingle();
+    if (!data) return slug;
+    slug = `${baseSlug}-${n}`;
+    n += 1;
+  }
+}
+
 export async function getOrganization() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
@@ -20,7 +48,6 @@ export async function getOrganization() {
 
   if (owned) return owned;
 
-  // Bootstrap from legacy workspace
   const { data: ws } = await supabase
     .from('workspaces')
     .select('*')
@@ -55,7 +82,8 @@ export async function createClient(name) {
   const org = await getOrganization();
   if (!org) throw new Error('No organization');
 
-  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'client';
+  const baseSlug = slugify(name);
+  const slug = await uniqueSlug(org.id, baseSlug);
   const { data, error } = await supabase
     .from('clients')
     .insert({ organization_id: org.id, name, slug })
@@ -71,7 +99,7 @@ export async function listOrganizationMembers() {
 
   const { data, error } = await supabase
     .from('organization_members')
-    .select('*')
+    .select('*, profiles(id, email, full_name)')
     .eq('organization_id', org.id);
   if (error) throw error;
   return data;
@@ -80,7 +108,7 @@ export async function listOrganizationMembers() {
 export async function listClientMembers(clientId) {
   const { data, error } = await supabase
     .from('client_members')
-    .select('*')
+    .select('*, profiles(id, email, full_name)')
     .eq('client_id', clientId);
   if (error) throw error;
   return data;
@@ -123,14 +151,27 @@ export async function inviteOrganizationMember(email, role = 'editor') {
 }
 
 export async function updateClient(clientId, updates) {
+  const org = await getOrganization();
+  if (!org) throw new Error('No organization');
+
+  const payload = { ...updates };
+  if (updates.name) {
+    payload.slug = await uniqueSlug(org.id, slugify(updates.name), clientId);
+  }
+
   const { data, error } = await supabase
     .from('clients')
-    .update(updates)
+    .update(payload)
     .eq('id', clientId)
     .select()
     .single();
   if (error) throw error;
   return data;
+}
+
+export async function deleteClient(clientId) {
+  const { error } = await supabase.from('clients').delete().eq('id', clientId);
+  if (error) throw error;
 }
 
 export async function listOrganizationInvites() {

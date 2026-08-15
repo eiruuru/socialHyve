@@ -1,7 +1,22 @@
 import { cn } from '@/lib/utils';
 
-export function PlatformChip({ platform, className }) {
+export function PlatformChip({ platform, className, iconOnly = false }) {
   const isFb = platform === 'facebook';
+
+  if (iconOnly) {
+    return (
+      <span
+        className={cn(
+          'inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-white',
+          isFb ? 'bg-platform-fb' : 'bg-gradient-to-br from-[#F58529] via-[#DD2A7B] to-[#8134AF]',
+          className
+        )}
+        title={isFb ? 'Facebook' : 'Instagram'}
+      >
+        {isFb ? 'f' : '◎'}
+      </span>
+    );
+  }
 
   return (
     <span

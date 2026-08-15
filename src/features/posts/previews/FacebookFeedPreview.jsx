@@ -61,12 +61,12 @@ function FacebookMedia({ items }) {
   return <MediaCarousel items={items} platform="facebook" showCounter aspectClassName="aspect-[4/3]" />;
 }
 
-export function FacebookFeedPreview({ caption, media = [] }) {
+export function FacebookFeedPreview({ caption, media = [], embedded = false }) {
   const { facebook } = usePreviewAccounts();
   const items = normalizeMediaList(media);
 
   return (
-    <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+    <div className={embedded ? 'bg-white' : 'overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm'}>
       <div className="flex items-start gap-2 px-3 py-3">
         <ProfileAvatar account={facebook} platform="facebook" className="h-10 w-10" />
         <div>

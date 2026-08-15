@@ -19,7 +19,7 @@ function GridCell({ post, isCurrent, onClick }) {
       onClick={onClick}
       className={cn(
         'relative aspect-square overflow-hidden bg-neutral-200',
-        isCurrent && 'ring-2 ring-honey ring-offset-1'
+        isCurrent && 'ring-2 ring-honey ring-inset'
       )}
     >
       {thumb?.public_url ? (
@@ -93,7 +93,7 @@ export function InstagramGridPreview({
   }, [siblingPosts, currentPostId, scheduledAt, media, showFuturePosts]);
 
   return (
-    <div className="grid max-h-[320px] grid-cols-3 gap-0.5 overflow-y-auto bg-white p-1">
+    <div className="grid grid-cols-3 gap-px bg-neutral-200">
       {gridPosts.map((post) =>
         post.placeholder ? (
           <div key={post.id} className="aspect-square bg-neutral-100" />

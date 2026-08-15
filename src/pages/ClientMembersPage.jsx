@@ -6,6 +6,7 @@ import {
   listClientInvites,
   listClientMembers,
   listClients,
+  displayMember,
 } from '@/lib/organization';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -111,7 +112,12 @@ export default function ClientMembersPage() {
               <ul className="space-y-2">
                 {members.map((m) => (
                   <li key={m.id} className="flex items-center justify-between rounded-hyve-sm border px-3 py-2 text-sm">
-                    <span className="font-mono text-xs">{m.user_id.slice(0, 8)}…</span>
+                    <div>
+                      <p className="font-medium">{displayMember(m)}</p>
+                      {m.profiles?.email && m.profiles.full_name && (
+                        <p className="text-xs text-muted-foreground">{m.profiles.email}</p>
+                      )}
+                    </div>
                     <span className="capitalize text-muted-foreground">{m.role}</span>
                   </li>
                 ))}

@@ -1,13 +1,98 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { createClient, listClients } from '@/lib/organization';
+import { Pencil, Trash2 } from 'lucide-react';
+import { createClient, deleteClient, listClients, updateClient } from '@/lib/organization';
+import { useClient } from '@/lib/clientContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
+function ClientRow({ client, onUpdated, onDeleted }) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(client.name);
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!name.trim() || name.trim() === client.name) {
+      setEditing(false);
+      setName(client.name);
+      return;
+    }
+    setSaving(true);
+    try {
+      await updateClient(client.id, { name: name.trim() });
+      onUpdated();
+      setEditing(false);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    const confirmed = confirm(
+      `Delete "${client.name}"?\n\nThis will permanently delete all posts, connections, and members for this client. This cannot be undone.`
+    );
+    if (!confirmed) return;
+    try {
+      await deleteClient(client.id);
+      onDeleted(client.id);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  return (
+    <li className="flex items-center justify-between gap-3 py-3">
+      <div className="min-w-0 flex-1">
+        {editing ? (
+          <div className="flex gap-2">
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="max-w-xs"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSave();
+                if (e.key === 'Escape') { setEditing(false); setName(client.name); }
+              }}
+            />
+            <Button size="sm" onClick={handleSave} disabled={saving}>
+              {saving ? 'Saving…' : 'Save'}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => { setEditing(false); setName(client.name); }}>
+              Cancel
+            </Button>
+          </div>
+        ) : (
+          <>
+            <p className="font-medium">{client.name}</p>
+            <p className="text-xs text-muted-foreground">{client.slug}</p>
+          </>
+        )}
+      </div>
+      {!editing && (
+        <div className="flex shrink-0 items-center gap-1">
+          <Button variant="ghost" size="icon" onClick={() => setEditing(true)} title="Rename" aria-label="Rename client">
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={handleDelete} title="Delete client" aria-label="Delete client">
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <Link to={`/app/clients/${client.id}/members`}>Members</Link>
+          </Button>
+        </div>
+      )}
+    </li>
+  );
+}
+
 export default function ClientsPage() {
   const queryClient = useQueryClient();
+  const { refreshClients, setActiveClient } = useClient();
   const [name, setName] = useState('');
   const [creating, setCreating] = useState(false);
 
@@ -21,13 +106,30 @@ export default function ClientsPage() {
     if (!name.trim()) return;
     setCreating(true);
     try {
-      await createClient(name.trim());
+      const client = await createClient(name.trim());
       setName('');
+      await refreshClients();
+      setActiveClient(client);
       queryClient.invalidateQueries({ queryKey: ['clients'] });
     } catch (err) {
       alert(err.message);
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleUpdated = async () => {
+    await refreshClients();
+    queryClient.invalidateQueries({ queryKey: ['clients'] });
+  };
+
+  const handleDeleted = async (deletedId) => {
+    await refreshClients();
+    queryClient.invalidateQueries({ queryKey: ['clients'] });
+    const savedId = localStorage.getItem('socialhyve_active_client');
+    if (savedId === deletedId) {
+      const remaining = clients.filter((c) => c.id !== deletedId);
+      if (remaining[0]) setActiveClient(remaining[0]);
     }
   };
 
@@ -70,15 +172,12 @@ export default function ClientsPage() {
           ) : (
             <ul className="divide-y">
               {clients.map((client) => (
-                <li key={client.id} className="flex items-center justify-between py-3">
-                  <div>
-                    <p className="font-medium">{client.name}</p>
-                    <p className="text-xs text-muted-foreground">{client.slug}</p>
-                  </div>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link to={`/app/clients/${client.id}/members`}>Members</Link>
-                  </Button>
-                </li>
+                <ClientRow
+                  key={client.id}
+                  client={client}
+                  onUpdated={handleUpdated}
+                  onDeleted={handleDeleted}
+                />
               ))}
             </ul>
           )}

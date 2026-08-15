@@ -1,5 +1,6 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Check, Link2, RefreshCw, RotateCcw, Trash2 } from 'lucide-react';
 import {
   getPost,
   deletePost,
@@ -9,7 +10,7 @@ import {
   createReviewLink,
   logPostActivity,
 } from '@/lib/posts';
-import { listOrganizationMembers } from '@/lib/organization';
+import { listOrganizationMembers, displayMember } from '@/lib/organization';
 import { invokeFunction } from '@/lib/supabaseFunctions';
 import { PlatformPreviewTabs } from '@/features/posts/previews/PlatformPreviewTabs';
 import { normalizeMediaList } from '@/features/posts/previews/mediaUtils';
@@ -140,20 +141,32 @@ export default function PostDetailPage() {
             <p className="text-sm text-muted-foreground">Label: {post.label}</p>
           )}
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex items-center gap-1">
           {approval === 'pending' && (
-            <Button onClick={handleApprove}>Approve</Button>
+            <Button size="icon" onClick={handleApprove} title="Approve" aria-label="Approve">
+              <Check className="h-4 w-4" />
+            </Button>
           )}
           {approval === 'changes_requested' && (
-            <Button onClick={handleResubmit}>Resubmit for review</Button>
+            <Button size="icon" variant="secondary" onClick={handleResubmit} title="Resubmit for review" aria-label="Resubmit for review">
+              <RotateCcw className="h-4 w-4" />
+            </Button>
           )}
           {post.status === 'failed' && (
-            <Button onClick={handleRetry}>Try again</Button>
+            <Button size="icon" variant="secondary" onClick={handleRetry} title="Try again" aria-label="Try again">
+              <RefreshCw className="h-4 w-4" />
+            </Button>
           )}
-          <Button variant="outline" onClick={handleCopyReviewLink}>Copy review link</Button>
-          <Button variant="destructive" onClick={handleDelete}>Delete</Button>
-          <Button variant="outline" asChild>
-            <Link to="/app/calendar">Back to Calendar</Link>
+          <Button size="icon" variant="outline" onClick={handleCopyReviewLink} title="Copy review link" aria-label="Copy review link">
+            <Link2 className="h-4 w-4" />
+          </Button>
+          <Button size="icon" variant="destructive" onClick={handleDelete} title="Delete" aria-label="Delete">
+            <Trash2 className="h-4 w-4" />
+          </Button>
+          <Button size="icon" variant="outline" asChild title="Back to calendar" aria-label="Back to calendar">
+            <Link to="/app/calendar">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
           </Button>
         </div>
       </div>
@@ -211,7 +224,7 @@ export default function PostDetailPage() {
                   <option value="">Unassigned</option>
                   {members.map((m) => (
                     <option key={m.user_id} value={m.user_id}>
-                      {m.user_id.slice(0, 8)}… ({m.role})
+                      {displayMember(m)} ({m.role})
                     </option>
                   ))}
                 </select>

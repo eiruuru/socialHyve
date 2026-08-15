@@ -85,10 +85,10 @@ export function InstagramPreviewPanel({
           checked={showFuturePosts}
           onChange={(e) => setShowFuturePosts(e.target.checked)}
         />
-        Show future scheduled posts
+        Show future posts
       </label>
       <p className="text-[11px] text-muted-foreground/80">
-        Drafts always appear. Facebook-only posts are excluded.
+        When unchecked, shows posts up to the one you&apos;re viewing. Facebook-only posts are excluded.
       </p>
     </div>
   ) : null;

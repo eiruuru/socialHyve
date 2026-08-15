@@ -14,17 +14,16 @@ function getPostSortTime(post) {
   return new Date(post.scheduled_at || post.timestamp || post.created_at || 0).getTime();
 }
 
-function shouldShowInGrid(post, { showFuturePosts, currentPostId, composingId }) {
+function shouldShowInGrid(post, { showFuturePosts, currentPostId, composingId, referenceMs }) {
   if (showFuturePosts) return true;
   if (post.external) return true;
   if (post.id === currentPostId || post.id === composingId || post.isComposing) return true;
-  if (post.status === 'draft') return true;
-  if (post.status !== 'scheduled') return true;
 
-  const scheduledMs = post.scheduled_at ? new Date(post.scheduled_at).getTime() : NaN;
-  if (Number.isNaN(scheduledMs)) return true;
+  const postMs = getPostSortTime(post);
+  if (Number.isNaN(postMs)) return true;
 
-  return scheduledMs <= Date.now();
+  const cutoffMs = referenceMs ?? Date.now();
+  return postMs <= cutoffMs;
 }
 
 function isInstagramPost(post) {
@@ -107,6 +106,20 @@ export function InstagramGridPreview({
 
   const gridPosts = useMemo(() => {
     const composingId = currentPostId || '__composing__';
+    const referenceMs = (() => {
+      if (scheduledAt) {
+        const ms = new Date(scheduledAt).getTime();
+        if (!Number.isNaN(ms)) return ms;
+      }
+      if (currentPostId) {
+        const current = siblingPosts.find((p) => p.id === currentPostId);
+        if (current) {
+          const ms = getPostSortTime(current);
+          if (!Number.isNaN(ms)) return ms;
+        }
+      }
+      return null;
+    })();
 
     let posts = siblingPosts.filter((p) => {
       if (!isInstagramPost(p)) return false;
@@ -139,7 +152,7 @@ export function InstagramGridPreview({
     }
 
     posts = posts.filter((p) =>
-      shouldShowInGrid(p, { showFuturePosts, currentPostId, composingId }),
+      shouldShowInGrid(p, { showFuturePosts, currentPostId, composingId, referenceMs }),
     );
 
     posts.sort((a, b) => getPostSortTime(b) - getPostSortTime(a));

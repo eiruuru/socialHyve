@@ -66,10 +66,11 @@ async function publishPost(service: ReturnType<typeof getServiceClient>, postId:
 
   await service.from('posts').update({ status: 'publishing' }).eq('id', postId);
 
-  const { data: accounts } = await service
-    .from('social_accounts')
-    .select('*')
-    .eq('workspace_id', post.workspace_id);
+  const accountQuery = post.client_id
+    ? service.from('social_accounts').select('*').eq('client_id', post.client_id)
+    : service.from('social_accounts').select('*').eq('workspace_id', post.workspace_id);
+
+  const { data: accounts } = await accountQuery;
 
   const fbAccount = accounts?.find((a) => a.platform === 'facebook');
   const igAccount = accounts?.find((a) => a.platform === 'instagram');

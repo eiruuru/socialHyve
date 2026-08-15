@@ -1,14 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { listPosts } from '@/lib/posts';
+import { useClient } from '@/lib/clientContext';
 import { ContentCalendar } from '@/features/calendar/ContentCalendar';
 import { EmptyHiveState } from '@/components/EmptyHiveState';
 import { Button } from '@/components/ui/button';
 
 export default function CalendarPage() {
+  const { activeClient } = useClient();
   const { data: posts = [], isLoading } = useQuery({
-    queryKey: ['posts'],
+    queryKey: ['posts', activeClient?.id],
     queryFn: () => listPosts(),
+    enabled: !!activeClient,
   });
 
   return (

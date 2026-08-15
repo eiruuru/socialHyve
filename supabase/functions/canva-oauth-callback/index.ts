@@ -62,12 +62,23 @@ Deno.serve(async (req) => {
     const tokens = await exchangeToken(code, oauthState.code_verifier);
     const expiresAt = new Date(Date.now() + (tokens.expires_in || 3600) * 1000).toISOString();
 
-    await service.from('canva_connections').upsert({
-      workspace_id: oauthState.workspace_id,
-      access_token: tokens.access_token,
-      refresh_token: tokens.refresh_token,
-      token_expires_at: expiresAt,
-    }, { onConflict: 'workspace_id' });
+    if (oauthState.client_id) {
+      await service.from('canva_connections').upsert({
+        workspace_id: oauthState.workspace_id,
+        client_id: oauthState.client_id,
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+        token_expires_at: expiresAt,
+      }, { onConflict: 'client_id' });
+    } else {
+      await service.from('canva_connections').upsert({
+        workspace_id: oauthState.workspace_id,
+        client_id: oauthState.client_id,
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+        token_expires_at: expiresAt,
+      }, { onConflict: 'workspace_id' });
+    }
 
     return redirectResponse(`${APP_URL}/app/settings/canva?connected=canva`);
   } catch (err) {

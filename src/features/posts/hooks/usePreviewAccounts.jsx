@@ -1,9 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { listSocialAccounts } from '@/lib/posts';
+import { getActiveClientId } from '@/lib/clientContext';
 
 export function usePreviewAccounts() {
+  const clientId = getActiveClientId();
   const { data: accounts = [] } = useQuery({
-    queryKey: ['social-accounts'],
+    queryKey: ['social-accounts', clientId],
     queryFn: listSocialAccounts,
   });
 

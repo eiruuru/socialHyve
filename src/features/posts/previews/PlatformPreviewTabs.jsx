@@ -1,14 +1,25 @@
 import { useEffect, useState } from 'react';
-import { TabsRoot, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Facebook, Instagram } from 'lucide-react';
+import { useOptionalClient } from '@/lib/clientContext';
 import { FacebookFeedPreview } from './FacebookFeedPreview';
-import { InstagramFeedPreview } from './InstagramFeedPreview';
+import { InstagramPreviewPanel } from './InstagramPreviewPanel';
+import { PreviewFrame } from './PreviewFrame';
+import { cn } from '@/lib/utils';
 
 export function PlatformPreviewTabs({
   caption,
   media,
   publishFacebook = true,
   publishInstagram = true,
+  scheduledAt,
+  clientId: clientIdProp,
+  currentPostId,
+  facebookCaption,
+  instagramCaption,
 }) {
+  const clientCtx = useOptionalClient();
+  const clientId = clientIdProp || clientCtx?.activeClient?.id;
+
   const showFacebook = publishFacebook;
   const showInstagram = publishInstagram;
   const showTabs = showFacebook && showInstagram;
@@ -28,29 +39,54 @@ export function PlatformPreviewTabs({
     );
   }
 
-  const preview =
-    tab === 'facebook' ? (
-      <FacebookFeedPreview caption={caption} media={media} />
-    ) : (
-      <InstagramFeedPreview caption={caption} media={media} />
+  const renderPreview = (platform) => {
+    if (platform === 'facebook') {
+      return (
+        <PreviewFrame platform="facebook" scheduledAt={scheduledAt}>
+          <FacebookFeedPreview caption={facebookCaption ?? caption} media={media} />
+        </PreviewFrame>
+      );
+    }
+    return (
+      <PreviewFrame platform="instagram" scheduledAt={scheduledAt}>
+        <InstagramPreviewPanel
+          caption={instagramCaption ?? caption}
+          media={media}
+          scheduledAt={scheduledAt}
+          clientId={clientId}
+          currentPostId={currentPostId}
+        />
+      </PreviewFrame>
     );
+  };
+
+  const tabButton = (platform, Icon, label) => (
+    <button
+      type="button"
+      onClick={() => setTab(platform)}
+      className={cn(
+        'flex flex-1 items-center justify-center gap-2 border-b-2 pb-2 text-sm font-medium transition-colors',
+        tab === platform
+          ? 'border-honey text-ink'
+          : 'border-transparent text-muted-foreground hover:text-ink'
+      )}
+    >
+      <Icon className="h-4 w-4" />
+      {label}
+    </button>
+  );
 
   if (!showTabs) {
-    return preview;
+    return renderPreview(tab);
   }
 
   return (
-    <TabsRoot value={tab} onValueChange={setTab}>
-      <TabsList className="mb-4 grid w-full grid-cols-2">
-        <TabsTrigger value="facebook">Facebook</TabsTrigger>
-        <TabsTrigger value="instagram">Instagram</TabsTrigger>
-      </TabsList>
-      <TabsContent value="facebook" className="mt-0">
-        <FacebookFeedPreview caption={caption} media={media} />
-      </TabsContent>
-      <TabsContent value="instagram" className="mt-0">
-        <InstagramFeedPreview caption={caption} media={media} />
-      </TabsContent>
-    </TabsRoot>
+    <div>
+      <div className="mb-4 flex gap-4">
+        {showFacebook && tabButton('facebook', Facebook, 'Facebook')}
+        {showInstagram && tabButton('instagram', Instagram, 'Instagram')}
+      </div>
+      {renderPreview(tab)}
+    </div>
   );
 }

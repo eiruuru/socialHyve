@@ -7,12 +7,18 @@ import { Textarea } from '@/components/ui/textarea';
 
 function CommentBubble({ comment, isOwn }) {
   const initial = (comment.authorEmail || '?').slice(0, 2).toUpperCase();
+  const isPrivate = comment.visibility === 'internal';
 
   if (isOwn) {
     return (
       <div className="flex justify-end gap-2.5">
-        <div className="max-w-[80%] rounded-[14px_14px_4px_14px] bg-honey-light px-3.5 py-2.5 text-sm">
-          {comment.body}
+        <div className="max-w-[80%]">
+          {isPrivate && (
+            <p className="mb-0.5 text-right text-[10px] text-muted-foreground">Private</p>
+          )}
+          <div className="rounded-[14px_14px_4px_14px] bg-honey-light px-3.5 py-2.5 text-sm">
+            {comment.body}
+          </div>
         </div>
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-status-scheduled text-xs font-bold text-white">
           {initial}
@@ -26,22 +32,28 @@ function CommentBubble({ comment, isOwn }) {
       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-honey-dark text-xs font-bold text-white">
         {initial}
       </span>
-      <div className="max-w-[80%] rounded-[14px_14px_14px_4px] bg-neutral-100 px-3.5 py-2.5 text-sm">
-        {comment.body}
+      <div className="max-w-[80%]">
+        {isPrivate && (
+          <p className="mb-0.5 text-[10px] text-muted-foreground">Private</p>
+        )}
+        <div className="rounded-[14px_14px_14px_4px] bg-neutral-100 px-3.5 py-2.5 text-sm">
+          {comment.body}
+        </div>
       </div>
     </div>
   );
 }
 
-export function CommentThread({ postId, readOnly = false }) {
+export function CommentThread({ postId, readOnly = false, teamView = true }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [body, setBody] = useState('');
+  const [isPrivate, setIsPrivate] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const { data: comments = [], isLoading } = useQuery({
-    queryKey: ['post-comments', postId],
-    queryFn: () => listPostComments(postId),
+    queryKey: ['post-comments', postId, teamView],
+    queryFn: () => listPostComments(postId, { teamView }),
     enabled: !!postId,
   });
 
@@ -55,8 +67,10 @@ export function CommentThread({ postId, readOnly = false }) {
     if (!body.trim()) return;
     setSaving(true);
     try {
-      await addPostComment(postId, body.trim());
+      const visibility = teamView && isPrivate ? 'internal' : 'client';
+      await addPostComment(postId, body.trim(), visibility);
       setBody('');
+      setIsPrivate(false);
       queryClient.invalidateQueries({ queryKey: ['post-comments', postId] });
     } catch (err) {
       alert(err.message);
@@ -91,6 +105,16 @@ export function CommentThread({ postId, readOnly = false }) {
             onChange={(e) => setBody(e.target.value)}
             rows={3}
           />
+          {teamView && (
+            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={isPrivate}
+                onChange={(e) => setIsPrivate(e.target.checked)}
+              />
+              Private (invisible to clients)
+            </label>
+          )}
           <Button type="submit" size="sm" disabled={saving || !body.trim()}>
             {saving ? 'Sending…' : 'Add comment'}
           </Button>

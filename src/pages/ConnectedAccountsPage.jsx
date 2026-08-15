@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { invokeFunction } from '@/lib/supabaseFunctions';
 import { listSocialAccounts, disconnectSocialAccount } from '@/lib/posts';
+import { useClient } from '@/lib/clientContext';
 import { Button } from '@/components/ui/button';
 import { PlatformChip } from '@/components/brand/PlatformChip';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,17 +10,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 export default function ConnectedAccountsPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { activeClient } = useClient();
   const connected = searchParams.get('connected');
   const error = searchParams.get('error');
 
   const { data: accounts = [], refetch, isLoading } = useQuery({
-    queryKey: ['social-accounts'],
+    queryKey: ['social-accounts', activeClient?.id],
     queryFn: listSocialAccounts,
   });
 
   const connectMeta = async () => {
     try {
-      const { url } = await invokeFunction('metaOAuthStart');
+      const { url } = await invokeFunction('metaOAuthStart', { clientId: activeClient?.id });
       window.location.href = url;
     } catch (err) {
       alert(err.message);
@@ -39,7 +41,9 @@ export default function ConnectedAccountsPage() {
       <div>
         <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Settings</p>
         <h2 className="font-display text-2xl font-bold">Connected Accounts</h2>
-        <p className="text-muted-foreground">Link your Facebook Page and Instagram Business account</p>
+        <p className="text-muted-foreground">
+          Link Meta accounts for {activeClient?.name || 'this client'}
+        </p>
       </div>
 
       {connected === 'meta' && (

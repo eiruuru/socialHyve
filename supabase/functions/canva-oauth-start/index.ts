@@ -18,8 +18,10 @@ Deno.serve(async (req) => {
   if (opt) return opt;
 
   try {
+    const body = await req.json().catch(() => ({}));
     const { supabase, user } = await requireUser(req);
     const workspace = await getWorkspaceForUser(supabase, user.id);
+    const clientId = body.clientId as string | undefined;
     const state = randomString(32);
     const codeVerifier = randomString(64);
     const codeChallenge = await sha256Base64Url(codeVerifier);
@@ -27,6 +29,7 @@ Deno.serve(async (req) => {
     const service = getServiceClient();
     await service.from('oauth_states').insert({
       workspace_id: workspace.id,
+      client_id: clientId || null,
       provider: 'canva',
       state,
       code_verifier: codeVerifier,

@@ -17,13 +17,16 @@ Deno.serve(async (req) => {
   if (opt) return opt;
 
   try {
+    const body = await req.json().catch(() => ({}));
     const { supabase, user } = await requireUser(req);
     const workspace = await getWorkspaceForUser(supabase, user.id);
+    const clientId = body.clientId as string | undefined;
     const state = randomString(32);
 
     const service = getServiceClient();
     await service.from('oauth_states').insert({
       workspace_id: workspace.id,
+      client_id: clientId || null,
       provider: 'meta',
       state,
     });

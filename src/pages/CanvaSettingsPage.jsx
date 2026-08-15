@@ -2,23 +2,25 @@ import { useQuery } from '@tanstack/react-query';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { invokeFunction } from '@/lib/supabaseFunctions';
 import { getCanvaConnection, disconnectCanva } from '@/lib/posts';
+import { useClient } from '@/lib/clientContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function CanvaSettingsPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { activeClient } = useClient();
   const connected = searchParams.get('connected');
   const error = searchParams.get('error');
 
   const { data: connection, refetch, isLoading } = useQuery({
-    queryKey: ['canva-connection'],
+    queryKey: ['canva-connection', activeClient?.id],
     queryFn: getCanvaConnection,
   });
 
   const connectCanva = async () => {
     try {
-      const { url } = await invokeFunction('canvaOAuthStart');
+      const { url } = await invokeFunction('canvaOAuthStart', { clientId: activeClient?.id });
       window.location.href = url;
     } catch (err) {
       alert(err.message);
@@ -35,7 +37,7 @@ export default function CanvaSettingsPage() {
       <div>
         <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Settings</p>
         <h2 className="font-display text-2xl font-bold">Canva Integration</h2>
-        <p className="text-muted-foreground">Connect Canva to attach designs to your posts</p>
+        <p className="text-muted-foreground">Connect Canva for {activeClient?.name || 'this client'}</p>
       </div>
 
       {connected === 'canva' && (

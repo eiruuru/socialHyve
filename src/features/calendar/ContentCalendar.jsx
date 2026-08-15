@@ -1,26 +1,47 @@
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  startOfWeek,
+  endOfWeek,
+  eachDayOfInterval,
+  isSameMonth,
+  isSameDay,
+  addMonths,
+  subMonths,
+  compareAsc,
+} from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PostStatusBadges } from '@/features/queue/postStatus';
+import { useClient } from '@/lib/clientContext';
+import { CalendarPostCard } from './CalendarPostCard';
 import { Button } from '@/components/ui/button';
 import { TabsRoot, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+function mondayStartWeek(date) {
+  const d = startOfWeek(date, { weekStartsOn: 1 });
+  return d;
+}
+
+function mondayEndWeek(date) {
+  return endOfWeek(date, { weekStartsOn: 1 });
+}
+
 export function ContentCalendar({ posts = [] }) {
   const navigate = useNavigate();
+  const { activeClient } = useClient();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState('month');
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
-  const calendarStart = startOfWeek(monthStart);
-  const calendarEnd = endOfWeek(monthEnd);
+  const calendarStart = mondayStartWeek(monthStart);
+  const calendarEnd = mondayEndWeek(monthEnd);
   const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
-
-  const weekStart = startOfWeek(currentDate);
-  const weekEnd = endOfWeek(currentDate);
-  const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
   const getPostsForDay = (day) =>
     posts.filter((p) => {
@@ -28,20 +49,22 @@ export function ContentCalendar({ posts = [] }) {
       return date && isSameDay(new Date(date), day);
     });
 
-  const PostChip = ({ post }) => (
-    <button
-      type="button"
-      onClick={() => navigate(`/app/posts/${post.id}`)}
-      className="mb-1 w-full truncate rounded px-1.5 py-0.5 text-left text-xs hover:opacity-80"
-    >
-      <PostStatusBadges post={post} className="inline" />
-      {post.caption?.slice(0, 30) || 'Untitled'}
-    </button>
-  );
+  const sortedPosts = [...posts].sort((a, b) => {
+    const da = a.scheduled_at || a.created_at;
+    const db = b.scheduled_at || b.created_at;
+    if (!da && !db) return 0;
+    if (!da) return 1;
+    if (!db) return -1;
+    return compareAsc(new Date(da), new Date(db));
+  });
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Calendar</p>
+          <h2 className="font-display text-xl font-bold">{activeClient?.name || 'All posts'}</h2>
+        </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" onClick={() => setCurrentDate(subMonths(currentDate, 1))}>
             <ChevronLeft className="h-4 w-4" />
@@ -56,7 +79,7 @@ export function ContentCalendar({ posts = [] }) {
         <TabsRoot value={view} onValueChange={setView}>
           <TabsList>
             <TabsTrigger value="month">Month</TabsTrigger>
-            <TabsTrigger value="week">Week</TabsTrigger>
+            <TabsTrigger value="list">List</TabsTrigger>
           </TabsList>
         </TabsRoot>
       </div>
@@ -64,7 +87,7 @@ export function ContentCalendar({ posts = [] }) {
       {view === 'month' ? (
         <div className="rounded-hyve-lg border border-neutral-200">
           <div className="grid grid-cols-7 border-b border-neutral-200 bg-paper-alt">
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+            {WEEKDAYS.map((d) => (
               <div key={d} className="p-2 text-center text-xs font-medium text-muted-foreground">{d}</div>
             ))}
           </div>
@@ -75,7 +98,7 @@ export function ContentCalendar({ posts = [] }) {
                 <div
                   key={day.toISOString()}
                   className={cn(
-                    'min-h-[100px] border-b border-r border-neutral-200 p-2',
+                    'min-h-[140px] border-b border-r border-neutral-200 p-2',
                     !isSameMonth(day, currentDate) && 'bg-neutral-50 text-muted-foreground'
                   )}
                 >
@@ -87,7 +110,7 @@ export function ContentCalendar({ posts = [] }) {
                     {format(day, 'd')}
                   </button>
                   {dayPosts.map((post) => (
-                    <PostChip key={post.id} post={post} />
+                    <CalendarPostCard key={post.id} post={post} />
                   ))}
                 </div>
               );
@@ -95,34 +118,23 @@ export function ContentCalendar({ posts = [] }) {
           </div>
         </div>
       ) : (
-        <div className="rounded-hyve-lg border border-neutral-200">
-          <div className="grid grid-cols-7 border-b border-neutral-200 bg-paper-alt">
-            {weekDays.map((day) => (
-              <div key={day.toISOString()} className="p-2 text-center">
-                <div className="text-xs text-muted-foreground">{format(day, 'EEE')}</div>
-                <div className="text-lg font-semibold">{format(day, 'd')}</div>
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-7">
-            {weekDays.map((day) => {
-              const dayPosts = getPostsForDay(day);
-              return (
-                <div key={day.toISOString()} className="min-h-[200px] border-r p-2 last:border-r-0">
-                  <button
-                    type="button"
-                    className="mb-2 text-xs text-primary hover:underline"
-                    onClick={() => navigate(`/app/posts/new?date=${day.toISOString()}`)}
-                  >
-                    + New post
-                  </button>
-                  {dayPosts.map((post) => (
-                    <PostChip key={post.id} post={post} />
-                  ))}
+        <div className="space-y-2">
+          {sortedPosts.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No posts scheduled.</p>
+          ) : (
+            sortedPosts.map((post) => (
+              <div key={post.id} className="flex items-start gap-4 rounded-hyve-md border p-3">
+                <div className="w-28 shrink-0 text-sm text-muted-foreground">
+                  {post.scheduled_at
+                    ? format(new Date(post.scheduled_at), 'MMM d, yyyy · h:mm a')
+                    : 'Unscheduled'}
                 </div>
-              );
-            })}
-          </div>
+                <div className="min-w-0 flex-1">
+                  <CalendarPostCard post={post} className="mb-0 border-0 shadow-none" />
+                </div>
+              </div>
+            ))
+          )}
         </div>
       )}
     </div>

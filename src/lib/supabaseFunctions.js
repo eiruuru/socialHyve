@@ -9,6 +9,7 @@ const FUNCTION_MAP = {
   canvaExportDesign: 'canva-export-design',
   publishPost: 'publish-post',
   refreshTokens: 'refresh-tokens',
+  reviewByToken: 'review-by-token',
 };
 
 export async function invokeFunction(name, body = {}) {

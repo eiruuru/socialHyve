@@ -1,20 +1,16 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Calendar, ClipboardCheck, Save, Send, Upload } from 'lucide-react';
 import {
   createPost,
   addPostMedia,
   schedulePost,
   uploadMediaFile,
+  updatePost,
 } from '@/lib/posts';
 import { invokeFunction } from '@/lib/supabaseFunctions';
-import { CanvaDesignPicker } from '@/features/integrations/canva/CanvaDesignPicker';
-import { PlatformPreviewTabs } from '@/features/posts/previews/PlatformPreviewTabs';
-import { MediaStrip, MAX_CAROUSEL_ITEMS } from '@/features/posts/MediaStrip';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GenericContentStep } from '@/features/posts/composer/GenericContentStep';
+import { FineTuneStep } from '@/features/posts/composer/FineTuneStep';
+import { MAX_CAROUSEL_ITEMS } from '@/features/posts/MediaStrip';
 
 const IG_CAPTION_LIMIT = 2200;
 const FB_CAPTION_LIMIT = 63206;
@@ -41,7 +37,13 @@ export function PostComposer() {
   const [searchParams] = useSearchParams();
   const presetDate = searchParams.get('date');
 
+  const [step, setStep] = useState(1);
+  const [draftPostId, setDraftPostId] = useState(null);
+  const [internalName, setInternalName] = useState('');
+  const [label, setLabel] = useState('');
   const [caption, setCaption] = useState('');
+  const [firstComment, setFirstComment] = useState('');
+  const [platformOverrides, setPlatformOverrides] = useState({});
   const [publishFacebook, setPublishFacebook] = useState(true);
   const [publishInstagram, setPublishInstagram] = useState(true);
   const [scheduledAt, setScheduledAt] = useState(() => {
@@ -60,44 +62,24 @@ export function PostComposer() {
     ? `${caption.length}/${IG_CAPTION_LIMIT} (Instagram)`
     : `${caption.length}/${FB_CAPTION_LIMIT} (Facebook)`;
 
-  const handleCanvaSelect = (item) => {
-    if (media.length >= MAX_CAROUSEL_ITEMS) return;
-    setMedia((prev) => [...prev, {
-      source: 'canva',
-      canva_design_id: item.canvaDesignId,
-      public_url: item.publicUrl,
-      storage_path: item.storagePath,
-      mime_type: item.mimeType,
-      sort_order: prev.length,
-    }]);
-  };
-
-  const handleFileUpload = async (e) => {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
-
-    setMedia((prev) => {
-      const remaining = MAX_CAROUSEL_ITEMS - prev.length;
-      const toAdd = files.slice(0, remaining);
-      return [
-        ...prev,
-        ...toAdd.map((file, i) => ({
-          source: 'upload',
-          public_url: URL.createObjectURL(file),
-          mime_type: file.type,
-          file,
-          sort_order: prev.length + i,
-        })),
-      ];
-    });
-    e.target.value = '';
-  };
+  const buildPayload = (status, approvalStatus) => ({
+    caption,
+    internal_name: internalName || null,
+    label: label || null,
+    first_comment: firstComment || null,
+    platform_overrides: platformOverrides,
+    status,
+    approval_status: approvalStatus,
+    publish_facebook: publishFacebook,
+    publish_instagram: publishInstagram,
+    scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
+  });
 
   const saveMediaToPost = async (postId) => {
     for (const item of media) {
       if (item.file) {
         await uploadMediaFile(postId, item.file, item.sort_order);
-      } else {
+      } else if (!item.id) {
         await addPostMedia(postId, {
           source: item.source,
           canva_design_id: item.canva_design_id,
@@ -108,6 +90,17 @@ export function PostComposer() {
         });
       }
     }
+  };
+
+  const ensureDraft = async () => {
+    if (draftPostId) {
+      await updatePost(draftPostId, buildPayload('draft', 'draft'));
+      return draftPostId;
+    }
+    const post = await createPost(buildPayload('draft', 'draft'));
+    await saveMediaToPost(post.id);
+    setDraftPostId(post.id);
+    return post.id;
   };
 
   const runWithValidation = async (action) => {
@@ -125,208 +118,104 @@ export function PostComposer() {
     }
   };
 
-  const handleSaveDraft = () => runWithValidation(async () => {
-    const post = await createPost({
-      caption,
-      status: 'draft',
-      publish_facebook: publishFacebook,
-      publish_instagram: publishInstagram,
-      scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
+  const handleNext = () =>
+    runWithValidation(async () => {
+      await ensureDraft();
+      setStep(2);
     });
-    await saveMediaToPost(post.id);
-    navigate(`/app/posts/${post.id}`);
-  });
 
-  const handleSchedule = () => runWithValidation(async () => {
-    if (!scheduledAt) {
-      alert('Please set a schedule date and time');
-      return;
-    }
-    const scheduleDate = new Date(scheduledAt);
-    const minSchedule = new Date(Date.now() + 10 * 60 * 1000);
-    if (scheduleDate < minSchedule) {
-      alert('Schedule time must be at least 10 minutes in the future');
-      return;
-    }
-    const post = await createPost({
-      caption,
-      status: 'scheduled',
-      publish_facebook: publishFacebook,
-      publish_instagram: publishInstagram,
-      scheduled_at: scheduleDate.toISOString(),
+  const handleSaveDraft = () =>
+    runWithValidation(async () => {
+      const id = await ensureDraft();
+      navigate(`/app/posts/${id}`);
     });
-    await saveMediaToPost(post.id);
-    await schedulePost(post.id, scheduleDate.toISOString());
-    navigate('/app/calendar');
-  });
 
-  const handlePublishNow = () => runWithValidation(async () => {
-    const post = await createPost({
-      caption,
-      status: 'scheduled',
-      publish_facebook: publishFacebook,
-      publish_instagram: publishInstagram,
-      scheduled_at: new Date().toISOString(),
+  const handleSchedule = () =>
+    runWithValidation(async () => {
+      if (!scheduledAt) {
+        alert('Please set a schedule date and time');
+        return;
+      }
+      const scheduleDate = new Date(scheduledAt);
+      const minSchedule = new Date(Date.now() + 10 * 60 * 1000);
+      if (scheduleDate < minSchedule) {
+        alert('Schedule time must be at least 10 minutes in the future');
+        return;
+      }
+      const id = await ensureDraft();
+      await updatePost(id, buildPayload('scheduled', 'draft'));
+      await schedulePost(id, scheduleDate.toISOString());
+      navigate('/app/calendar');
     });
-    await saveMediaToPost(post.id);
-    await invokeFunction('publishPost', { postId: post.id });
-    navigate(`/app/posts/${post.id}`);
-  });
 
-  const handleSubmitForReview = () => runWithValidation(async () => {
-    const post = await createPost({
-      caption,
-      status: 'draft',
-      approval_status: 'pending',
-      publish_facebook: publishFacebook,
-      publish_instagram: publishInstagram,
-      scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
+  const handlePublishNow = () =>
+    runWithValidation(async () => {
+      const id = await ensureDraft();
+      await updatePost(id, {
+        ...buildPayload('scheduled', 'draft'),
+        scheduled_at: new Date().toISOString(),
+      });
+      await invokeFunction('publishPost', { postId: id });
+      navigate(`/app/posts/${id}`);
     });
-    await saveMediaToPost(post.id);
-    navigate('/app/queue');
-  });
+
+  const handleSubmitForReview = () =>
+    runWithValidation(async () => {
+      const id = await ensureDraft();
+      await updatePost(id, buildPayload('draft', 'pending'));
+      navigate('/app/queue');
+    });
 
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      <div className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-display">Compose Post</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Textarea
-              placeholder="Write your caption..."
-              value={caption}
-              onChange={(e) => setCaption(e.target.value)}
-              rows={6}
-            />
-            <p className="text-xs text-muted-foreground">{captionHint}</p>
-
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={publishFacebook}
-                  onChange={(e) => setPublishFacebook(e.target.checked)}
-                />
-                Facebook
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={publishInstagram}
-                  onChange={(e) => setPublishInstagram(e.target.checked)}
-                />
-                Instagram
-              </label>
-            </div>
-
-            <div>
-              <label className="mb-1 block text-sm font-medium">Schedule</label>
-              <Input
-                type="datetime-local"
-                value={scheduledAt}
-                onChange={(e) => setScheduledAt(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-medium">Media</p>
-                <div className="flex items-center gap-1">
-                  <CanvaDesignPicker
-                    iconOnly
-                    onSelect={handleCanvaSelect}
-                    disabled={media.length >= MAX_CAROUSEL_ITEMS}
-                  />
-                  <label
-                    className={
-                      media.length >= MAX_CAROUSEL_ITEMS
-                        ? 'cursor-not-allowed opacity-50'
-                        : 'cursor-pointer'
-                    }
-                    title="Upload"
-                  >
-                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-full text-ink hover:bg-neutral-100">
-                      <Upload className="h-4 w-4" />
-                    </span>
-                    <input
-                      type="file"
-                      accept="image/*,video/*"
-                      multiple
-                      className="hidden"
-                      disabled={media.length >= MAX_CAROUSEL_ITEMS}
-                      onChange={handleFileUpload}
-                      aria-label="Upload media"
-                    />
-                  </label>
-                </div>
-              </div>
-              <MediaStrip items={media} onChange={setMedia} />
-            </div>
-
-            {validationErrors.length > 0 && (
-              <ul className="space-y-1 text-xs text-amber-600">
-                {validationErrors.map((msg) => (
-                  <li key={msg}>{msg}</li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleSaveDraft}
-            disabled={saving}
-            title="Save draft"
-            aria-label="Save draft"
-          >
-            <Save className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="secondary"
-            size="icon"
-            onClick={handleSubmitForReview}
-            disabled={saving}
-            title="Submit for review"
-            aria-label="Submit for review"
-          >
-            <ClipboardCheck className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="secondary"
-            size="icon"
-            onClick={handleSchedule}
-            disabled={saving}
-            title="Schedule"
-            aria-label="Schedule"
-          >
-            <Calendar className="h-4 w-4" />
-          </Button>
-          <Button
-            size="icon"
-            onClick={handlePublishNow}
-            disabled={saving}
-            title="Publish now"
-            aria-label="Publish now"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
-        </div>
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <span className={step === 1 ? 'font-semibold text-ink' : ''}>1. Content</span>
+        <span>→</span>
+        <span className={step === 2 ? 'font-semibold text-ink' : ''}>2. Fine-tune</span>
       </div>
 
-      <div className="lg:sticky lg:top-8 lg:self-start">
-        <h3 className="mb-4 font-display font-semibold">Preview</h3>
-        <PlatformPreviewTabs
+      {step === 1 ? (
+        <GenericContentStep
+          internalName={internalName}
+          setInternalName={setInternalName}
+          label={label}
+          setLabel={setLabel}
           caption={caption}
+          setCaption={setCaption}
+          captionHint={captionHint}
+          publishFacebook={publishFacebook}
+          setPublishFacebook={setPublishFacebook}
+          publishInstagram={publishInstagram}
+          setPublishInstagram={setPublishInstagram}
+          scheduledAt={scheduledAt}
+          setScheduledAt={setScheduledAt}
           media={media}
+          setMedia={setMedia}
+          validationErrors={validationErrors}
+          onNext={handleNext}
+          saving={saving}
+        />
+      ) : (
+        <FineTuneStep
+          step={step}
+          setStep={setStep}
+          caption={caption}
+          platformOverrides={platformOverrides}
+          setPlatformOverrides={setPlatformOverrides}
+          firstComment={firstComment}
+          setFirstComment={setFirstComment}
+          scheduledAt={scheduledAt}
           publishFacebook={publishFacebook}
           publishInstagram={publishInstagram}
+          media={media}
+          postId={draftPostId}
+          saving={saving}
+          onSaveDraft={handleSaveDraft}
+          onSubmitForReview={handleSubmitForReview}
+          onSchedule={handleSchedule}
+          onPublishNow={handlePublishNow}
         />
-      </div>
+      )}
     </div>
   );
 }

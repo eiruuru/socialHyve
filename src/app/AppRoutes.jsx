@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { RequireAuth } from './RequireAuth';
 import { AppLayout } from './AppLayout';
 import { WorkspaceProvider } from '@/lib/WorkspaceContext';
+import { ClientProvider } from '@/lib/clientContext';
 import { EmptyHiveState } from '@/components/EmptyHiveState';
 
 const LoginPage = lazy(() => import('@/pages/LoginPage'));
@@ -12,6 +13,10 @@ const PostComposerPage = lazy(() => import('@/pages/PostComposerPage'));
 const PostDetailPage = lazy(() => import('@/pages/PostDetailPage'));
 const ConnectedAccountsPage = lazy(() => import('@/pages/ConnectedAccountsPage'));
 const CanvaSettingsPage = lazy(() => import('@/pages/CanvaSettingsPage'));
+const ClientsPage = lazy(() => import('@/pages/ClientsPage'));
+const TeamPage = lazy(() => import('@/pages/TeamPage'));
+const ClientMembersPage = lazy(() => import('@/pages/ClientMembersPage'));
+const ClientReviewPage = lazy(() => import('@/pages/ClientReviewPage'));
 
 function Lazy({ children }) {
   return (
@@ -29,7 +34,9 @@ export function AppRoutes() {
         <Route
           element={
             <WorkspaceProvider>
-              <AppLayout />
+              <ClientProvider>
+                <AppLayout />
+              </ClientProvider>
             </WorkspaceProvider>
           }
         >
@@ -38,6 +45,10 @@ export function AppRoutes() {
           <Route path="calendar" element={<Lazy><CalendarPage /></Lazy>} />
           <Route path="posts/new" element={<Lazy><PostComposerPage /></Lazy>} />
           <Route path="posts/:id" element={<Lazy><PostDetailPage /></Lazy>} />
+          <Route path="clients" element={<Lazy><ClientsPage /></Lazy>} />
+          <Route path="clients/:clientId/members" element={<Lazy><ClientMembersPage /></Lazy>} />
+          <Route path="client/:clientId/review" element={<Lazy><ClientReviewPage /></Lazy>} />
+          <Route path="team" element={<Lazy><TeamPage /></Lazy>} />
           <Route path="settings/accounts" element={<Lazy><ConnectedAccountsPage /></Lazy>} />
           <Route path="settings/canva" element={<Lazy><CanvaSettingsPage /></Lazy>} />
         </Route>

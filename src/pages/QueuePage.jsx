@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
+import { useClient } from '@/lib/clientContext';
 import { listPosts, updateApprovalStatus, addPostComment } from '@/lib/posts';
 import { invokeFunction } from '@/lib/supabaseFunctions';
 import { PostQueueCard } from '@/features/queue/PostQueueCard';
@@ -32,12 +33,14 @@ const EMPTY_COPY = {
 
 export default function QueuePage() {
   const { user } = useAuth();
+  const { activeClient } = useClient();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState('review');
 
   const { data: posts = [], isLoading } = useQuery({
-    queryKey: ['posts'],
+    queryKey: ['posts', activeClient?.id],
     queryFn: () => listPosts(),
+    enabled: !!activeClient,
   });
 
   const filtered = filterQueuePosts(posts, tab);

@@ -42,5 +42,8 @@ verify_jwt = false
 [functions.refresh-tokens]
 verify_jwt = false
 
+[functions.review-by-token]
+verify_jwt = false
+
 [storage.buckets.post-media]
 public = true

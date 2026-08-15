@@ -1,13 +1,16 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { Calendar, ClipboardCheck, FileText, Link2, LogOut, Palette } from 'lucide-react';
+import { Calendar, ClipboardCheck, FileText, Link2, LogOut, Palette, Users, Building2 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { Logo } from '@/components/brand/Logo';
+import { ClientSwitcher } from '@/components/ClientSwitcher';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { to: '/app/queue', label: 'Queue', icon: ClipboardCheck },
   { to: '/app/calendar', label: 'Calendar', icon: Calendar },
   { to: '/app/posts/new', label: 'New Post', icon: FileText },
+  { to: '/app/clients', label: 'Clients', icon: Building2 },
+  { to: '/app/team', label: 'Team', icon: Users },
   { to: '/app/settings/accounts', label: 'Accounts', icon: Link2 },
   { to: '/app/settings/canva', label: 'Canva', icon: Palette },
 ];
@@ -20,6 +23,9 @@ export function AppLayout() {
       <aside className="flex w-60 flex-col bg-sidebar text-sidebar-foreground">
         <div className="border-b border-sidebar-border px-5 py-6">
           <Logo variant="dark" />
+          <div className="mt-4">
+            <ClientSwitcher />
+          </div>
           <p className="mt-2 truncate text-xs text-neutral-400">{user?.email}</p>
         </div>
         <nav className="flex-1 space-y-1 p-4">

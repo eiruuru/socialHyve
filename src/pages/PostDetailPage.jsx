@@ -1,14 +1,37 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getPost, deletePost, updateApprovalStatus } from '@/lib/posts';
+import {
+  getPost,
+  deletePost,
+  updateApprovalStatus,
+  updatePost,
+  listPostActivity,
+  createReviewLink,
+  logPostActivity,
+} from '@/lib/posts';
+import { listOrganizationMembers } from '@/lib/organization';
 import { invokeFunction } from '@/lib/supabaseFunctions';
 import { PlatformPreviewTabs } from '@/features/posts/previews/PlatformPreviewTabs';
-import { normalizeMediaList, isVideo } from '@/features/posts/previews/mediaUtils';
+import { normalizeMediaList } from '@/features/posts/previews/mediaUtils';
 import { PostStatusBadges, canTransitionApproval } from '@/features/queue/postStatus';
 import { CommentThread } from '@/features/queue/CommentThread';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+const APPROVAL_OPTIONS = [
+  { value: 'draft', label: 'Draft' },
+  { value: 'pending', label: 'Pending review' },
+  { value: 'approved', label: 'Approved' },
+  { value: 'changes_requested', label: 'Changes requested' },
+];
+
+const STATUS_OPTIONS = [
+  { value: 'draft', label: 'Draft' },
+  { value: 'scheduled', label: 'Scheduled' },
+  { value: 'published', label: 'Published' },
+  { value: 'failed', label: 'Failed' },
+];
 
 export default function PostDetailPage() {
   const { id } = useParams();
@@ -20,11 +43,23 @@ export default function PostDetailPage() {
     queryFn: () => getPost(id),
   });
 
+  const { data: activity = [] } = useQuery({
+    queryKey: ['post-activity', id],
+    queryFn: () => listPostActivity(id),
+    enabled: !!id,
+  });
+
+  const { data: members = [] } = useQuery({
+    queryKey: ['org-members'],
+    queryFn: listOrganizationMembers,
+  });
+
   if (isLoading) return <p className="text-muted-foreground">Loading…</p>;
   if (!post) return <p className="text-destructive">Post not found</p>;
 
   const mediaItems = normalizeMediaList(post.post_media || []);
   const approval = post.approval_status || 'draft';
+  const overrides = post.platform_overrides || {};
 
   const handleDelete = async () => {
     if (!confirm('Delete this post?')) return;
@@ -53,24 +88,56 @@ export default function PostDetailPage() {
     navigate('/app/queue');
   };
 
+  const handleApprovalChange = async (value) => {
+    await updateApprovalStatus(id, value);
+    queryClient.invalidateQueries({ queryKey: ['post', id] });
+    queryClient.invalidateQueries({ queryKey: ['post-activity', id] });
+  };
+
+  const handleStatusChange = async (value) => {
+    await updatePost(id, { status: value });
+    await logPostActivity(id, 'status', `Status changed to ${value}`);
+    queryClient.invalidateQueries({ queryKey: ['post', id] });
+    queryClient.invalidateQueries({ queryKey: ['post-activity', id] });
+  };
+
+  const handleAssigneeChange = async (userId) => {
+    await updatePost(id, { assigned_to: userId || null });
+    await logPostActivity(id, 'assignee', userId ? 'Assignee updated' : 'Assignee cleared');
+    queryClient.invalidateQueries({ queryKey: ['post', id] });
+    queryClient.invalidateQueries({ queryKey: ['post-activity', id] });
+  };
+
+  const handleCopyReviewLink = async () => {
+    const row = await createReviewLink(id);
+    const link = `${window.location.origin}/review/${row.token}`;
+    await navigator.clipboard.writeText(link);
+    alert('Review link copied to clipboard');
+  };
+
+  const scheduleSummary = [];
+  if (post.publish_facebook) {
+    const at = overrides.facebook?.scheduled_at || post.scheduled_at;
+    scheduleSummary.push({ platform: 'Facebook', at });
+  }
+  if (post.publish_instagram) {
+    const at = overrides.instagram?.scheduled_at || post.scheduled_at;
+    scheduleSummary.push({ platform: 'Instagram', at });
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Post</p>
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="font-display text-2xl font-bold">Post Detail</h2>
+            <h2 className="font-display text-2xl font-bold">
+              {post.internal_name || 'Post Detail'}
+            </h2>
             <PostStatusBadges post={post} />
           </div>
-          {post.scheduled_at && (
-            <p className="text-muted-foreground">
-              Scheduled: {new Date(post.scheduled_at).toLocaleString()}
-            </p>
-          )}
-          {post.published_at && (
-            <p className="text-muted-foreground">
-              Published: {new Date(post.published_at).toLocaleString()}
-            </p>
+          {post.label && (
+            <p className="text-sm text-muted-foreground">Label: {post.label}</p>
           )}
         </div>
         <div className="flex flex-wrap gap-2">
@@ -83,6 +150,7 @@ export default function PostDetailPage() {
           {post.status === 'failed' && (
             <Button onClick={handleRetry}>Try again</Button>
           )}
+          <Button variant="outline" onClick={handleCopyReviewLink}>Copy review link</Button>
           <Button variant="destructive" onClick={handleDelete}>Delete</Button>
           <Button variant="outline" asChild>
             <Link to="/app/calendar">Back to Calendar</Link>
@@ -106,14 +174,79 @@ export default function PostDetailPage() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
+              <CardTitle>Workflow</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-medium">Approval state</label>
+                <select
+                  value={approval}
+                  onChange={(e) => handleApprovalChange(e.target.value)}
+                  className="h-10 w-full rounded-hyve-sm border border-input bg-background px-3 text-sm"
+                >
+                  {APPROVAL_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium">Publish state</label>
+                <select
+                  value={post.status}
+                  onChange={(e) => handleStatusChange(e.target.value)}
+                  className="h-10 w-full rounded-hyve-sm border border-input bg-background px-3 text-sm"
+                >
+                  {STATUS_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="sm:col-span-2">
+                <label className="mb-1 block text-xs font-medium">Assigned to</label>
+                <select
+                  value={post.assigned_to || ''}
+                  onChange={(e) => handleAssigneeChange(e.target.value || null)}
+                  className="h-10 w-full rounded-hyve-sm border border-input bg-background px-3 text-sm"
+                >
+                  <option value="">Unassigned</option>
+                  {members.map((m) => (
+                    <option key={m.user_id} value={m.user_id}>
+                      {m.user_id.slice(0, 8)}… ({m.role})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </CardContent>
+          </Card>
+
+          {scheduleSummary.length > 0 && (
+            <div className="rounded-hyve-md bg-blue-50 p-4 text-sm text-blue-900">
+              <p className="font-medium">Scheduling</p>
+              <ul className="mt-1 space-y-0.5">
+                {scheduleSummary.map(({ platform, at }) => (
+                  <li key={platform}>
+                    {platform}: {at ? new Date(at).toLocaleString() : 'Not set'}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <Card>
+            <CardHeader>
               <CardTitle>Content</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="whitespace-pre-wrap">{post.caption || '(no caption)'}</p>
+              {post.first_comment && (
+                <p className="text-sm text-muted-foreground">
+                  First comment: {post.first_comment}
+                </p>
+              )}
               {mediaItems.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {mediaItems.map((item, i) => (
-                    isVideo(item.mime_type) ? (
+                    item.mime_type?.startsWith('video') ? (
                       <video key={i} src={item.public_url} className="h-20 w-20 rounded object-cover" muted />
                     ) : (
                       <img key={i} src={item.public_url} alt="" className="h-20 w-20 rounded object-cover" />
@@ -137,6 +270,29 @@ export default function PostDetailPage() {
           </Card>
 
           <Card>
+            <CardHeader>
+              <CardTitle>Activity</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {activity.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No activity yet.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {activity.map((a) => (
+                    <li key={a.id} className="text-sm">
+                      <span className="text-muted-foreground">
+                        {new Date(a.created_at).toLocaleString()}
+                      </span>
+                      {' — '}
+                      {a.detail || a.action}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
             <CardContent className="pt-6">
               <CommentThread postId={id} />
             </CardContent>
@@ -144,12 +300,16 @@ export default function PostDetailPage() {
         </div>
 
         <div className="lg:sticky lg:top-8 lg:self-start">
-          <h3 className="mb-4 font-display font-semibold">Preview</h3>
           <PlatformPreviewTabs
             caption={post.caption}
             media={mediaItems}
+            scheduledAt={post.scheduled_at}
             publishFacebook={post.publish_facebook}
             publishInstagram={post.publish_instagram}
+            clientId={post.client_id}
+            currentPostId={post.id}
+            facebookCaption={overrides.facebook?.caption}
+            instagramCaption={overrides.instagram?.caption}
           />
         </div>
       </div>

@@ -6,6 +6,7 @@ import { AppRoutes } from '@/app/AppRoutes';
 import { EmptyHiveState } from '@/components/EmptyHiveState';
 
 const LandingPage = lazy(() => import('@/pages/LandingPage'));
+const ReviewLinkPage = lazy(() => import('@/pages/ReviewLinkPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -29,6 +30,7 @@ export default function App() {
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<LandingPage />} />
+              <Route path="/review/:token" element={<ReviewLinkPage />} />
               <Route path="/app/*" element={<AppRoutes />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

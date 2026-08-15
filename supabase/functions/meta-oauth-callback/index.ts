@@ -74,12 +74,14 @@ Deno.serve(async (req) => {
     if (pagesData.error) throw new Error(pagesData.error.message);
 
     const workspaceId = oauthState.workspace_id;
+    const clientId = oauthState.client_id;
 
     for (const page of pagesData.data || []) {
       const pagePictureUrl = page.picture?.data?.url || null;
 
       await service.from('social_accounts').upsert({
         workspace_id: workspaceId,
+        client_id: clientId,
         platform: 'facebook',
         external_id: page.id,
         name: page.name,
@@ -100,6 +102,7 @@ Deno.serve(async (req) => {
 
         await service.from('social_accounts').upsert({
           workspace_id: workspaceId,
+          client_id: clientId,
           platform: 'instagram',
           external_id: igData.id,
           name: igData.username || `IG ${igData.id}`,

@@ -1,4 +1,4 @@
-import { handleOptions, redirectResponse } from '../_shared/cors.ts';
+import { handleOptions, redirectResponse, redirectResponseWithDelay } from '../_shared/cors.ts';
 import { getServiceClient, META_GRAPH } from '../_shared/supabase.ts';
 
 const META_APP_ID = Deno.env.get('META_APP_ID') || '';
@@ -40,11 +40,11 @@ Deno.serve(async (req) => {
   const error = url.searchParams.get('error');
 
   if (error) {
-    return redirectResponse(`${APP_URL}/app/settings/accounts?error=${encodeURIComponent(error)}`);
+    return redirectResponseWithDelay(`${APP_URL}/app/settings/accounts?error=${encodeURIComponent(error)}`);
   }
 
   if (!code || !state) {
-    return redirectResponse(`${APP_URL}/app/settings/accounts?error=missing_code`);
+    return redirectResponseWithDelay(`${APP_URL}/app/settings/accounts?error=missing_code`);
   }
 
   try {
@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (stateErr || !oauthState) {
-      return redirectResponse(`${APP_URL}/app/settings/accounts?error=invalid_state`);
+      return redirectResponseWithDelay(`${APP_URL}/app/settings/accounts?error=invalid_state`);
     }
 
     await service.from('oauth_states').delete().eq('id', oauthState.id);
@@ -117,9 +117,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    return redirectResponse(`${APP_URL}/app/settings/accounts?connected=meta`);
+    return redirectResponseWithDelay(`${APP_URL}/app/settings/accounts?connected=meta`);
   } catch (err) {
     const msg = encodeURIComponent((err as Error).message);
-    return redirectResponse(`${APP_URL}/app/settings/accounts?error=${msg}`);
+    return redirectResponseWithDelay(`${APP_URL}/app/settings/accounts?error=${msg}`);
   }
 });

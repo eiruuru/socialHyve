@@ -102,6 +102,15 @@ async function uniqueSlug(orgId, baseSlug, excludeClientId = null) {
   }
 }
 
+async function ensureOrganizationSetup(org, userId) {
+  if (!org?.id || !userId) return;
+
+  await supabase.from('organization_members').upsert(
+    { organization_id: org.id, user_id: userId, role: 'owner' },
+    { onConflict: 'organization_id,user_id' },
+  );
+}
+
 export async function getOrganization() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
@@ -120,7 +129,10 @@ export async function getOrganization() {
     .eq('owner_id', user.id)
     .maybeSingle();
 
-  if (owned) return owned;
+  if (owned) {
+    await ensureOrganizationSetup(owned, user.id);
+    return owned;
+  }
 
   const { data: ws } = await supabase
     .from('workspaces')
@@ -130,12 +142,14 @@ export async function getOrganization() {
 
   if (!ws) return null;
 
-  const { data: org } = await supabase
+  const { data: org, error } = await supabase
     .from('organizations')
     .upsert({ id: ws.id, name: ws.name, owner_id: ws.owner_id }, { onConflict: 'id' })
     .select()
     .single();
 
+  if (error) throw error;
+  await ensureOrganizationSetup(org, user.id);
   return org;
 }
 

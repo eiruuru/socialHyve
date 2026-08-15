@@ -36,6 +36,19 @@ export async function getWorkspace() {
 
     if (error) throw error;
     _cachedWorkspace = created;
+
+    const { data: org, error: orgErr } = await supabase
+      .from('organizations')
+      .upsert({ id: created.id, name: created.name, owner_id: created.owner_id }, { onConflict: 'id' })
+      .select()
+      .single();
+    if (!orgErr && org) {
+      await supabase.from('organization_members').upsert(
+        { organization_id: org.id, user_id: user.id, role: 'owner' },
+        { onConflict: 'organization_id,user_id' },
+      );
+    }
+
     return created;
   })();
 

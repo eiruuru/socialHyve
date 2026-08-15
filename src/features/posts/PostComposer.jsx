@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Calendar, ClipboardCheck, Save, Send, Upload } from 'lucide-react';
 import {
   createPost,
   addPostMedia,
@@ -8,8 +9,7 @@ import {
 } from '@/lib/posts';
 import { invokeFunction } from '@/lib/supabaseFunctions';
 import { CanvaDesignPicker } from '@/features/integrations/canva/CanvaDesignPicker';
-import { FacebookFeedPreview } from '@/features/posts/previews/FacebookFeedPreview';
-import { InstagramFeedPreview } from '@/features/posts/previews/InstagramFeedPreview';
+import { PlatformPreviewTabs } from '@/features/posts/previews/PlatformPreviewTabs';
 import { MediaStrip, MAX_CAROUSEL_ITEMS } from '@/features/posts/MediaStrip';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -231,22 +231,36 @@ export function PostComposer() {
             </div>
 
             <div className="space-y-2">
-              <p className="text-sm font-medium">Media</p>
-              <div className="flex gap-2">
-                <CanvaDesignPicker onSelect={handleCanvaSelect} disabled={media.length >= MAX_CAROUSEL_ITEMS} />
-                <label className={media.length >= MAX_CAROUSEL_ITEMS ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}>
-                  <span className="inline-flex h-10 items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground">
-                    Upload
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*,video/*"
-                    multiple
-                    className="hidden"
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium">Media</p>
+                <div className="flex items-center gap-1">
+                  <CanvaDesignPicker
+                    iconOnly
+                    onSelect={handleCanvaSelect}
                     disabled={media.length >= MAX_CAROUSEL_ITEMS}
-                    onChange={handleFileUpload}
                   />
-                </label>
+                  <label
+                    className={
+                      media.length >= MAX_CAROUSEL_ITEMS
+                        ? 'cursor-not-allowed opacity-50'
+                        : 'cursor-pointer'
+                    }
+                    title="Upload"
+                  >
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-full text-ink hover:bg-neutral-100">
+                      <Upload className="h-4 w-4" />
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*,video/*"
+                      multiple
+                      className="hidden"
+                      disabled={media.length >= MAX_CAROUSEL_ITEMS}
+                      onChange={handleFileUpload}
+                      aria-label="Upload media"
+                    />
+                  </label>
+                </div>
               </div>
               <MediaStrip items={media} onChange={setMedia} />
             </div>
@@ -261,36 +275,57 @@ export function PostComposer() {
           </CardContent>
         </Card>
 
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={handleSaveDraft} disabled={saving}>
-            Save Draft
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleSaveDraft}
+            disabled={saving}
+            title="Save draft"
+            aria-label="Save draft"
+          >
+            <Save className="h-4 w-4" />
           </Button>
-          <Button variant="secondary" onClick={handleSubmitForReview} disabled={saving}>
-            Submit for review
+          <Button
+            variant="secondary"
+            size="icon"
+            onClick={handleSubmitForReview}
+            disabled={saving}
+            title="Submit for review"
+            aria-label="Submit for review"
+          >
+            <ClipboardCheck className="h-4 w-4" />
           </Button>
-          <Button variant="secondary" onClick={handleSchedule} disabled={saving}>
-            Schedule
+          <Button
+            variant="secondary"
+            size="icon"
+            onClick={handleSchedule}
+            disabled={saving}
+            title="Schedule"
+            aria-label="Schedule"
+          >
+            <Calendar className="h-4 w-4" />
           </Button>
-          <Button onClick={handlePublishNow} disabled={saving}>
-            Publish Now
+          <Button
+            size="icon"
+            onClick={handlePublishNow}
+            disabled={saving}
+            title="Publish now"
+            aria-label="Publish now"
+          >
+            <Send className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      <div className="space-y-4">
-        <h3 className="font-display font-semibold">Preview</h3>
-        {publishFacebook && (
-          <div>
-            <p className="mb-2 text-xs text-muted-foreground">Facebook</p>
-            <FacebookFeedPreview caption={caption} media={media} />
-          </div>
-        )}
-        {publishInstagram && (
-          <div>
-            <p className="mb-2 text-xs text-muted-foreground">Instagram</p>
-            <InstagramFeedPreview caption={caption} media={media} />
-          </div>
-        )}
+      <div className="lg:sticky lg:top-8 lg:self-start">
+        <h3 className="mb-4 font-display font-semibold">Preview</h3>
+        <PlatformPreviewTabs
+          caption={caption}
+          media={media}
+          publishFacebook={publishFacebook}
+          publishInstagram={publishInstagram}
+        />
       </div>
     </div>
   );

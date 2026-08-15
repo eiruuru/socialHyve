@@ -2,8 +2,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getPost, deletePost, updateApprovalStatus } from '@/lib/posts';
 import { invokeFunction } from '@/lib/supabaseFunctions';
-import { FacebookFeedPreview } from '@/features/posts/previews/FacebookFeedPreview';
-import { InstagramFeedPreview } from '@/features/posts/previews/InstagramFeedPreview';
+import { PlatformPreviewTabs } from '@/features/posts/previews/PlatformPreviewTabs';
 import { normalizeMediaList, isVideo } from '@/features/posts/previews/mediaUtils';
 import { PostStatusBadges, canTransitionApproval } from '@/features/queue/postStatus';
 import { CommentThread } from '@/features/queue/CommentThread';
@@ -144,19 +143,14 @@ export default function PostDetailPage() {
           </Card>
         </div>
 
-        <div className="space-y-4">
-          {post.publish_facebook && (
-            <div>
-              <p className="mb-2 font-mono text-xs uppercase tracking-wider text-neutral-500">Facebook</p>
-              <FacebookFeedPreview caption={post.caption} media={mediaItems} />
-            </div>
-          )}
-          {post.publish_instagram && (
-            <div>
-              <p className="mb-2 font-mono text-xs uppercase tracking-wider text-neutral-500">Instagram</p>
-              <InstagramFeedPreview caption={post.caption} media={mediaItems} />
-            </div>
-          )}
+        <div className="lg:sticky lg:top-8 lg:self-start">
+          <h3 className="mb-4 font-display font-semibold">Preview</h3>
+          <PlatformPreviewTabs
+            caption={post.caption}
+            media={mediaItems}
+            publishFacebook={post.publish_facebook}
+            publishInstagram={post.publish_instagram}
+          />
         </div>
       </div>
     </div>

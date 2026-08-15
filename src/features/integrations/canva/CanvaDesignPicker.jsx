@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Palette } from 'lucide-react';
 import { invokeFunction } from '@/lib/supabaseFunctions';
 import { Button } from '@/components/ui/button';
 import { DialogRoot, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
-export function CanvaDesignPicker({ onSelect, disabled }) {
+export function CanvaDesignPicker({ onSelect, disabled, iconOnly = false }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [exporting, setExporting] = useState(null);
@@ -45,8 +47,16 @@ export function CanvaDesignPicker({ onSelect, disabled }) {
   return (
     <DialogRoot open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button type="button" variant="outline" disabled={disabled}>
-          Add from Canva
+        <Button
+          type="button"
+          variant={iconOnly ? 'ghost' : 'outline'}
+          size={iconOnly ? 'icon' : 'default'}
+          disabled={disabled}
+          title="Add from Canva"
+          aria-label="Add from Canva"
+          className={cn(iconOnly && 'h-9 w-9 shrink-0')}
+        >
+          {iconOnly ? <Palette className="h-4 w-4" /> : 'Add from Canva'}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[80vh] overflow-y-auto">

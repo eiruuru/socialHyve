@@ -1,4 +1,5 @@
 import { handleOptions, jsonResponse } from '../_shared/cors.ts';
+import { debugTokenType, resolvePageAccessToken } from '../_shared/metaPages.ts';
 import { getServiceClient, META_GRAPH } from '../_shared/supabase.ts';
 import { resolvePostAccounts } from '../_shared/socialAccounts.ts';
 
@@ -67,34 +68,29 @@ async function ensurePageAccessToken(
     throw new Error('Missing Page credentials. Reconnect Meta in Settings → Accounts.');
   }
 
-  const res = await fetch(
-    `${META_GRAPH}/${pageId}?fields=access_token&access_token=${encodeURIComponent(stored)}`,
-  );
-  const data = await res.json();
-  if (data.access_token) {
-    if (data.access_token !== stored && account.id) {
-      await service.from('social_accounts').update({
-        access_token: data.access_token,
-        page_access_token: data.access_token,
-      }).eq('id', account.id);
-    }
-    return data.access_token as string;
+  const tokenType = await debugTokenType(stored, APP_ACCESS_TOKEN);
+  if (tokenType === 'PAGE') {
+    return stored;
   }
 
-  const debugRes = await fetch(
-    `${META_GRAPH}/debug_token?input_token=${encodeURIComponent(stored)}&access_token=${encodeURIComponent(APP_ACCESS_TOKEN)}`,
-  );
-  const debug = await debugRes.json();
-  if (debug.data?.type === 'USER') {
+  const userToken =
+    (account.user_access_token as string | undefined) ||
+    (tokenType === 'USER' ? stored : undefined);
+  if (!userToken) {
     throw new Error(
-      'Facebook Page token is invalid (stored as a user token). Disconnect and reconnect Meta in Settings → Accounts.',
+      'Facebook Page token is invalid. Reconnect Meta in Settings → Accounts.',
     );
   }
 
-  throw new Error(
-    (data.error?.message as string) ||
-      'Could not get Page access token. Disconnect and reconnect Meta in Settings → Accounts.',
-  );
+  const pageToken = await resolvePageAccessToken(pageId as string, userToken, APP_ACCESS_TOKEN);
+  if (account.id) {
+    await service.from('social_accounts').update({
+      access_token: pageToken,
+      page_access_token: pageToken,
+      user_access_token: userToken,
+    }).eq('id', account.id);
+  }
+  return pageToken;
 }
 
 async function publishPost(service: ReturnType<typeof getServiceClient>, postId: string) {

@@ -73,6 +73,53 @@ async function fetchPageAccessToken(
   return undefined;
 }
 
+export async function debugTokenType(
+  token: string,
+  appAccessToken: string,
+): Promise<string | null> {
+  const res = await fetch(
+    `${META_GRAPH}/debug_token?input_token=${encodeURIComponent(token)}&access_token=${encodeURIComponent(appAccessToken)}`,
+  );
+  const data = await res.json();
+  return (data.data?.type as string) || null;
+}
+
+/** Resolve a Page access token from a user access token (handles corrupted stored page tokens). */
+export async function resolvePageAccessToken(
+  pageId: string,
+  userToken: string,
+  appAccessToken: string,
+): Promise<string> {
+  const fields = 'id,access_token';
+
+  const accountsRes = await fetch(
+    `${META_GRAPH}/me/accounts?fields=${encodeURIComponent(fields)}&limit=100&access_token=${encodeURIComponent(userToken)}`,
+  );
+  const accountsData = await accountsRes.json();
+  if (!accountsData.error) {
+    const page = (accountsData.data || []).find((p: { id: string }) => p.id === pageId);
+    if (page?.access_token) return page.access_token as string;
+  }
+
+  const bizRes = await fetch(
+    `${META_GRAPH}/me/businesses?fields=client_pages{${fields}}&limit=50&access_token=${encodeURIComponent(userToken)}`,
+  );
+  const bizData = await bizRes.json();
+  if (!bizData.error) {
+    for (const biz of bizData.data || []) {
+      const page = (biz.client_pages?.data || []).find((p: { id: string }) => p.id === pageId);
+      if (page?.access_token) return page.access_token as string;
+    }
+  }
+
+  const direct = await fetchPageAccessToken(pageId, userToken, appAccessToken);
+  if (direct) return direct;
+
+  throw new Error(
+    `Could not get Page access token for ${pageId}. Reconnect Meta in Settings → Accounts.`,
+  );
+}
+
 export async function getGrantedScopes(userToken: string, appAccessToken: string): Promise<string> {
   const res = await fetch(
     `${META_GRAPH}/debug_token?input_token=${encodeURIComponent(userToken)}&access_token=${encodeURIComponent(appAccessToken)}`,

@@ -1,6 +1,6 @@
 import { handleOptions, redirectResponse } from '../_shared/cors.ts';
 import { getServiceClient, META_GRAPH } from '../_shared/supabase.ts';
-import { fetchGrantedPages, getGrantedScopes } from '../_shared/metaPages.ts';
+import { debugTokenType, fetchGrantedPages, getGrantedScopes, resolvePageAccessToken } from '../_shared/metaPages.ts';
 
 const META_APP_ID = Deno.env.get('META_APP_ID') || '';
 const META_APP_SECRET = Deno.env.get('META_APP_SECRET') || '';
@@ -99,6 +99,12 @@ Deno.serve(async (req) => {
     for (const page of pages) {
       const pagePictureUrl = page.picture?.data?.url || null;
 
+      let pageToken = page.access_token!;
+      const pageTokenType = await debugTokenType(pageToken, appAccessToken);
+      if (pageTokenType !== 'PAGE') {
+        pageToken = await resolvePageAccessToken(page.id, longToken, appAccessToken);
+      }
+
       const { error: fbErr } = await service.from('social_accounts').upsert({
         workspace_id: workspaceId,
         client_id: clientId,
@@ -107,8 +113,9 @@ Deno.serve(async (req) => {
         name: page.name,
         username: page.name,
         profile_picture_url: pagePictureUrl,
-        access_token: page.access_token,
-        page_access_token: page.access_token,
+        access_token: pageToken,
+        page_access_token: pageToken,
+        user_access_token: longToken,
         page_id: page.id,
         token_expires_at: tokenExpiresAt,
       }, { onConflict: 'workspace_id,platform,external_id' });
@@ -119,7 +126,7 @@ Deno.serve(async (req) => {
       const igAccount = page.instagram_business_account;
       if (igAccount?.id) {
         const igRes = await fetch(
-          `${META_GRAPH}/${igAccount.id}?fields=id,username,profile_picture_url&access_token=${page.access_token}`
+          `${META_GRAPH}/${igAccount.id}?fields=id,username,profile_picture_url&access_token=${pageToken}`
         );
         const igData = await igRes.json();
 
@@ -131,8 +138,9 @@ Deno.serve(async (req) => {
           name: igData.username || `IG ${igData.id}`,
           username: igData.username || null,
           profile_picture_url: igData.profile_picture_url || null,
-          access_token: page.access_token,
-          page_access_token: page.access_token,
+          access_token: pageToken,
+          page_access_token: pageToken,
+          user_access_token: longToken,
           page_id: page.id,
           ig_user_id: igData.id,
           token_expires_at: tokenExpiresAt,
@@ -162,6 +170,11 @@ Deno.serve(async (req) => {
         if (fbPrimaryErr && !primaryErr) throw fbPrimaryErr;
       }
     }
+
+    await service
+      .from('social_accounts')
+      .update({ user_access_token: longToken, token_expires_at: tokenExpiresAt })
+      .eq('client_id', clientId);
 
     if (!hasPrimary('instagram') && firstIgExternalId) {
       const igRow = (clientAccounts || []).find(

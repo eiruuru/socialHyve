@@ -11,6 +11,7 @@ import { filterQueuePosts } from '@/features/queue/postStatus';
 import { TabsRoot, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { canTransitionApproval } from '@/features/queue/postStatus';
 import { cn } from '@/lib/utils';
+import { buildPostNavSearch } from '@/features/posts/postNavUtils';
 
 const QUEUE_VIEW_KEY = 'socialhyve_queue_view';
 
@@ -57,6 +58,7 @@ export default function QueuePage() {
 
   const filtered = filterQueuePosts(posts, tab);
   const empty = EMPTY_COPY[tab];
+  const navSearch = buildPostNavSearch({ nav: 'queue', tab });
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['posts'] });
@@ -127,6 +129,7 @@ export default function QueuePage() {
                     key={post.id}
                     post={post}
                     variant={viewMode}
+                    navSearch={navSearch}
                     authorEmail={user?.email}
                     onApprove={handleApprove}
                     onRequestChanges={handleRequestChanges}

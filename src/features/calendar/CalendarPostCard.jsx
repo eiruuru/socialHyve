@@ -42,6 +42,7 @@ export function CalendarPostCard({
   onDragStart,
   onDragEnd,
   isDragging = false,
+  navSearch = '',
 }) {
   const navigate = useNavigate();
   const didDragRef = useRef(false);
@@ -63,7 +64,7 @@ export function CalendarPostCard({
       didDragRef.current = false;
       return;
     }
-    navigate(`/app/posts/${post.id}`);
+    navigate(`/app/posts/${post.id}${navSearch}`);
   };
 
   const handleDragStart = (e) => {

@@ -10,6 +10,23 @@ const PIPELINE_STATUSES = ['draft', 'scheduled', 'failed', 'publishing'];
 const MAX_GRID_POSTS = 12;
 const GRID_ROWS = MAX_GRID_POSTS / 3;
 
+function getPostSortTime(post) {
+  return new Date(post.scheduled_at || post.timestamp || post.created_at || 0).getTime();
+}
+
+function shouldShowInGrid(post, { showFuturePosts, currentPostId, composingId }) {
+  if (showFuturePosts) return true;
+  if (post.external) return true;
+  if (post.id === currentPostId || post.id === composingId || post.isComposing) return true;
+  if (post.status === 'draft') return true;
+  if (post.status !== 'scheduled') return true;
+
+  const scheduledMs = post.scheduled_at ? new Date(post.scheduled_at).getTime() : NaN;
+  if (Number.isNaN(scheduledMs)) return true;
+
+  return scheduledMs <= Date.now();
+}
+
 function isInstagramPost(post) {
   return post.publish_instagram === true;
 }
@@ -89,7 +106,6 @@ export function InstagramGridPreview({
   const igLivePosts = igLiveData?.media || [];
 
   const gridPosts = useMemo(() => {
-    const currentScheduledMs = scheduledAt ? new Date(scheduledAt).getTime() : null;
     const composingId = currentPostId || '__composing__';
 
     let posts = siblingPosts.filter((p) => {
@@ -98,20 +114,6 @@ export function InstagramGridPreview({
       if (PIPELINE_STATUSES.includes(p.status)) return true;
       return false;
     });
-
-    if (
-      !showFuturePosts &&
-      currentScheduledMs != null &&
-      !Number.isNaN(currentScheduledMs)
-    ) {
-      posts = posts.filter((p) => {
-        if (p.status === 'draft') return true;
-        if (p.status !== 'scheduled') return true;
-        const scheduledMs = p.scheduled_at ? new Date(p.scheduled_at).getTime() : null;
-        if (scheduledMs == null || Number.isNaN(scheduledMs)) return true;
-        return scheduledMs <= currentScheduledMs;
-      });
-    }
 
     if (publishInstagram) {
       if (media.length > 0 && !posts.some((p) => p.id === currentPostId || p.id === composingId)) {
@@ -136,11 +138,11 @@ export function InstagramGridPreview({
       if (!existingIds.has(igPost.id)) posts.push(igPost);
     }
 
-    posts.sort((a, b) => {
-      const da = new Date(a.scheduled_at || a.timestamp || a.created_at || 0).getTime();
-      const db = new Date(b.scheduled_at || b.timestamp || b.created_at || 0).getTime();
-      return db - da;
-    });
+    posts = posts.filter((p) =>
+      shouldShowInGrid(p, { showFuturePosts, currentPostId, composingId }),
+    );
+
+    posts.sort((a, b) => getPostSortTime(b) - getPostSortTime(a));
 
     const result = posts.slice(0, MAX_GRID_POSTS);
     if (result.length === 0) {

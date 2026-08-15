@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { IconTooltip } from '@/components/ui/IconTooltip';
 import { TabsRoot, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+import { buildPostNavSearch } from '@/features/posts/postNavUtils';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -55,6 +56,10 @@ export function ContentCalendar({ posts = [] }) {
       const date = p.scheduled_at || p.created_at;
       return date && isSameDay(new Date(date), day);
     });
+
+  const calendarMonth = format(currentDate, 'yyyy-MM');
+  const monthNavSearch = buildPostNavSearch({ nav: 'calendar', month: calendarMonth });
+  const listNavSearch = buildPostNavSearch({ nav: 'calendar' });
 
   const sortedPosts = [...posts].sort((a, b) => {
     const da = a.scheduled_at || a.created_at;
@@ -177,6 +182,7 @@ export function ContentCalendar({ posts = [] }) {
                     <CalendarPostCard
                       key={post.id}
                       post={post}
+                      navSearch={monthNavSearch}
                       draggable={isPostDraggable(post)}
                       isDragging={draggingPostId === post.id}
                       onDragStart={handleDragStart}
@@ -201,7 +207,12 @@ export function ContentCalendar({ posts = [] }) {
                     : 'Unscheduled'}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <CalendarPostCard post={post} layout="horizontal" className="mb-0 border-0 shadow-none" />
+                  <CalendarPostCard
+                    post={post}
+                    layout="horizontal"
+                    navSearch={listNavSearch}
+                    className="mb-0 border-0 shadow-none"
+                  />
                 </div>
               </div>
             ))

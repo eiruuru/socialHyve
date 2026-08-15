@@ -23,6 +23,8 @@ import { IconTooltip } from '@/components/ui/IconTooltip';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatScheduledLabel } from '@/lib/scheduleTime';
+import { PostNavigation } from '@/features/posts/PostNavigation';
+import { usePostNavigation } from '@/features/posts/usePostNavigation';
 
 const APPROVAL_OPTIONS = [
   { value: 'draft', label: 'Draft' },
@@ -64,6 +66,8 @@ export default function PostDetailPage() {
     queryFn: listSocialAccounts,
     enabled: !!post?.client_id,
   });
+
+  const postNav = usePostNavigation(id);
 
   if (isLoading) return <p className="text-muted-foreground">Loading…</p>;
   if (!post) return <p className="text-destructive">Post not found</p>;
@@ -167,7 +171,14 @@ export default function PostDetailPage() {
             <p className="text-sm text-muted-foreground">Label: {post.label}</p>
           )}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-3">
+          <PostNavigation
+            prevHref={postNav.prevHref}
+            nextHref={postNav.nextHref}
+            position={postNav.position}
+            total={postNav.total}
+          />
+          <div className="flex items-center gap-1">
           {approval === 'pending' && (
             <IconTooltip title="Approve" description="Mark this post as approved">
               <Button size="icon" onClick={handleApprove} aria-label="Approve">
@@ -197,7 +208,7 @@ export default function PostDetailPage() {
           {post.status !== 'published' && (
             <IconTooltip title="Edit post" description="Open in the composer to edit">
               <Button size="icon" variant="outline" asChild aria-label="Edit post">
-                <Link to={`/app/posts/${id}/edit`}>
+                <Link to={`/app/posts/${id}/edit${postNav.navSearch}`}>
                   <Pencil className="h-4 w-4" />
                 </Link>
               </Button>
@@ -215,6 +226,7 @@ export default function PostDetailPage() {
               </Link>
             </Button>
           </IconTooltip>
+          </div>
         </div>
       </div>
 

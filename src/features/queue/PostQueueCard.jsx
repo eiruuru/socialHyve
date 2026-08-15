@@ -71,6 +71,7 @@ export function PostQueueCard({
   onPublish,
   showActions = true,
   variant = 'list',
+  navSearch = '',
 }) {
   const navigate = useNavigate();
   const [rejectOpen, setRejectOpen] = useState(false);
@@ -119,7 +120,7 @@ export function PostQueueCard({
       {approval === 'approved' && post.status === 'draft' && (
         <Button size="sm" onClick={() => onPublish?.(post.id)}>Publish now</Button>
       )}
-      <Button size="sm" variant="outline" onClick={() => navigate(`/app/posts/${post.id}/edit`)}>
+      <Button size="sm" variant="outline" onClick={() => navigate(`/app/posts/${post.id}/edit${navSearch}`)}>
         Edit
       </Button>
     </div>
@@ -169,7 +170,7 @@ export function PostQueueCard({
         <UrgencyBadge scheduleUrgency={scheduleUrgency} className="right-2 top-2" />
         <button
           type="button"
-          onClick={() => navigate(`/app/posts/${post.id}`)}
+          onClick={() => navigate(`/app/posts/${post.id}${navSearch}`)}
           className="relative aspect-square w-full overflow-hidden bg-neutral-100"
         >
           <PostThumb post={post} className="rounded-none" />

@@ -12,6 +12,7 @@ const LoginPage = lazy(() => import('@/pages/LoginPage'));
 const CalendarPage = lazy(() => import('@/pages/CalendarPage'));
 const QueuePage = lazy(() => import('@/pages/QueuePage'));
 const PostComposerPage = lazy(() => import('@/pages/PostComposerPage'));
+const PostImportPage = lazy(() => import('@/pages/PostImportPage'));
 const EditPostPage = lazy(() => import('@/pages/EditPostPage'));
 const PostDetailPage = lazy(() => import('@/pages/PostDetailPage'));
 const ConnectedAccountsPage = lazy(() => import('@/pages/ConnectedAccountsPage'));
@@ -50,6 +51,7 @@ export function AppRoutes() {
           <Route path="queue" element={<Lazy><QueuePage /></Lazy>} />
           <Route path="calendar" element={<Lazy><CalendarPage /></Lazy>} />
           <Route path="posts/new" element={<Lazy><PostComposerPage /></Lazy>} />
+          <Route path="posts/import" element={<Lazy><PostImportPage /></Lazy>} />
           <Route path="posts/:id/edit" element={<Lazy><EditPostPage /></Lazy>} />
           <Route path="posts/:id" element={<Lazy><PostDetailPage /></Lazy>} />
           <Route path="clients" element={<Lazy><ClientsPage /></Lazy>} />

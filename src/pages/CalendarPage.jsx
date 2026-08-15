@@ -46,9 +46,14 @@ export default function CalendarPage() {
           <h2 className="font-display text-2xl font-bold">Content Calendar</h2>
           <p className="text-muted-foreground">Plan and schedule your social posts</p>
         </div>
-        <Button asChild>
-          <Link to="/app/posts/new">New Post</Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="outline">
+            <Link to="/app/posts/import">Import CSV</Link>
+          </Button>
+          <Button asChild>
+            <Link to="/app/posts/new">New Post</Link>
+          </Button>
+        </div>
       </div>
       {isLoading ? (
         <p className="text-muted-foreground">Loading calendar…</p>

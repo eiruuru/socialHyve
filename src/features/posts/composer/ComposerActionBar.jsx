@@ -5,6 +5,7 @@ import { formatScheduledLabel, zonedLocalToUtc } from '@/lib/scheduleTime';
 
 export function ComposerActionBar({
   saving,
+  publishing,
   scheduledAt,
   scheduleTimezone,
   onSaveDraft,
@@ -45,7 +46,7 @@ export function ComposerActionBar({
           </Button>
           <Button onClick={onPublishNow} disabled={saving}>
             <Send className="mr-2 h-4 w-4" />
-            Publish now
+            {publishing ? 'Publishing…' : 'Publish now'}
           </Button>
         </div>
       </CardContent>

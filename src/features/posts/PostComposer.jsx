@@ -23,6 +23,10 @@ import {
 } from '@/lib/scheduleTime';
 import { GenericContentStep } from '@/features/posts/composer/GenericContentStep';
 import { ComposerActionBar } from '@/features/posts/composer/ComposerActionBar';
+import {
+  getPublishPlatformLabel,
+  PublishProgressPanel,
+} from '@/features/posts/composer/PublishProgressPanel';
 import { FineTunePanel } from '@/features/posts/composer/FineTunePanel';
 import { PlatformPreviewTabs } from '@/features/posts/previews/PlatformPreviewTabs';
 import { MAX_CAROUSEL_ITEMS } from '@/features/posts/MediaStrip';
@@ -91,6 +95,7 @@ export function PostComposer({ editPostId = null }) {
   const [scheduledAt, setScheduledAt] = useState('');
   const [media, setMedia] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [publishProgress, setPublishProgress] = useState(null);
   const [approvalStatus, setApprovalStatus] = useState('draft');
 
   useEffect(() => {
@@ -204,7 +209,7 @@ export function PostComposer({ editPostId = null }) {
     scheduled_at: scheduledAtUtc,
   });
 
-  const syncMedia = async (postId) => {
+  const syncMedia = async (postId, { onUploadProgress } = {}) => {
     const currentIds = new Set(media.filter((m) => m.id).map((m) => m.id));
     const currentPaths = new Set(media.filter((m) => m.storage_path).map((m) => m.storage_path));
 
@@ -214,9 +219,25 @@ export function PostComposer({ editPostId = null }) {
       }
     }
 
+    const pendingUploads = media.filter((item) => item.file);
+    for (let i = 0; i < pendingUploads.length; i += 1) {
+      const item = pendingUploads[i];
+      onUploadProgress?.({
+        current: i,
+        total: pendingUploads.length,
+        fileName: item.file.name,
+      });
+      await uploadMediaFile(postId, item.file, item.sort_order);
+      onUploadProgress?.({
+        current: i + 1,
+        total: pendingUploads.length,
+        fileName: item.file.name,
+      });
+    }
+
     for (const item of media) {
       if (item.file) {
-        await uploadMediaFile(postId, item.file, item.sort_order);
+        continue;
       } else if (!item.id) {
         await addPostMedia(postId, {
           source: item.source,
@@ -258,14 +279,14 @@ export function PostComposer({ editPostId = null }) {
     });
   };
 
-  const ensureDraft = async () => {
+  const ensureDraft = async (options = {}) => {
     if (draftPostId) {
       await updatePost(draftPostId, buildPayload(existingPost?.status || 'draft'));
-      await syncMedia(draftPostId);
+      await syncMedia(draftPostId, options);
       return draftPostId;
     }
     const post = await createPost(buildPayload('draft', 'draft'));
-    await syncMedia(post.id);
+    await syncMedia(post.id, options);
     setDraftPostId(post.id);
     return post.id;
   };
@@ -317,17 +338,73 @@ export function PostComposer({ editPostId = null }) {
       navigate('/app/calendar');
     });
 
-  const handlePublishNow = () =>
-    runWithValidation(async () => {
-      const id = await ensureDraft();
+  const handlePublishNow = async () => {
+    if (isPublished) {
+      alert('Published posts cannot be edited.');
+      return;
+    }
+    if (validationErrors.length) {
+      alert(validationErrors.join('\n'));
+      return;
+    }
+
+    setSaving(true);
+    try {
+      setPublishProgress({
+        label: 'Saving post…',
+        value: 10,
+        indeterminate: false,
+      });
+
+      const id = await ensureDraft({
+        onUploadProgress: ({ current, total, fileName }) => {
+          const uploadEnd = 55;
+          const value = total
+            ? 10 + Math.round((current / total) * (uploadEnd - 10))
+            : 10;
+          setPublishProgress({
+            label: total > 1 ? `Uploading media (${current}/${total})…` : 'Uploading media…',
+            subtitle: fileName,
+            value,
+            indeterminate: false,
+          });
+        },
+      });
+
+      setPublishProgress({
+        label: 'Preparing to publish…',
+        value: 60,
+        indeterminate: false,
+      });
+
       const nowIso = new Date().toISOString();
       await updatePost(id, {
         ...buildPayload('scheduled'),
         scheduled_at: nowIso,
       });
+
+      setPublishProgress({
+        label: getPublishPlatformLabel(publishFacebook, publishInstagram),
+        value: 75,
+        indeterminate: true,
+      });
+
       await invokeFunction('publishPost', { postId: id });
+
+      setPublishProgress({
+        label: 'Published!',
+        value: 100,
+        indeterminate: false,
+      });
+      await new Promise((resolve) => { setTimeout(resolve, 400); });
       navigate(`/app/posts/${id}`);
-    });
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setSaving(false);
+      setPublishProgress(null);
+    }
+  };
 
   const handleSubmitForReview = () =>
     runWithValidation(async () => {
@@ -399,8 +476,18 @@ export function PostComposer({ editPostId = null }) {
         </div>
       </div>
 
+      {publishProgress && (
+        <PublishProgressPanel
+          label={publishProgress.label}
+          subtitle={publishProgress.subtitle}
+          value={publishProgress.value}
+          indeterminate={publishProgress.indeterminate}
+        />
+      )}
+
       <ComposerActionBar
         saving={saving}
+        publishing={!!publishProgress}
         scheduledAt={scheduledAt}
         scheduleTimezone={scheduleTimezone}
         onSaveDraft={handleSaveDraft}

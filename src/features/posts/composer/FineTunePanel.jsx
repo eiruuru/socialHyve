@@ -1,7 +1,7 @@
 import { ChevronDown } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 export function FineTunePanel({
@@ -25,16 +25,18 @@ export function FineTunePanel({
 
   return (
     <Card>
-      <button
-        type="button"
-        onClick={() => onOpenChange(!open)}
-        className="flex w-full items-center justify-between px-6 py-4 text-left"
-      >
-        <span className="font-display text-base font-semibold">Fine tune</span>
-        <ChevronDown className={cn('h-4 w-4 shrink-0 transition-transform', open && 'rotate-180')} />
-      </button>
+      <CardHeader className="pb-0">
+        <button
+          type="button"
+          onClick={() => onOpenChange(!open)}
+          className="flex w-full items-center justify-between text-left"
+        >
+          <CardTitle className="font-display">Fine tune</CardTitle>
+          <ChevronDown className={cn('h-4 w-4 shrink-0 transition-transform', open && 'rotate-180')} />
+        </button>
+      </CardHeader>
       {open && (
-        <CardContent className="space-y-4 border-t pt-4">
+        <CardContent className="space-y-4 pt-4">
           {publishFacebook && (
             <div className="space-y-3 rounded-hyve-md border border-neutral-200 p-4">
               <p className="text-sm font-medium">Facebook</p>

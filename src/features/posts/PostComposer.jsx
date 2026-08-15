@@ -170,38 +170,24 @@ export function PostComposer() {
   return (
     <div className="space-y-4">
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="space-y-4">
-          <GenericContentStep
-            internalName={internalName}
-            setInternalName={setInternalName}
-            label={label}
-            setLabel={setLabel}
-            caption={caption}
-            setCaption={setCaption}
-            captionHint={captionHint}
-            publishFacebook={publishFacebook}
-            setPublishFacebook={setPublishFacebook}
-            publishInstagram={publishInstagram}
-            setPublishInstagram={setPublishInstagram}
-            scheduledAt={scheduledAt}
-            setScheduledAt={setScheduledAt}
-            media={media}
-            setMedia={setMedia}
-            validationErrors={validationErrors}
-          />
-          <FineTunePanel
-            open={fineTuneOpen}
-            onOpenChange={setFineTuneOpen}
-            caption={caption}
-            platformOverrides={platformOverrides}
-            setPlatformOverrides={setPlatformOverrides}
-            firstComment={firstComment}
-            setFirstComment={setFirstComment}
-            scheduledAt={scheduledAt}
-            publishFacebook={publishFacebook}
-            publishInstagram={publishInstagram}
-          />
-        </div>
+        <GenericContentStep
+          internalName={internalName}
+          setInternalName={setInternalName}
+          label={label}
+          setLabel={setLabel}
+          caption={caption}
+          setCaption={setCaption}
+          captionHint={captionHint}
+          publishFacebook={publishFacebook}
+          setPublishFacebook={setPublishFacebook}
+          publishInstagram={publishInstagram}
+          setPublishInstagram={setPublishInstagram}
+          scheduledAt={scheduledAt}
+          setScheduledAt={setScheduledAt}
+          media={media}
+          setMedia={setMedia}
+          validationErrors={validationErrors}
+        />
 
         <div className="lg:sticky lg:top-8 lg:self-start">
           <PlatformPreviewTabs
@@ -216,6 +202,19 @@ export function PostComposer() {
           />
         </div>
       </div>
+
+      <FineTunePanel
+        open={fineTuneOpen}
+        onOpenChange={setFineTuneOpen}
+        caption={caption}
+        platformOverrides={platformOverrides}
+        setPlatformOverrides={setPlatformOverrides}
+        firstComment={firstComment}
+        setFirstComment={setFirstComment}
+        scheduledAt={scheduledAt}
+        publishFacebook={publishFacebook}
+        publishInstagram={publishInstagram}
+      />
 
       <div className="sticky bottom-0 -mx-8 border-t bg-paper/95 px-8 py-4 backdrop-blur">
         <div className="flex items-center gap-2">

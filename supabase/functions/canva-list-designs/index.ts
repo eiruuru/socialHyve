@@ -1,5 +1,12 @@
 import { handleOptions, jsonResponse } from '../_shared/cors.ts';
-import { CANVA_API, getServiceClient, getWorkspaceForUser, requireUser } from '../_shared/supabase.ts';
+import {
+  CANVA_API,
+  getCanvaConnection,
+  getOrganizationForUser,
+  getServiceClient,
+  refreshCanvaToken,
+  requireUser,
+} from '../_shared/supabase.ts';
 
 Deno.serve(async (req) => {
   const opt = handleOptions(req);
@@ -7,26 +14,33 @@ Deno.serve(async (req) => {
 
   try {
     const { supabase, user } = await requireUser(req);
-    const workspace = await getWorkspaceForUser(supabase, user.id);
+    const org = await getOrganizationForUser(supabase, user.id);
+    const body = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
+    const clientId = body.clientId as string | undefined;
+    const continuation = body.continuation || '';
+
+    if (clientId) {
+      const { data: client, error: clientErr } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('id', clientId)
+        .maybeSingle();
+      if (clientErr || !client) {
+        return jsonResponse({ error: 'Client not found or access denied' }, 403);
+      }
+    }
 
     const service = getServiceClient();
-    const { data: connection, error: connErr } = await service
-      .from('canva_connections')
-      .select('*')
-      .eq('workspace_id', workspace.id)
-      .maybeSingle();
+    const connection = await getCanvaConnection(service, org.id, clientId);
 
-    if (connErr || !connection) {
-      return jsonResponse({ error: 'Canva not connected' }, 400);
+    if (!connection) {
+      return jsonResponse({ error: 'Canva not connected for this client' }, 400);
     }
 
     let accessToken = connection.access_token;
     if (new Date(connection.token_expires_at) <= new Date()) {
       accessToken = await refreshCanvaToken(service, connection);
     }
-
-    const body = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
-    const continuation = body.continuation || '';
 
     const listUrl = new URL(`${CANVA_API}/designs`);
     if (continuation) listUrl.searchParams.set('continuation', continuation);
@@ -46,13 +60,17 @@ Deno.serve(async (req) => {
     }));
 
     for (const design of designs) {
-      await service.from('canva_designs').upsert({
-        workspace_id: workspace.id,
+      const row = {
+        workspace_id: org.id,
+        client_id: clientId || null,
         canva_design_id: design.id,
         title: design.title,
         thumbnail_url: design.thumbnailUrl,
         last_synced_at: new Date().toISOString(),
-      }, { onConflict: 'workspace_id,canva_design_id' });
+      };
+      await service.from('canva_designs').upsert(row, {
+        onConflict: clientId ? 'client_id,canva_design_id' : 'workspace_id,canva_design_id',
+      });
     }
 
     return jsonResponse({ designs, continuation: data.continuation || null });
@@ -60,32 +78,3 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: (err as Error).message }, 400);
   }
 });
-
-async function refreshCanvaToken(service: ReturnType<typeof getServiceClient>, connection: Record<string, unknown>) {
-  const clientId = Deno.env.get('CANVA_CLIENT_ID') || '';
-  const clientSecret = Deno.env.get('CANVA_CLIENT_SECRET') || '';
-  const credentials = btoa(`${clientId}:${clientSecret}`);
-
-  const res = await fetch('https://api.canva.com/rest/v1/oauth/token', {
-    method: 'POST',
-    headers: {
-      Authorization: `Basic ${credentials}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      grant_type: 'refresh_token',
-      refresh_token: connection.refresh_token as string,
-    }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error_description || 'Canva token refresh failed');
-
-  const expiresAt = new Date(Date.now() + (data.expires_in || 3600) * 1000).toISOString();
-  await service.from('canva_connections').update({
-    access_token: data.access_token,
-    refresh_token: data.refresh_token || connection.refresh_token,
-    token_expires_at: expiresAt,
-  }).eq('id', connection.id);
-
-  return data.access_token;
-}

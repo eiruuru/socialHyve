@@ -1,8 +1,7 @@
 import { handleOptions, jsonResponse } from '../_shared/cors.ts';
 import {
-  CANVA_API,
+  getOrganizationForUser,
   getServiceClient,
-  getWorkspaceForUser,
   randomString,
   requireUser,
   sha256Base64Url,
@@ -18,17 +17,33 @@ Deno.serve(async (req) => {
   if (opt) return opt;
 
   try {
+    if (!CANVA_CLIENT_ID || !CANVA_REDIRECT_URI) {
+      return jsonResponse({ error: 'Canva OAuth is not configured' }, 503);
+    }
+
     const body = await req.json().catch(() => ({}));
     const { supabase, user } = await requireUser(req);
-    const workspace = await getWorkspaceForUser(supabase, user.id);
+    const org = await getOrganizationForUser(supabase, user.id);
     const clientId = body.clientId as string | undefined;
+
+    if (clientId) {
+      const client = await supabase
+        .from('clients')
+        .select('id')
+        .eq('id', clientId)
+        .maybeSingle();
+      if (client.error || !client.data) {
+        return jsonResponse({ error: 'Client not found or access denied' }, 403);
+      }
+    }
+
     const state = randomString(32);
     const codeVerifier = randomString(64);
     const codeChallenge = await sha256Base64Url(codeVerifier);
 
     const service = getServiceClient();
     await service.from('oauth_states').insert({
-      workspace_id: workspace.id,
+      workspace_id: org.id,
       client_id: clientId || null,
       provider: 'canva',
       state,

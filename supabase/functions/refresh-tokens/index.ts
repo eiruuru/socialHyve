@@ -1,10 +1,8 @@
 import { handleOptions, jsonResponse } from '../_shared/cors.ts';
-import { CANVA_API, getServiceClient, META_GRAPH } from '../_shared/supabase.ts';
+import { getServiceClient, META_GRAPH, refreshCanvaToken } from '../_shared/supabase.ts';
 
 const META_APP_ID = Deno.env.get('META_APP_ID') || '';
 const META_APP_SECRET = Deno.env.get('META_APP_SECRET') || '';
-const CANVA_CLIENT_ID = Deno.env.get('CANVA_CLIENT_ID') || '';
-const CANVA_CLIENT_SECRET = Deno.env.get('CANVA_CLIENT_SECRET') || '';
 
 const REFRESH_WINDOW_DAYS = 14;
 
@@ -78,31 +76,15 @@ async function refreshCanvaAccounts(service: ReturnType<typeof getServiceClient>
 
   for (const conn of connections || []) {
     try {
-      const credentials = btoa(`${CANVA_CLIENT_ID}:${CANVA_CLIENT_SECRET}`);
-      const res = await fetch(`${CANVA_API}/oauth/token`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Basic ${credentials}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          grant_type: 'refresh_token',
-          refresh_token: conn.refresh_token,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error_description || 'Refresh failed');
-
-      const expiresAt = new Date(Date.now() + (data.expires_in || 3600) * 1000).toISOString();
-      await service.from('canva_connections').update({
-        access_token: data.access_token,
-        refresh_token: data.refresh_token || conn.refresh_token,
-        token_expires_at: expiresAt,
-      }).eq('id', conn.id);
-
-      results.push({ workspaceId: conn.workspace_id, status: 'refreshed', expiresAt });
+      await refreshCanvaToken(service, conn);
+      results.push({ workspaceId: conn.workspace_id, clientId: conn.client_id, status: 'refreshed' });
     } catch (err) {
-      results.push({ workspaceId: conn.workspace_id, status: 'failed', error: (err as Error).message });
+      results.push({
+        workspaceId: conn.workspace_id,
+        clientId: conn.client_id,
+        status: 'failed',
+        error: (err as Error).message,
+      });
     }
   }
 

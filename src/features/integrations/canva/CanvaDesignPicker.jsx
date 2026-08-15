@@ -1,7 +1,10 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Palette } from 'lucide-react';
 import { invokeFunction } from '@/lib/supabaseFunctions';
+import { getCanvaConnection } from '@/lib/posts';
+import { useClient } from '@/lib/clientContext';
 import { Button } from '@/components/ui/button';
 import { IconTooltip } from '@/components/ui/IconTooltip';
 import { DialogRoot, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -9,14 +12,22 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
 export function CanvaDesignPicker({ onSelect, disabled, iconOnly = false }) {
+  const { activeClient } = useClient();
+  const clientId = activeClient?.id;
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [exporting, setExporting] = useState(null);
 
+  const { data: connection } = useQuery({
+    queryKey: ['canva-connection', clientId],
+    queryFn: getCanvaConnection,
+    enabled: !!clientId,
+  });
+
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['canva-designs'],
-    queryFn: () => invokeFunction('canvaListDesigns'),
-    enabled: open,
+    queryKey: ['canva-designs', clientId],
+    queryFn: () => invokeFunction('canvaListDesigns', { clientId }),
+    enabled: open && !!connection && !!clientId,
   });
 
   const designs = (data?.designs || []).filter((d) =>
@@ -29,6 +40,7 @@ export function CanvaDesignPicker({ onSelect, disabled, iconOnly = false }) {
       const result = await invokeFunction('canvaExportDesign', {
         designId: design.id,
         format: 'png',
+        clientId,
       });
       onSelect({
         canvaDesignId: design.id,
@@ -44,6 +56,28 @@ export function CanvaDesignPicker({ onSelect, disabled, iconOnly = false }) {
       setExporting(null);
     }
   };
+
+  if (!connection) {
+    return (
+      <IconTooltip
+        title="Connect Canva"
+        description="Connect Canva for this client in Settings to browse designs"
+      >
+        <Button
+          type="button"
+          variant={iconOnly ? 'ghost' : 'outline'}
+          size={iconOnly ? 'icon' : 'default'}
+          disabled={disabled}
+          asChild
+          className={cn(iconOnly && 'h-9 w-9 shrink-0')}
+        >
+          <Link to="/app/settings/canva" aria-label="Connect Canva">
+            {iconOnly ? <Palette className="h-4 w-4" /> : 'Connect Canva'}
+          </Link>
+        </Button>
+      </IconTooltip>
+    );
+  }
 
   return (
     <DialogRoot open={open} onOpenChange={setOpen}>
@@ -103,7 +137,7 @@ export function CanvaDesignPicker({ onSelect, disabled, iconOnly = false }) {
             </div>
           )}
           {!isLoading && !designs.length && (
-            <p className="text-sm text-muted-foreground">No designs found. Connect Canva in settings.</p>
+            <p className="text-sm text-muted-foreground">No designs found.</p>
           )}
           <Button variant="ghost" size="sm" onClick={() => refetch()}>Refresh</Button>
         </div>

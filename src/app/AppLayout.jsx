@@ -15,6 +15,7 @@ import { useMembership } from '@/lib/membershipContext';
 import { useClient } from '@/lib/clientContext';
 import { Logo } from '@/components/brand/Logo';
 import { ClientSwitcher } from '@/components/ClientSwitcher';
+import { useNavigateOnClientSwitch } from '@/app/useNavigateOnClientSwitch';
 import { cn } from '@/lib/utils';
 
 const allNavItems = [
@@ -32,6 +33,7 @@ export function AppLayout() {
   const membership = useMembership();
   const clientCtx = useClient();
   const location = useLocation();
+  useNavigateOnClientSwitch();
   const isWide = location.pathname.includes('/calendar');
 
   const clientReviewItems = membership.isClientOnly

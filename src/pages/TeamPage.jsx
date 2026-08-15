@@ -49,7 +49,9 @@ export default function TeamPage() {
       <div>
         <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Organization</p>
         <h2 className="font-display text-2xl font-bold">Team</h2>
-        <p className="text-muted-foreground">Invite editors and admins to your agency workspace</p>
+        <p className="text-muted-foreground">
+          Invite editors, managers, and admins. Managers get client access once assigned on a client&apos;s members page.
+        </p>
       </div>
 
       <Card>
@@ -76,6 +78,7 @@ export default function TeamPage() {
                 className="h-10 rounded-hyve-sm border border-input bg-background px-3 text-sm"
               >
                 <option value="editor">Editor</option>
+                <option value="manager">Manager</option>
                 <option value="admin">Admin</option>
               </select>
             </div>

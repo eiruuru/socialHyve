@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight, GripVertical, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { IconTooltip } from '@/components/ui/IconTooltip';
 import { MAX_CAROUSEL_ITEMS, isVideo, reorderMedia } from '@/features/posts/previews/mediaUtils';
 
 export function MediaStrip({ items, onChange, maxItems = MAX_CAROUSEL_ITEMS }) {
@@ -42,15 +43,21 @@ export function MediaStrip({ items, onChange, maxItems = MAX_CAROUSEL_ITEMS }) {
               {item.source === 'canva' ? 'Canva design' : 'Upload'} · #{index + 1}
             </span>
             <div className="flex gap-1">
-              <Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled={index === 0} onClick={() => move(index, -1)}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled={index === items.length - 1} onClick={() => move(index, 1)}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => remove(index)}>
-                <X className="h-4 w-4" />
-              </Button>
+              <IconTooltip title="Move earlier" description="Move this item left in the carousel">
+                <Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled={index === 0} onClick={() => move(index, -1)} aria-label="Move earlier">
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+              </IconTooltip>
+              <IconTooltip title="Move later" description="Move this item right in the carousel">
+                <Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled={index === items.length - 1} onClick={() => move(index, 1)} aria-label="Move later">
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </IconTooltip>
+              <IconTooltip title="Remove" description="Remove this item from the post">
+                <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => remove(index)} aria-label="Remove media">
+                  <X className="h-4 w-4" />
+                </Button>
+              </IconTooltip>
             </div>
           </div>
         ))}

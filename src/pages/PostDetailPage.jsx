@@ -17,6 +17,7 @@ import { normalizeMediaList } from '@/features/posts/previews/mediaUtils';
 import { PostStatusBadges, canTransitionApproval } from '@/features/queue/postStatus';
 import { CommentThread } from '@/features/queue/CommentThread';
 import { Button } from '@/components/ui/button';
+import { IconTooltip } from '@/components/ui/IconTooltip';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -143,31 +144,43 @@ export default function PostDetailPage() {
         </div>
         <div className="flex items-center gap-1">
           {approval === 'pending' && (
-            <Button size="icon" onClick={handleApprove} title="Approve" aria-label="Approve">
-              <Check className="h-4 w-4" />
-            </Button>
+            <IconTooltip title="Approve" description="Mark this post as approved">
+              <Button size="icon" onClick={handleApprove} aria-label="Approve">
+                <Check className="h-4 w-4" />
+              </Button>
+            </IconTooltip>
           )}
           {approval === 'changes_requested' && (
-            <Button size="icon" variant="secondary" onClick={handleResubmit} title="Resubmit for review" aria-label="Resubmit for review">
-              <RotateCcw className="h-4 w-4" />
-            </Button>
+            <IconTooltip title="Resubmit for review" description="Send back to the approval queue">
+              <Button size="icon" variant="secondary" onClick={handleResubmit} aria-label="Resubmit for review">
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+            </IconTooltip>
           )}
           {post.status === 'failed' && (
-            <Button size="icon" variant="secondary" onClick={handleRetry} title="Try again" aria-label="Try again">
-              <RefreshCw className="h-4 w-4" />
-            </Button>
+            <IconTooltip title="Try again" description="Retry publishing this post">
+              <Button size="icon" variant="secondary" onClick={handleRetry} aria-label="Try again">
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </IconTooltip>
           )}
-          <Button size="icon" variant="outline" onClick={handleCopyReviewLink} title="Copy review link" aria-label="Copy review link">
-            <Link2 className="h-4 w-4" />
-          </Button>
-          <Button size="icon" variant="destructive" onClick={handleDelete} title="Delete" aria-label="Delete">
-            <Trash2 className="h-4 w-4" />
-          </Button>
-          <Button size="icon" variant="outline" asChild title="Back to calendar" aria-label="Back to calendar">
-            <Link to="/app/calendar">
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
+          <IconTooltip title="Copy review link" description="Share a link for external approval">
+            <Button size="icon" variant="outline" onClick={handleCopyReviewLink} aria-label="Copy review link">
+              <Link2 className="h-4 w-4" />
+            </Button>
+          </IconTooltip>
+          <IconTooltip title="Delete" description="Permanently remove this post">
+            <Button size="icon" variant="destructive" onClick={handleDelete} aria-label="Delete">
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </IconTooltip>
+          <IconTooltip title="Back to calendar" description="Return to the content calendar">
+            <Button size="icon" variant="outline" asChild aria-label="Back to calendar">
+              <Link to="/app/calendar">
+                <ArrowLeft className="h-4 w-4" />
+              </Link>
+            </Button>
+          </IconTooltip>
         </div>
       </div>
 

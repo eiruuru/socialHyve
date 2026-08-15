@@ -195,3 +195,44 @@ export async function listClientInvites(clientId) {
   if (error) throw error;
   return data;
 }
+
+export async function listOrganizationManagers() {
+  const org = await getOrganization();
+  if (!org) return [];
+
+  const { data, error } = await supabase
+    .from('organization_members')
+    .select('*, profiles(id, email, full_name)')
+    .eq('organization_id', org.id)
+    .eq('role', 'manager');
+  if (error) throw error;
+  return data;
+}
+
+export async function listClientManagers(clientId) {
+  const { data, error } = await supabase
+    .from('manager_client_assignments')
+    .select('*, profiles(id, email, full_name)')
+    .eq('client_id', clientId);
+  if (error) throw error;
+  return data;
+}
+
+export async function assignManagerToClient(clientId, userId) {
+  const { data, error } = await supabase
+    .from('manager_client_assignments')
+    .upsert({ client_id: clientId, user_id: userId }, { onConflict: 'user_id,client_id' })
+    .select('*, profiles(id, email, full_name)')
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function removeManagerFromClient(clientId, userId) {
+  const { error } = await supabase
+    .from('manager_client_assignments')
+    .delete()
+    .eq('client_id', clientId)
+    .eq('user_id', userId);
+  if (error) throw error;
+}

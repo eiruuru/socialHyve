@@ -17,6 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import { useClient } from '@/lib/clientContext';
 import { CalendarPostCard } from './CalendarPostCard';
 import { Button } from '@/components/ui/button';
+import { IconTooltip } from '@/components/ui/IconTooltip';
 import { TabsRoot, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
@@ -66,15 +67,19 @@ export function ContentCalendar({ posts = [] }) {
           <h2 className="font-display text-xl font-bold">{activeClient?.name || 'All posts'}</h2>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={() => setCurrentDate(subMonths(currentDate, 1))}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
+          <IconTooltip title="Previous month" description="Go to the previous month">
+            <Button variant="outline" size="icon" onClick={() => setCurrentDate(subMonths(currentDate, 1))} aria-label="Previous month">
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+          </IconTooltip>
           <h3 className="min-w-[180px] text-center text-lg font-semibold">
             {format(currentDate, 'MMMM yyyy')}
           </h3>
-          <Button variant="outline" size="icon" onClick={() => setCurrentDate(addMonths(currentDate, 1))}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          <IconTooltip title="Next month" description="Go to the next month">
+            <Button variant="outline" size="icon" onClick={() => setCurrentDate(addMonths(currentDate, 1))} aria-label="Next month">
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </IconTooltip>
         </div>
         <TabsRoot value={view} onValueChange={setView}>
           <TabsList>

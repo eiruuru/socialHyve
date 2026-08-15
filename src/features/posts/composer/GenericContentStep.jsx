@@ -2,6 +2,7 @@ import { Upload } from 'lucide-react';
 import { CanvaDesignPicker } from '@/features/integrations/canva/CanvaDesignPicker';
 import { MediaStrip, MAX_CAROUSEL_ITEMS } from '@/features/posts/MediaStrip';
 import { PlatformChip } from '@/components/brand/PlatformChip';
+import { IconTooltip } from '@/components/ui/IconTooltip';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,7 +26,6 @@ export function GenericContentStep({
   media,
   setMedia,
   validationErrors,
-  fineTunePanel,
 }) {
   const handleCanvaSelect = (item) => {
     if (media.length >= MAX_CAROUSEL_ITEMS) return;
@@ -133,38 +133,37 @@ export function GenericContentStep({
           <div className="flex items-center justify-between gap-2">
             <p className="text-sm font-medium">Media</p>
             <div className="flex items-center gap-1">
-              <CanvaDesignPicker
-                iconOnly
-                onSelect={handleCanvaSelect}
-                disabled={media.length >= MAX_CAROUSEL_ITEMS}
-              />
-              <label
-                className={
-                  media.length >= MAX_CAROUSEL_ITEMS
-                    ? 'cursor-not-allowed opacity-50'
-                    : 'cursor-pointer'
-                }
-                title="Upload"
-              >
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full text-ink hover:bg-neutral-100">
-                  <Upload className="h-4 w-4" />
-                </span>
-                <input
-                  type="file"
-                  accept="image/*,video/*"
-                  multiple
-                  className="hidden"
-                  disabled={media.length >= MAX_CAROUSEL_ITEMS}
-                  onChange={handleFileUpload}
-                  aria-label="Upload media"
-                />
-              </label>
+                  <CanvaDesignPicker
+                    iconOnly
+                    onSelect={handleCanvaSelect}
+                    disabled={media.length >= MAX_CAROUSEL_ITEMS}
+                  />
+                  <IconTooltip title="Upload media" description="Add images or videos from your device">
+                    <label
+                      className={
+                        media.length >= MAX_CAROUSEL_ITEMS
+                          ? 'inline-flex cursor-not-allowed opacity-50'
+                          : 'inline-flex cursor-pointer'
+                      }
+                    >
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-full text-ink hover:bg-neutral-100">
+                        <Upload className="h-4 w-4" />
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*,video/*"
+                        multiple
+                        className="hidden"
+                        disabled={media.length >= MAX_CAROUSEL_ITEMS}
+                        onChange={handleFileUpload}
+                        aria-label="Upload media"
+                      />
+                    </label>
+                  </IconTooltip>
             </div>
           </div>
           <MediaStrip items={media} onChange={setMedia} />
         </div>
-
-        {fineTunePanel}
 
         {validationErrors.length > 0 && (
           <ul className="space-y-1 text-xs text-amber-600">

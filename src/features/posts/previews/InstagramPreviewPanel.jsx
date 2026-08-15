@@ -3,22 +3,24 @@ import { Film, LayoutGrid, Square } from 'lucide-react';
 import { InstagramFeedPreview } from './InstagramFeedPreview';
 import { InstagramGridPreview } from './InstagramGridPreview';
 import { PreviewFrame } from './PreviewFrame';
+import { IconTooltip } from '@/components/ui/IconTooltip';
 import { cn } from '@/lib/utils';
 
-function IconToggle({ active, onClick, title, children }) {
+function IconToggle({ active, onClick, title, description, children }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={title}
-      aria-label={title}
-      className={cn(
-        'inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors',
-        active ? 'bg-honey text-white' : 'text-muted-foreground hover:bg-neutral-200 hover:text-ink'
-      )}
-    >
-      {children}
-    </button>
+    <IconTooltip title={title} description={description}>
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={title}
+        className={cn(
+          'inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors',
+          active ? 'bg-honey text-white' : 'text-muted-foreground hover:bg-neutral-200 hover:text-ink'
+        )}
+      >
+        {children}
+      </button>
+    </IconTooltip>
   );
 }
 
@@ -39,6 +41,7 @@ export function InstagramPreviewPanel({
         active={viewMode === 'post'}
         onClick={() => setViewMode('post')}
         title="Post preview"
+        description="See how this post looks in the feed"
       >
         <Square className="h-4 w-4" />
       </IconToggle>
@@ -46,6 +49,7 @@ export function InstagramPreviewPanel({
         active={viewMode === 'grid'}
         onClick={() => setViewMode('grid')}
         title="Grid preview"
+        description="See placement on the profile grid"
       >
         <LayoutGrid className="h-4 w-4" />
       </IconToggle>
@@ -54,6 +58,7 @@ export function InstagramPreviewPanel({
         active={contentFilter === 'posts'}
         onClick={() => setContentFilter('posts')}
         title="Posts"
+        description="Show feed posts in the grid"
       >
         <Square className="h-3.5 w-3.5" />
       </IconToggle>
@@ -61,6 +66,7 @@ export function InstagramPreviewPanel({
         active={contentFilter === 'reels'}
         onClick={() => setContentFilter('reels')}
         title="Reels"
+        description="Reels preview coming soon"
       >
         <Film className="h-4 w-4" />
       </IconToggle>

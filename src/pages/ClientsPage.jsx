@@ -5,6 +5,7 @@ import { Pencil, Trash2 } from 'lucide-react';
 import { createClient, deleteClient, listClients, updateClient } from '@/lib/organization';
 import { useClient } from '@/lib/clientContext';
 import { Button } from '@/components/ui/button';
+import { IconTooltip } from '@/components/ui/IconTooltip';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -75,12 +76,16 @@ function ClientRow({ client, onUpdated, onDeleted }) {
       </div>
       {!editing && (
         <div className="flex shrink-0 items-center gap-1">
-          <Button variant="ghost" size="icon" onClick={() => setEditing(true)} title="Rename" aria-label="Rename client">
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={handleDelete} title="Delete client" aria-label="Delete client">
-            <Trash2 className="h-4 w-4 text-destructive" />
-          </Button>
+          <IconTooltip title="Rename" description="Change this client's display name">
+            <Button variant="ghost" size="icon" onClick={() => setEditing(true)} aria-label="Rename client">
+              <Pencil className="h-4 w-4" />
+            </Button>
+          </IconTooltip>
+          <IconTooltip title="Delete client" description="Permanently delete this client and all its data">
+            <Button variant="ghost" size="icon" onClick={handleDelete} aria-label="Delete client">
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          </IconTooltip>
           <Button variant="outline" size="sm" asChild>
             <Link to={`/app/clients/${client.id}/members`}>Members</Link>
           </Button>

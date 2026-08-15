@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Palette } from 'lucide-react';
 import { invokeFunction } from '@/lib/supabaseFunctions';
 import { Button } from '@/components/ui/button';
+import { IconTooltip } from '@/components/ui/IconTooltip';
 import { DialogRoot, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -46,19 +47,20 @@ export function CanvaDesignPicker({ onSelect, disabled, iconOnly = false }) {
 
   return (
     <DialogRoot open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          type="button"
-          variant={iconOnly ? 'ghost' : 'outline'}
-          size={iconOnly ? 'icon' : 'default'}
-          disabled={disabled}
-          title="Add from Canva"
-          aria-label="Add from Canva"
-          className={cn(iconOnly && 'h-9 w-9 shrink-0')}
-        >
-          {iconOnly ? <Palette className="h-4 w-4" /> : 'Add from Canva'}
-        </Button>
-      </DialogTrigger>
+      <IconTooltip title="Add from Canva" description="Browse and attach a Canva design">
+        <DialogTrigger asChild>
+          <Button
+            type="button"
+            variant={iconOnly ? 'ghost' : 'outline'}
+            size={iconOnly ? 'icon' : 'default'}
+            disabled={disabled}
+            aria-label="Add from Canva"
+            className={cn(iconOnly && 'h-9 w-9 shrink-0')}
+          >
+            {iconOnly ? <Palette className="h-4 w-4" /> : 'Add from Canva'}
+          </Button>
+        </DialogTrigger>
+      </IconTooltip>
       <DialogContent className="max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Select Canva Design</DialogTitle>

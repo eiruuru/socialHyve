@@ -14,6 +14,7 @@ import { FineTunePanel } from '@/features/posts/composer/FineTunePanel';
 import { PlatformPreviewTabs } from '@/features/posts/previews/PlatformPreviewTabs';
 import { MAX_CAROUSEL_ITEMS } from '@/features/posts/MediaStrip';
 import { Button } from '@/components/ui/button';
+import { IconTooltip } from '@/components/ui/IconTooltip';
 
 const IG_CAPTION_LIMIT = 2200;
 const FB_CAPTION_LIMIT = 63206;
@@ -169,38 +170,38 @@ export function PostComposer() {
   return (
     <div className="space-y-4">
       <div className="grid gap-6 lg:grid-cols-2">
-        <GenericContentStep
-          internalName={internalName}
-          setInternalName={setInternalName}
-          label={label}
-          setLabel={setLabel}
-          caption={caption}
-          setCaption={setCaption}
-          captionHint={captionHint}
-          publishFacebook={publishFacebook}
-          setPublishFacebook={setPublishFacebook}
-          publishInstagram={publishInstagram}
-          setPublishInstagram={setPublishInstagram}
-          scheduledAt={scheduledAt}
-          setScheduledAt={setScheduledAt}
-          media={media}
-          setMedia={setMedia}
-          validationErrors={validationErrors}
-          fineTunePanel={
-            <FineTunePanel
-              open={fineTuneOpen}
-              onOpenChange={setFineTuneOpen}
-              caption={caption}
-              platformOverrides={platformOverrides}
-              setPlatformOverrides={setPlatformOverrides}
-              firstComment={firstComment}
-              setFirstComment={setFirstComment}
-              scheduledAt={scheduledAt}
-              publishFacebook={publishFacebook}
-              publishInstagram={publishInstagram}
-            />
-          }
-        />
+        <div className="space-y-4">
+          <GenericContentStep
+            internalName={internalName}
+            setInternalName={setInternalName}
+            label={label}
+            setLabel={setLabel}
+            caption={caption}
+            setCaption={setCaption}
+            captionHint={captionHint}
+            publishFacebook={publishFacebook}
+            setPublishFacebook={setPublishFacebook}
+            publishInstagram={publishInstagram}
+            setPublishInstagram={setPublishInstagram}
+            scheduledAt={scheduledAt}
+            setScheduledAt={setScheduledAt}
+            media={media}
+            setMedia={setMedia}
+            validationErrors={validationErrors}
+          />
+          <FineTunePanel
+            open={fineTuneOpen}
+            onOpenChange={setFineTuneOpen}
+            caption={caption}
+            platformOverrides={platformOverrides}
+            setPlatformOverrides={setPlatformOverrides}
+            firstComment={firstComment}
+            setFirstComment={setFirstComment}
+            scheduledAt={scheduledAt}
+            publishFacebook={publishFacebook}
+            publishInstagram={publishInstagram}
+          />
+        </div>
 
         <div className="lg:sticky lg:top-8 lg:self-start">
           <PlatformPreviewTabs
@@ -218,45 +219,49 @@ export function PostComposer() {
 
       <div className="sticky bottom-0 -mx-8 border-t bg-paper/95 px-8 py-4 backdrop-blur">
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleSaveDraft}
-            disabled={saving}
-            title="Save draft"
-            aria-label="Save draft"
-          >
-            <Save className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="secondary"
-            size="icon"
-            onClick={handleSubmitForReview}
-            disabled={saving}
-            title="Submit for review"
-            aria-label="Submit for review"
-          >
-            <ClipboardCheck className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="secondary"
-            size="icon"
-            onClick={handleSchedule}
-            disabled={saving}
-            title="Schedule"
-            aria-label="Schedule"
-          >
-            <Calendar className="h-4 w-4" />
-          </Button>
-          <Button
-            size="icon"
-            onClick={handlePublishNow}
-            disabled={saving}
-            title="Publish now"
-            aria-label="Publish now"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+          <IconTooltip title="Save draft" description="Keep your work without publishing">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleSaveDraft}
+              disabled={saving}
+              aria-label="Save draft"
+            >
+              <Save className="h-4 w-4" />
+            </Button>
+          </IconTooltip>
+          <IconTooltip title="Submit for review" description="Send to the approval queue">
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={handleSubmitForReview}
+              disabled={saving}
+              aria-label="Submit for review"
+            >
+              <ClipboardCheck className="h-4 w-4" />
+            </Button>
+          </IconTooltip>
+          <IconTooltip title="Schedule" description="Publish automatically at the set time">
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={handleSchedule}
+              disabled={saving}
+              aria-label="Schedule"
+            >
+              <Calendar className="h-4 w-4" />
+            </Button>
+          </IconTooltip>
+          <IconTooltip title="Publish now" description="Post immediately to connected accounts">
+            <Button
+              size="icon"
+              onClick={handlePublishNow}
+              disabled={saving}
+              aria-label="Publish now"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </IconTooltip>
         </div>
       </div>
     </div>

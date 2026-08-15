@@ -5,7 +5,11 @@ import {
   inviteClientMember,
   listClientInvites,
   listClientMembers,
+  listClientManagers,
   listClients,
+  listOrganizationManagers,
+  assignManagerToClient,
+  removeManagerFromClient,
   displayMember,
 } from '@/lib/organization';
 import { Button } from '@/components/ui/button';
@@ -18,6 +22,8 @@ export default function ClientMembersPage() {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('approver');
   const [inviting, setInviting] = useState(false);
+  const [managerUserId, setManagerUserId] = useState('');
+  const [assigning, setAssigning] = useState(false);
 
   const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
@@ -37,6 +43,20 @@ export default function ClientMembersPage() {
     enabled: !!clientId,
   });
 
+  const { data: orgManagers = [] } = useQuery({
+    queryKey: ['org-managers'],
+    queryFn: listOrganizationManagers,
+  });
+
+  const { data: clientManagers = [] } = useQuery({
+    queryKey: ['client-managers', clientId],
+    queryFn: () => listClientManagers(clientId),
+    enabled: !!clientId,
+  });
+
+  const assignedManagerIds = new Set(clientManagers.map((m) => m.user_id));
+  const availableManagers = orgManagers.filter((m) => !assignedManagerIds.has(m.user_id));
+
   const handleInvite = async (e) => {
     e.preventDefault();
     if (!email.trim()) return;
@@ -52,6 +72,30 @@ export default function ClientMembersPage() {
       alert(err.message);
     } finally {
       setInviting(false);
+    }
+  };
+
+  const handleAssignManager = async (e) => {
+    e.preventDefault();
+    if (!managerUserId) return;
+    setAssigning(true);
+    try {
+      await assignManagerToClient(clientId, managerUserId);
+      setManagerUserId('');
+      queryClient.invalidateQueries({ queryKey: ['client-managers', clientId] });
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  const handleRemoveManager = async (userId) => {
+    try {
+      await removeManagerFromClient(clientId, userId);
+      queryClient.invalidateQueries({ queryKey: ['client-managers', clientId] });
+    } catch (err) {
+      alert(err.message);
     }
   };
 
@@ -97,6 +141,67 @@ export default function ClientMembersPage() {
               {inviting ? 'Inviting…' : 'Send invite'}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Assigned managers</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Team managers can work on this client&apos;s calendar, posts, and integrations after you assign them here.
+          </p>
+          {availableManagers.length > 0 ? (
+            <form onSubmit={handleAssignManager} className="flex flex-wrap items-end gap-2">
+              <div>
+                <label className="mb-1 block text-xs font-medium">Manager</label>
+                <select
+                  value={managerUserId}
+                  onChange={(e) => setManagerUserId(e.target.value)}
+                  className="h-10 rounded-hyve-sm border border-input bg-background px-3 text-sm"
+                >
+                  <option value="">Select manager…</option>
+                  {availableManagers.map((m) => (
+                    <option key={m.user_id} value={m.user_id}>
+                      {displayMember(m)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <Button type="submit" disabled={assigning || !managerUserId}>
+                {assigning ? 'Assigning…' : 'Assign manager'}
+              </Button>
+            </form>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Invite managers from the Team page, then assign them to this client.
+            </p>
+          )}
+          {clientManagers.length > 0 ? (
+            <ul className="space-y-2">
+              {clientManagers.map((m) => (
+                <li key={m.id} className="flex items-center justify-between rounded-hyve-sm border px-3 py-2 text-sm">
+                  <div>
+                    <p className="font-medium">{displayMember(m)}</p>
+                    {m.profiles?.email && m.profiles.full_name && (
+                      <p className="text-xs text-muted-foreground">{m.profiles.email}</p>
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemoveManager(m.user_id)}
+                  >
+                    Remove
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">No managers assigned yet.</p>
+          )}
         </CardContent>
       </Card>
 

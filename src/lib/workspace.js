@@ -43,10 +43,19 @@ export async function getWorkspace() {
       .select()
       .single();
     if (!orgErr && org) {
-      await supabase.from('organization_members').upsert(
-        { organization_id: org.id, user_id: user.id, role: 'owner' },
-        { onConflict: 'organization_id,user_id' },
-      );
+      const { data: existing } = await supabase
+        .from('organization_members')
+        .select('id')
+        .eq('organization_id', org.id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (!existing) {
+        await supabase.from('organization_members').insert({
+          organization_id: org.id,
+          user_id: user.id,
+          role: 'owner',
+        });
+      }
     }
 
     return created;

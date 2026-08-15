@@ -102,13 +102,24 @@ async function uniqueSlug(orgId, baseSlug, excludeClientId = null) {
   }
 }
 
-async function ensureOrganizationSetup(org, userId) {
-  if (!org?.id || !userId) return;
+async function ensureOwnerMembership(org, userId) {
+  if (!org?.id || !userId || org.owner_id !== userId) return;
 
-  await supabase.from('organization_members').upsert(
-    { organization_id: org.id, user_id: userId, role: 'owner' },
-    { onConflict: 'organization_id,user_id' },
-  );
+  const { data: existing } = await supabase
+    .from('organization_members')
+    .select('id')
+    .eq('organization_id', org.id)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (existing) return;
+
+  const { error } = await supabase.from('organization_members').insert({
+    organization_id: org.id,
+    user_id: userId,
+    role: 'owner',
+  });
+  if (error) throw error;
 }
 
 export async function getOrganization() {
@@ -130,7 +141,7 @@ export async function getOrganization() {
     .maybeSingle();
 
   if (owned) {
-    await ensureOrganizationSetup(owned, user.id);
+    await ensureOwnerMembership(owned, user.id);
     return owned;
   }
 
@@ -149,7 +160,7 @@ export async function getOrganization() {
     .single();
 
   if (error) throw error;
-  await ensureOrganizationSetup(org, user.id);
+  await ensureOwnerMembership(org, user.id);
   return org;
 }
 
@@ -158,23 +169,34 @@ export async function listClients() {
 }
 
 export async function createClient(name) {
+  const timezone = getBrowserTimezone();
+  const { data, error } = await supabase.rpc('create_client', {
+    p_name: name,
+    p_timezone: timezone,
+  });
+
+  if (!error && data) return data;
+
+  // Fallback when migration 013 is not applied yet.
+  if (error?.code !== 'PGRST202') throw error;
+
   const org = await getOrganization();
   if (!org) throw new Error('No organization');
 
   const baseSlug = slugify(name);
   const slug = await uniqueSlug(org.id, baseSlug);
-  const { data, error } = await supabase
+  const { data: inserted, error: insertError } = await supabase
     .from('clients')
     .insert({
       organization_id: org.id,
       name,
       slug,
-      default_timezone: getBrowserTimezone(),
+      default_timezone: timezone,
     })
     .select()
     .single();
-  if (error) throw error;
-  return data;
+  if (insertError) throw insertError;
+  return inserted;
 }
 
 export async function listOrganizationMembers() {

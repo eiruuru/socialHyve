@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { listPosts } from '@/lib/posts';
 import { useClient } from '@/lib/clientContext';
 import { ContentCalendar } from '@/features/calendar/ContentCalendar';
-import { EmptyHiveState } from '@/components/EmptyHiveState';
 import { Button } from '@/components/ui/button';
 
 export default function CalendarPage() {
@@ -28,11 +27,6 @@ export default function CalendarPage() {
       </div>
       {isLoading ? (
         <p className="text-muted-foreground">Loading calendar…</p>
-      ) : posts.length === 0 ? (
-        <EmptyHiveState
-          title="No posts on the calendar yet."
-          description="Draft the next one and it'll show up here."
-        />
       ) : (
         <ContentCalendar posts={posts} />
       )}

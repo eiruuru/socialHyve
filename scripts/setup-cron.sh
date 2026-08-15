@@ -25,7 +25,7 @@ sed \
   supabase/setup/cron.sql > "$TMP_SQL"
 
 echo "Applying cron setup to $PROJECT_REF..."
-npx -y supabase db execute --project-ref "$PROJECT_REF" --file "$TMP_SQL"
+npx -y supabase db query --project-ref "$PROJECT_REF" --file "$TMP_SQL"
 rm -f "$TMP_SQL"
 
 echo "Cron jobs configured."

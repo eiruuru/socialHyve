@@ -4,10 +4,18 @@
 CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA extensions;
 CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
 
--- Store secrets in Vault (replace values before running)
+-- Store secrets in Vault (replace YOUR_SERVICE_ROLE_KEY before first run)
 -- Dashboard → Project Settings → API → Project URL and service_role key
-SELECT vault.create_secret('https://hfbxonnowvfkxmmkgftz.supabase.co', 'supabase_url', 'Project URL');
-SELECT vault.create_secret('YOUR_SERVICE_ROLE_KEY', 'service_role_key', 'Service role key');
+-- Safe to re-run: skips secrets that already exist.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM vault.secrets WHERE name = 'supabase_url') THEN
+    PERFORM vault.create_secret('https://hfbxonnowvfkxmmkgftz.supabase.co', 'supabase_url', 'Project URL');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM vault.secrets WHERE name = 'service_role_key') THEN
+    PERFORM vault.create_secret('YOUR_SERVICE_ROLE_KEY', 'service_role_key', 'Service role key');
+  END IF;
+END $$;
 
 -- Publish queue: every minute
 SELECT cron.unschedule('socialhyve-publish-queue')

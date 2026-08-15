@@ -4,6 +4,7 @@ import { resolvePostAccounts } from '../_shared/socialAccounts.ts';
 
 const META_APP_ID = Deno.env.get('META_APP_ID') || '';
 const META_APP_SECRET = Deno.env.get('META_APP_SECRET') || '';
+const APP_ACCESS_TOKEN = `${META_APP_ID}|${META_APP_SECRET}`;
 
 type MediaItem = {
   public_url?: string;
@@ -56,6 +57,46 @@ Deno.serve(async (req) => {
   }
 });
 
+async function ensurePageAccessToken(
+  service: ReturnType<typeof getServiceClient>,
+  account: Record<string, unknown>,
+): Promise<string> {
+  const pageId = account.page_id || account.external_id;
+  const stored = (account.page_access_token || account.access_token) as string;
+  if (!pageId || !stored) {
+    throw new Error('Missing Page credentials. Reconnect Meta in Settings → Accounts.');
+  }
+
+  const res = await fetch(
+    `${META_GRAPH}/${pageId}?fields=access_token&access_token=${encodeURIComponent(stored)}`,
+  );
+  const data = await res.json();
+  if (data.access_token) {
+    if (data.access_token !== stored && account.id) {
+      await service.from('social_accounts').update({
+        access_token: data.access_token,
+        page_access_token: data.access_token,
+      }).eq('id', account.id);
+    }
+    return data.access_token as string;
+  }
+
+  const debugRes = await fetch(
+    `${META_GRAPH}/debug_token?input_token=${encodeURIComponent(stored)}&access_token=${encodeURIComponent(APP_ACCESS_TOKEN)}`,
+  );
+  const debug = await debugRes.json();
+  if (debug.data?.type === 'USER') {
+    throw new Error(
+      'Facebook Page token is invalid (stored as a user token). Disconnect and reconnect Meta in Settings → Accounts.',
+    );
+  }
+
+  throw new Error(
+    (data.error?.message as string) ||
+      'Could not get Page access token. Disconnect and reconnect Meta in Settings → Accounts.',
+  );
+}
+
 async function publishPost(service: ReturnType<typeof getServiceClient>, postId: string) {
   const { data: post, error: postErr } = await service
     .from('posts')
@@ -83,9 +124,10 @@ async function publishPost(service: ReturnType<typeof getServiceClient>, postId:
 
   if (post.publish_facebook && fbAccount) {
     try {
-      const externalId = await publishToFacebook(fbAccount, post.caption, media, post.scheduled_at);
-      const token = (fbAccount.page_access_token || fbAccount.access_token) as string;
-      const permalink = await fetchMetaPermalink(externalId, token);
+      const pageToken = await ensurePageAccessToken(service, fbAccount);
+      const fbWithToken = { ...fbAccount, page_access_token: pageToken, access_token: pageToken };
+      const externalId = await publishToFacebook(fbWithToken, post.caption, media, post.scheduled_at);
+      const permalink = await fetchMetaPermalink(externalId, pageToken);
       await service.from('post_targets').upsert({
         post_id: postId,
         platform: 'facebook',
@@ -118,9 +160,10 @@ async function publishPost(service: ReturnType<typeof getServiceClient>, postId:
 
   if (post.publish_instagram && igAccount) {
     try {
-      const externalId = await publishToInstagram(igAccount, post.caption, media, post.scheduled_at);
-      const token = (igAccount.page_access_token || igAccount.access_token) as string;
-      const permalink = await fetchMetaPermalink(externalId, token);
+      const pageToken = await ensurePageAccessToken(service, igAccount);
+      const igWithToken = { ...igAccount, page_access_token: pageToken, access_token: pageToken };
+      const externalId = await publishToInstagram(igWithToken, post.caption, media, post.scheduled_at);
+      const permalink = await fetchMetaPermalink(externalId, pageToken);
       await service.from('post_targets').upsert({
         post_id: postId,
         platform: 'instagram',

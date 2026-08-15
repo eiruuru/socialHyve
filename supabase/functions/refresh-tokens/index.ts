@@ -36,6 +36,18 @@ async function refreshMetaAccounts(service: ReturnType<typeof getServiceClient>,
   const seenTokens = new Set<string>();
 
   for (const account of accounts || []) {
+    // Page access tokens must not be run through fb_exchange_token — that returns a user
+    // token without page permissions and breaks publishing ("impersonating a user's page").
+    if (account.platform === 'facebook' || account.platform === 'instagram') {
+      results.push({
+        accountId: account.id,
+        platform: account.platform,
+        status: 'skipped',
+        reason: 'page tokens are not user-exchangeable',
+      });
+      continue;
+    }
+
     const token = account.access_token;
     if (seenTokens.has(token)) continue;
     seenTokens.add(token);

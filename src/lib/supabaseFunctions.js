@@ -7,6 +7,7 @@ const FUNCTION_MAP = {
   canvaOAuthCallback: 'canva-oauth-callback',
   canvaListDesigns: 'canva-list-designs',
   canvaGetDesign: 'canva-get-design',
+  canvaGetDesignPages: 'canva-get-design-pages',
   canvaExportDesign: 'canva-export-design',
   metaListIgMedia: 'meta-list-ig-media',
   publishPost: 'publish-post',

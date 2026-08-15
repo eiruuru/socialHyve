@@ -10,8 +10,16 @@ import {
   MAX_IMPORT_ROWS,
   parsePostCsvText,
   POST_IMPORT_TEMPLATE_URL,
+  POST_IMPORT_TIMEZONES_URL,
   truncateCaption,
+  truncateLabel,
 } from '@/lib/postCsvImport';
+import {
+  clearImportLogs,
+  loadImportLogs,
+  saveImportSession,
+} from '@/lib/postImportLog';
+import { ImportLogPanel } from '@/features/posts/import/ImportLogPanel';
 import { EmptyHiveState } from '@/components/EmptyHiveState';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Button } from '@/components/ui/button';
@@ -47,8 +55,10 @@ export function PostImportView() {
   const [parsed, setParsed] = useState(null);
   const [parseError, setParseError] = useState('');
   const [clientChangedNotice, setClientChangedNotice] = useState('');
-  const [importProgress, setImportProgress] = useState({ current: 0, total: 0, caption: '' });
+  const [importProgress, setImportProgress] = useState({ current: 0, total: 0, label: '' });
   const [importResults, setImportResults] = useState({ created: 0, failed: [] });
+  const [importHistory, setImportHistory] = useState([]);
+  const [liveSession, setLiveSession] = useState(null);
 
   const previewClientIdRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -62,11 +72,20 @@ export function PostImportView() {
     setParsed(null);
     setParseError('');
     setClientChangedNotice('');
-    setImportProgress({ current: 0, total: 0, caption: '' });
+    setImportProgress({ current: 0, total: 0, label: '' });
     setImportResults({ created: 0, failed: [] });
+    setLiveSession(null);
     previewClientIdRef.current = null;
     if (fileInputRef.current) fileInputRef.current.value = '';
   }, []);
+
+  useEffect(() => {
+    if (activeClient?.id) {
+      setImportHistory(loadImportLogs(activeClient.id));
+    } else {
+      setImportHistory([]);
+    }
+  }, [activeClient?.id]);
 
   useEffect(() => {
     if (step !== STEPS.PREVIEW || !previewClientIdRef.current || !activeClient?.id) return;
@@ -122,40 +141,113 @@ export function PostImportView() {
     const validRows = parsed.rows.filter((row) => !row.errors.length && row.payload);
     if (!validRows.length) return;
 
+    const skippedEntries = parsed.rows
+      .filter((row) => row.errors.length)
+      .map((row) => ({
+        rowIndex: row.rowIndex,
+        status: 'skipped',
+        name: truncateLabel(row.row.internal_name) || truncateCaption(row.row.caption) || `Row ${row.rowIndex}`,
+        message: row.errors.join('; '),
+      }));
+
+    const sessionId = `${Date.now()}`;
+    const startedAt = new Date().toISOString();
+    const logEntries = [...skippedEntries];
+
+    setLiveSession({
+      id: sessionId,
+      fileName,
+      inProgress: true,
+      entries: logEntries,
+      summary: {
+        created: 0,
+        failed: 0,
+        skipped: skippedEntries.length,
+      },
+      startedAt,
+    });
+
     setStep(STEPS.IMPORTING);
-    setImportProgress({ current: 0, total: validRows.length, caption: '' });
+    setImportProgress({ current: 0, total: validRows.length, label: '' });
 
     const failed = [];
     let created = 0;
 
     for (let i = 0; i < validRows.length; i++) {
       const row = validRows[i];
+      const progressLabel = truncateLabel(row.row.internal_name) || truncateCaption(row.row.caption);
       setImportProgress({
         current: i,
         total: validRows.length,
-        caption: truncateCaption(row.row.caption),
+        label: progressLabel,
       });
 
       try {
         await createPost(row.payload);
         created += 1;
+        logEntries.push({
+          rowIndex: row.rowIndex,
+          status: 'created',
+          name: progressLabel || `Row ${row.rowIndex}`,
+        });
       } catch (err) {
+        const message = err.message || 'Failed to create post';
         failed.push({
           rowIndex: row.rowIndex,
-          message: err.message || 'Failed to create post',
+          message,
+        });
+        logEntries.push({
+          rowIndex: row.rowIndex,
+          status: 'failed',
+          name: progressLabel || `Row ${row.rowIndex}`,
+          message,
         });
       }
+
+      setLiveSession((prev) => prev && ({
+        ...prev,
+        entries: [...logEntries],
+        summary: {
+          created,
+          failed: failed.length,
+          skipped: skippedEntries.length,
+        },
+      }));
 
       setImportProgress({
         current: i + 1,
         total: validRows.length,
-        caption: truncateCaption(row.row.caption),
+        label: progressLabel,
       });
     }
 
     await queryClient.invalidateQueries({ queryKey: ['posts', activeClient.id] });
+
+    const completedSession = {
+      id: sessionId,
+      fileName,
+      inProgress: false,
+      entries: logEntries,
+      summary: {
+        created,
+        failed: failed.length,
+        skipped: skippedEntries.length,
+      },
+      startedAt,
+      completedAt: new Date().toISOString(),
+    };
+
+    saveImportSession(activeClient.id, completedSession);
+    setImportHistory(loadImportLogs(activeClient.id));
+    setLiveSession(null);
     setImportResults({ created, failed });
     setStep(STEPS.SUMMARY);
+  };
+
+  const handleClearLog = () => {
+    if (!activeClient?.id) return;
+    clearImportLogs(activeClient.id);
+    setImportHistory([]);
   };
 
   if (!clientsLoading && clients.length === 0) {
@@ -216,18 +308,29 @@ export function PostImportView() {
         </CardHeader>
         <CardContent className="space-y-4">
           <ol className="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
-            <li>Download the CSV template</li>
-            <li>Fill in your post captions and optional schedule metadata</li>
+            <li>Download the post template (and timezone reference if needed)</li>
+            <li>Fill in internal names, captions, and optional schedule columns</li>
+            <li>Use <span className="font-mono text-xs">scheduled_date</span> (YYYY-MM-DD) and <span className="font-mono text-xs">scheduled_time</span> (24-hour HH:MM, e.g. 09:00 or 14:30)</li>
             <li>Remove the example rows or replace them with your content</li>
-            <li>Upload the file and review the preview</li>
+            <li>Upload only the post template — not the timezone reference file</li>
             <li>Import to create draft posts — add media in the composer afterward</li>
           </ol>
+
+          <p className="text-xs text-muted-foreground">
+            CSV files have one sheet only. The timezone reference is a separate download — it will not affect your upload.
+          </p>
 
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline" disabled={busy}>
               <a href={POST_IMPORT_TEMPLATE_URL} download="post-import-template.csv">
                 <Download className="mr-2 h-4 w-4" />
-                Download template
+                Download post template
+              </a>
+            </Button>
+            <Button asChild variant="ghost" disabled={busy}>
+              <a href={POST_IMPORT_TIMEZONES_URL} download="post-import-timezones.csv">
+                <Download className="mr-2 h-4 w-4" />
+                Download timezone reference
               </a>
             </Button>
             {step !== STEPS.IDLE && step !== STEPS.PARSING && (
@@ -305,6 +408,7 @@ export function PostImportView() {
                 <thead className="bg-neutral-50 text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
                     <th className="px-3 py-2">Row</th>
+                    <th className="px-3 py-2">Internal name</th>
                     <th className="px-3 py-2">Caption</th>
                     <th className="px-3 py-2">Label</th>
                     <th className="px-3 py-2">Platforms</th>
@@ -324,11 +428,14 @@ export function PostImportView() {
                     return (
                       <tr key={row.rowIndex} className="border-t align-top">
                         <td className="px-3 py-2 font-mono text-xs">{row.rowIndex}</td>
+                        <td className="px-3 py-2">{row.row.internal_name || '—'}</td>
                         <td className="max-w-xs px-3 py-2">{row.row.caption || '—'}</td>
                         <td className="px-3 py-2">{row.row.label || '—'}</td>
                         <td className="px-3 py-2">{platforms.join(', ') || '—'}</td>
                         <td className="px-3 py-2 whitespace-nowrap">
-                          {row.row.scheduled_at || '—'}
+                          {row.row.schedule_display
+                            ? `${row.row.schedule_display}${row.row.schedule_timezone ? ` (${row.row.schedule_timezone})` : ''}`
+                            : '—'}
                         </td>
                         <td className="px-3 py-2">
                           {hasError ? (
@@ -360,7 +467,7 @@ export function PostImportView() {
         <ProgressPanel
           value={importPercent}
           title={`Creating ${importProgress.current} of ${importProgress.total}`}
-          subtitle={importProgress.caption ? `"${importProgress.caption}"` : undefined}
+          subtitle={importProgress.label ? `"${importProgress.label}"` : undefined}
         />
       )}
 
@@ -407,6 +514,12 @@ export function PostImportView() {
           </CardContent>
         </Card>
       )}
+
+      <ImportLogPanel
+        liveSession={liveSession}
+        history={importHistory}
+        onClear={importHistory.length && !liveSession ? handleClearLog : undefined}
+      />
     </div>
   );
 }

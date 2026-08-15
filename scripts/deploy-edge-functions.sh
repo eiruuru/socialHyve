@@ -43,6 +43,7 @@ FUNCTIONS=(
   canva-oauth-callback
   canva-list-designs
   canva-get-design
+  canva-get-design-pages
   canva-export-design
   meta-list-ig-media
   publish-post

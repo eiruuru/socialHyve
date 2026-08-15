@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { invokeFunction } from '@/lib/supabaseFunctions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +14,10 @@ const IMPORT_STAGES = [
   'Saving to your media library…',
 ];
 
+function clampPage(page, pageCount) {
+  return Math.min(Math.max(1, page), pageCount);
+}
+
 export function CanvaImportStep({
   design,
   clientId,
@@ -22,20 +27,39 @@ export function CanvaImportStep({
 }) {
   const [formatType, setFormatType] = useState('png');
   const [pagesInput, setPagesInput] = useState('');
+  const [previewPage, setPreviewPage] = useState(1);
+  const [pageJumpInput, setPageJumpInput] = useState('1');
   const [importing, setImporting] = useState(false);
   const [importStage, setImportStage] = useState(0);
   const [error, setError] = useState('');
 
-  const { data: meta, isLoading } = useQuery({
+  const { data: meta, isLoading: metaLoading } = useQuery({
     queryKey: ['canva-design', design?.id, clientId],
     queryFn: () => invokeFunction('canvaGetDesign', { designId: design.id, clientId }),
     enabled: !!design?.id && !!clientId,
   });
 
   const pageCount = meta?.pageCount ?? 1;
-  const thumbnailUrl = meta?.thumbnailUrl || design?.thumbnailUrl;
+  const designThumbnailUrl = meta?.thumbnailUrl || design?.thumbnailUrl;
   const title = meta?.title || design?.title || 'Untitled';
   const showPagesField = pageCount > 1 && formatType !== 'mp4';
+  const showPageNavigator = pageCount > 1 && formatType !== 'mp4';
+
+  const { data: pagePreview, isLoading: pagePreviewLoading } = useQuery({
+    queryKey: ['canva-design-page', design?.id, clientId, previewPage],
+    queryFn: () => invokeFunction('canvaGetDesignPages', {
+      designId: design.id,
+      clientId,
+      page: previewPage,
+    }),
+    enabled: !!design?.id && !!clientId && showPageNavigator,
+  });
+
+  const previewUrl = pagePreview?.thumbnailUrl || designThumbnailUrl;
+  const previewLoading = metaLoading || (showPageNavigator && pagePreviewLoading);
+  const usingFallbackThumbnail = showPageNavigator
+    && !pagePreview?.thumbnailUrl
+    && Boolean(designThumbnailUrl);
 
   useEffect(() => {
     if (!importing) {
@@ -49,6 +73,34 @@ export function CanvaImportStep({
 
     return () => window.clearInterval(interval);
   }, [importing]);
+
+  useEffect(() => {
+    setPageJumpInput(String(previewPage));
+  }, [previewPage]);
+
+  useEffect(() => {
+    if (!showPagesField || !pagesInput.trim()) return;
+
+    try {
+      const pages = validatePages(parsePageRange(pagesInput), pageCount);
+      if (pages?.length) {
+        setPreviewPage(pages[0]);
+      }
+    } catch {
+      // Keep current preview until pages input is valid
+    }
+  }, [pagesInput, pageCount, showPagesField]);
+
+  const goToPage = (nextPage) => {
+    const clamped = clampPage(nextPage, pageCount);
+    setPreviewPage(clamped);
+  };
+
+  const handlePageJump = () => {
+    const parsed = Number.parseInt(pageJumpInput, 10);
+    if (Number.isNaN(parsed)) return;
+    goToPage(parsed);
+  };
 
   const handleImport = async () => {
     setError('');
@@ -90,14 +142,14 @@ export function CanvaImportStep({
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="grid min-h-0 flex-1 gap-6 overflow-y-auto md:grid-cols-2">
         <div className="space-y-3">
-          {isLoading ? (
+          {previewLoading ? (
             <div className="flex aspect-[3/4] items-center justify-center rounded-lg bg-muted text-sm text-muted-foreground">
               Loading preview…
             </div>
-          ) : thumbnailUrl ? (
+          ) : previewUrl ? (
             <img
-              src={thumbnailUrl}
-              alt={title}
+              src={previewUrl}
+              alt={`${title} page ${previewPage}`}
               className="w-full rounded-lg border object-contain"
             />
           ) : (
@@ -105,6 +157,68 @@ export function CanvaImportStep({
               No preview
             </div>
           )}
+
+          {showPageNavigator && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => goToPage(previewPage - 1)}
+                  disabled={importing || previewPage <= 1}
+                  aria-label="Previous page"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <p className="text-sm font-medium text-ink">
+                  Page {previewPage} of {pageCount}
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => goToPage(previewPage + 1)}
+                  disabled={importing || previewPage >= pageCount}
+                  aria-label="Next page"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min={1}
+                  max={pageCount}
+                  value={pageJumpInput}
+                  onChange={(e) => setPageJumpInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handlePageJump();
+                  }}
+                  disabled={importing}
+                  className="h-8"
+                  aria-label="Jump to page"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handlePageJump}
+                  disabled={importing}
+                >
+                  Go
+                </Button>
+              </div>
+              {usingFallbackThumbnail && (
+                <p className="text-xs text-muted-foreground">
+                  Page preview is not ready yet — showing design thumbnail.
+                </p>
+              )}
+            </div>
+          )}
+
           <div>
             <p className="font-medium">{title}</p>
             {pageCount > 1 && (
@@ -143,6 +257,7 @@ export function CanvaImportStep({
               />
               <p className="mt-1 text-xs text-muted-foreground">
                 Leave blank to import all {pageCount} pages. Each page becomes a carousel item.
+                {showPageNavigator && ' Preview updates to the first page in your selection.'}
               </p>
             </div>
           )}
@@ -173,7 +288,7 @@ export function CanvaImportStep({
         <Button type="button" variant="outline" onClick={onBack} disabled={importing}>
           Back
         </Button>
-        <Button type="button" onClick={handleImport} disabled={importing || isLoading}>
+        <Button type="button" onClick={handleImport} disabled={importing || metaLoading}>
           {importing ? 'Importing…' : 'Import'}
         </Button>
       </div>

@@ -1,4 +1,4 @@
-caption,internal_name,label,publish_facebook,publish_instagram,scheduled_at,schedule_timezone
-"Summer sale starts Monday!","July promo","Campaign",true,true,2026-08-20 09:00,America/New_York
-"Behind the scenes at our studio","","Evergreen",true,false,,
-"Quick tip for the week","","",true,true,,
+internal_name,caption,label,publish_facebook,publish_instagram,scheduled_date,scheduled_time,schedule_timezone
+"July promo","Summer sale starts Monday!","Campaign",true,true,2026-08-20,09:00,America/New_York
+"Studio BTS","Behind the scenes at our studio","Evergreen",true,false,,
+"Weekly tip","Quick tip for the week","",true,true,,

@@ -69,28 +69,29 @@ async function ensurePageAccessToken(
   }
 
   const tokenType = await debugTokenType(stored, APP_ACCESS_TOKEN);
+  const userToken =
+    (account.user_access_token as string | undefined) ||
+    (tokenType === 'USER' ? stored : undefined);
+
+  if (userToken) {
+    const pageToken = await resolvePageAccessToken(pageId as string, userToken, APP_ACCESS_TOKEN);
+    if (account.id) {
+      await service.from('social_accounts').update({
+        access_token: pageToken,
+        page_access_token: pageToken,
+        user_access_token: userToken,
+      }).eq('id', account.id);
+    }
+    return pageToken;
+  }
+
   if (tokenType === 'PAGE') {
     return stored;
   }
 
-  const userToken =
-    (account.user_access_token as string | undefined) ||
-    (tokenType === 'USER' ? stored : undefined);
-  if (!userToken) {
-    throw new Error(
-      'Facebook Page token is invalid. Reconnect Meta in Settings → Accounts.',
-    );
-  }
-
-  const pageToken = await resolvePageAccessToken(pageId as string, userToken, APP_ACCESS_TOKEN);
-  if (account.id) {
-    await service.from('social_accounts').update({
-      access_token: pageToken,
-      page_access_token: pageToken,
-      user_access_token: userToken,
-    }).eq('id', account.id);
-  }
-  return pageToken;
+  throw new Error(
+    'Facebook Page token is invalid. Reconnect Meta in Settings → Accounts.',
+  );
 }
 
 async function publishPost(service: ReturnType<typeof getServiceClient>, postId: string) {

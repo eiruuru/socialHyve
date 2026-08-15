@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
         user_access_token: longToken,
         page_id: page.id,
         token_expires_at: tokenExpiresAt,
-      }, { onConflict: 'workspace_id,platform,external_id' });
+      }, { onConflict: 'client_id,platform,external_id' });
       if (fbErr) throw fbErr;
 
       if (!firstFbExternalId) firstFbExternalId = page.id;
@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
           page_id: page.id,
           ig_user_id: igData.id,
           token_expires_at: tokenExpiresAt,
-        }, { onConflict: 'workspace_id,platform,external_id' });
+        }, { onConflict: 'client_id,platform,external_id' });
         if (igErr) throw igErr;
 
         if (!firstIgExternalId && page.id === firstFbExternalId) {

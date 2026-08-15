@@ -154,7 +154,7 @@ export default function ConnectedAccountsPage() {
         <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Settings</p>
         <h2 className="font-display text-2xl font-bold">Connected Accounts</h2>
         <p className="text-muted-foreground">
-          Link Meta accounts for {activeClient?.name || 'this client'}
+          Link Meta accounts for {activeClient?.name || 'this client'}. Each client keeps its own connection — reconnect here after linking another client.
         </p>
       </div>
 

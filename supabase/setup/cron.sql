@@ -6,7 +6,7 @@ CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
 
 -- Store secrets in Vault (replace values before running)
 -- Dashboard → Project Settings → API → Project URL and service_role key
-SELECT vault.create_secret('https://YOUR_PROJECT_REF.supabase.co', 'supabase_url', 'Project URL');
+SELECT vault.create_secret('https://hfbxonnowvfkxmmkgftz.supabase.co', 'supabase_url', 'Project URL');
 SELECT vault.create_secret('YOUR_SERVICE_ROLE_KEY', 'service_role_key', 'Service role key');
 
 -- Publish queue: every minute

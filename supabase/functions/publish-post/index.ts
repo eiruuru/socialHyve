@@ -69,6 +69,11 @@ async function ensurePageAccessToken(
   }
 
   const tokenType = await debugTokenType(stored, APP_ACCESS_TOKEN);
+
+  if (tokenType === 'PAGE') {
+    return stored;
+  }
+
   const userToken =
     (account.user_access_token as string | undefined) ||
     (tokenType === 'USER' ? stored : undefined);
@@ -83,10 +88,6 @@ async function ensurePageAccessToken(
       }).eq('id', account.id);
     }
     return pageToken;
-  }
-
-  if (tokenType === 'PAGE') {
-    return stored;
   }
 
   throw new Error(

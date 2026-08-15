@@ -1,10 +1,15 @@
--- pg_cron jobs for publish queue and token refresh
--- Requires pg_cron and pg_net extensions (enable in Supabase dashboard)
+-- Manual cron setup for socialHyve (run AFTER migrations in Supabase SQL Editor)
+-- Requires pg_cron and pg_net extensions: Dashboard → Database → Extensions
 
 CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA extensions;
 CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
 
--- Run publish queue every minute
+-- Store secrets in Vault (replace values before running)
+-- Dashboard → Project Settings → API → Project URL and service_role key
+SELECT vault.create_secret('https://YOUR_PROJECT_REF.supabase.co', 'supabase_url', 'Project URL');
+SELECT vault.create_secret('YOUR_SERVICE_ROLE_KEY', 'service_role_key', 'Service role key');
+
+-- Publish queue: every minute
 SELECT cron.unschedule('socialhyve-publish-queue')
 WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'socialhyve-publish-queue');
 
@@ -23,7 +28,7 @@ SELECT cron.schedule(
   $$
 );
 
--- Refresh OAuth tokens weekly (Sunday 3am UTC)
+-- Token refresh: weekly Sunday 3am UTC
 SELECT cron.unschedule('socialhyve-refresh-tokens')
 WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'socialhyve-refresh-tokens');
 

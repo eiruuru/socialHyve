@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "lint": "eslint . --quiet",
     "smoke:check": "node scripts/smoke-check.mjs",
-    "deploy:functions": "supabase functions deploy --project-ref $SUPABASE_PROJECT_REF"
+    "deploy:functions": "bash scripts/deploy-edge-functions.sh",
+    "setup:supabase": "bash scripts/setup-supabase.sh",
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.6",

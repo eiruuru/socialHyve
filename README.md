@@ -2,24 +2,32 @@
 
 Loomly-style social media scheduler for Facebook and Instagram with Canva artwork integration.
 
+**Repo:** https://github.com/eiruuru/socialHyve
+
 ## Stack
 
 - React 18 + Vite + Tailwind
 - Supabase (Auth, Postgres, Storage, Edge Functions)
 
-## Setup
+## Quick start
 
-1. Copy `.env.example` to `.env` and fill in Supabase credentials.
-2. Create a Supabase project and run migrations:
-   ```bash
-   supabase db push
-   ```
-3. Set Edge Function secrets (Meta, Canva, token encryption key).
-4. Install and run:
-   ```bash
-   npm install
-   npm run dev
-   ```
+```bash
+cp .env.example .env          # add Supabase URL + anon key
+npm install
+npm run dev
+```
+
+## Supabase setup
+
+Full guide: **[docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md)**
+
+1. Create a Supabase project
+2. Connect GitHub repo (`eiruuru/socialHyve`) in **Project Settings → Integrations**
+3. Run `npx supabase login`
+4. Deploy functions + secrets: `bash scripts/deploy-edge-functions.sh`
+5. Set up cron: run `supabase/setup/cron.sql` in SQL Editor
+
+Quick checklist: `bash scripts/setup-supabase.sh`
 
 ## Features
 
@@ -34,3 +42,13 @@ Loomly-style social media scheduler for Facebook and Instagram with Canva artwor
 - [Meta Developer App](https://developers.facebook.com/) with Facebook Login
 - [Canva Connect App](https://www.canva.dev/) with OAuth PKCE
 - Facebook Page linked to Instagram Business/Creator account
+
+## Scripts
+
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | Start frontend |
+| `npm run build` | Production build |
+| `bash scripts/setup-supabase.sh` | Setup checklist |
+| `bash scripts/deploy-edge-functions.sh` | Deploy all Edge Functions |
+| `bash scripts/set-secrets.sh` | Push secrets from `.env` to Supabase |

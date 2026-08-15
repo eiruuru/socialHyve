@@ -29,6 +29,10 @@ Full guide: **[docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md)**
 
 Quick checklist: `bash scripts/setup-supabase.sh`
 
+## Production (Vercel)
+
+See **[docs/VERCEL_DEPLOY.md](docs/VERCEL_DEPLOY.md)** — import `eiruuru/socialHyve` at [vercel.com/new](https://vercel.com/new) and set `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`.
+
 ## Features
 
 - Connect Facebook Pages and linked Instagram Business accounts

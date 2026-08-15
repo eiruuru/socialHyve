@@ -4,6 +4,15 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
+function PlatformSection({ title, children, className }) {
+  return (
+    <section className={cn('space-y-3', className)}>
+      <p className="text-sm font-medium">{title}</p>
+      {children}
+    </section>
+  );
+}
+
 export function FineTunePanel({
   open,
   onOpenChange,
@@ -23,6 +32,8 @@ export function FineTunePanel({
     }));
   };
 
+  const showBoth = publishFacebook && publishInstagram;
+
   return (
     <Card>
       <CardHeader className={cn(open && 'pb-0')}>
@@ -36,63 +47,69 @@ export function FineTunePanel({
         </button>
       </CardHeader>
       {open && (
-        <CardContent className="space-y-4 pt-4">
-          {publishFacebook && (
-            <div className="space-y-3 rounded-hyve-md border border-neutral-200 p-4">
-              <p className="text-sm font-medium">Facebook</p>
-              <div>
-                <label className="mb-1 block text-xs font-medium">Caption override</label>
-                <Textarea
-                  placeholder={caption || 'Same as main caption'}
-                  value={platformOverrides.facebook?.caption ?? ''}
-                  onChange={(e) => updateOverride('facebook', 'caption', e.target.value)}
-                  rows={3}
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium">Schedule override</label>
-                <Input
-                  type="datetime-local"
-                  value={platformOverrides.facebook?.scheduled_at ?? scheduledAt}
-                  onChange={(e) => updateOverride('facebook', 'scheduled_at', e.target.value)}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">Placement: Feed only</p>
-            </div>
-          )}
+        <CardContent className="pt-4">
+          <div className={cn(showBoth && 'grid gap-8 lg:grid-cols-2')}>
+            {publishFacebook && (
+              <PlatformSection
+                title="Facebook"
+                className={cn(showBoth && 'lg:pr-8 lg:border-r lg:border-neutral-200')}
+              >
+                <div>
+                  <label className="mb-1 block text-xs font-medium">Caption override</label>
+                  <Textarea
+                    placeholder={caption || 'Same as main caption'}
+                    value={platformOverrides.facebook?.caption ?? ''}
+                    onChange={(e) => updateOverride('facebook', 'caption', e.target.value)}
+                    rows={3}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium">Schedule override</label>
+                  <Input
+                    type="datetime-local"
+                    value={platformOverrides.facebook?.scheduled_at ?? scheduledAt}
+                    onChange={(e) => updateOverride('facebook', 'scheduled_at', e.target.value)}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">Placement: Feed only</p>
+              </PlatformSection>
+            )}
 
-          {publishInstagram && (
-            <div className="space-y-3 rounded-hyve-md border border-neutral-200 p-4">
-              <p className="text-sm font-medium">Instagram</p>
-              <div>
-                <label className="mb-1 block text-xs font-medium">Caption override</label>
-                <Textarea
-                  placeholder={caption || 'Same as main caption'}
-                  value={platformOverrides.instagram?.caption ?? ''}
-                  onChange={(e) => updateOverride('instagram', 'caption', e.target.value)}
-                  rows={3}
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium">Schedule override</label>
-                <Input
-                  type="datetime-local"
-                  value={platformOverrides.instagram?.scheduled_at ?? scheduledAt}
-                  onChange={(e) => updateOverride('instagram', 'scheduled_at', e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium">First comment</label>
-                <Textarea
-                  placeholder="Auto-post as first comment on Instagram"
-                  value={firstComment}
-                  onChange={(e) => setFirstComment(e.target.value)}
-                  rows={2}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">Placement: Feed only</p>
-            </div>
-          )}
+            {publishInstagram && (
+              <PlatformSection
+                title="Instagram"
+                className={cn(showBoth && 'border-t border-neutral-200 pt-8 lg:border-t-0 lg:pt-0 lg:pl-8')}
+              >
+                <div>
+                  <label className="mb-1 block text-xs font-medium">Caption override</label>
+                  <Textarea
+                    placeholder={caption || 'Same as main caption'}
+                    value={platformOverrides.instagram?.caption ?? ''}
+                    onChange={(e) => updateOverride('instagram', 'caption', e.target.value)}
+                    rows={3}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium">Schedule override</label>
+                  <Input
+                    type="datetime-local"
+                    value={platformOverrides.instagram?.scheduled_at ?? scheduledAt}
+                    onChange={(e) => updateOverride('instagram', 'scheduled_at', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium">First comment</label>
+                  <Textarea
+                    placeholder="Auto-post as first comment on Instagram"
+                    value={firstComment}
+                    onChange={(e) => setFirstComment(e.target.value)}
+                    rows={2}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">Placement: Feed only</p>
+              </PlatformSection>
+            )}
+          </div>
         </CardContent>
       )}
     </Card>

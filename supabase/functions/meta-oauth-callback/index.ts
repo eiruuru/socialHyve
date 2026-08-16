@@ -78,18 +78,18 @@ Deno.serve(async (req) => {
     const tokenExpiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
     const appAccessToken = `${META_APP_ID}|${META_APP_SECRET}`;
 
+    const workspaceId = oauthState.workspace_id;
+    const clientId = oauthState.client_id;
+    connectedClientId = clientId;
+
     const pages = await fetchGrantedPages(longToken, appAccessToken);
     if (!pages.length) {
       const scopes = await getGrantedScopes(longToken, appAccessToken);
       const msg =
         'No Facebook Pages found after login. Pages managed in Meta Business require the business_management permission. ' +
         `Granted scopes: ${scopes}. Add business_management to your Login for Business configuration, set META_CONFIG_ID, and reconnect.`;
-      return redirectResponse(`${APP_URL}/app/settings/accounts?error=${encodeURIComponent(msg)}&clientId=${clientId}`);
+      return accountsRedirect({ error: msg }, clientId);
     }
-
-    const workspaceId = oauthState.workspace_id;
-    const clientId = oauthState.client_id;
-    connectedClientId = clientId;
 
     let existingAccounts: { platform: string; is_primary?: boolean }[] = [];
     const { data: primaryRows, error: primaryErr } = await service
@@ -102,6 +102,36 @@ Deno.serve(async (req) => {
 
     const hasPrimary = (platform: string) =>
       existingAccounts.some((a) => a.platform === platform && a.is_primary);
+
+    const { data: workspaceAccountRows } = await service
+      .from('social_accounts')
+      .select('id, client_id, platform, external_id')
+      .eq('workspace_id', workspaceId);
+
+    const workspaceAccounts = workspaceAccountRows || [];
+    const findWorkspaceOwners = (platform: string, externalId: string) =>
+      workspaceAccounts.filter(
+        (row) => row.platform === platform && String(row.external_id) === String(externalId),
+      );
+
+    const encryptedUserToken = await encryptAccountTokenFields({ user_access_token: longToken });
+
+    async function refreshWorkspaceAccountTokens(
+      platform: string,
+      externalId: string,
+      tokenFields: Record<string, string | null>,
+    ) {
+      await service
+        .from('social_accounts')
+        .update({
+          ...tokenFields,
+          ...encryptedUserToken,
+          token_expires_at: tokenExpiresAt,
+        })
+        .eq('workspace_id', workspaceId)
+        .eq('platform', platform)
+        .eq('external_id', externalId);
+    }
 
     let firstFbExternalId: string | null = null;
     let firstIgExternalId: string | null = null;
@@ -123,19 +153,41 @@ Deno.serve(async (req) => {
         user_access_token: longToken,
       });
 
-      const { error: fbErr } = await service.from('social_accounts').upsert({
-        workspace_id: workspaceId,
-        client_id: clientId,
-        platform: 'facebook',
-        external_id: page.id,
-        name: page.name,
-        username: page.name,
-        profile_picture_url: pagePictureUrl,
-        ...tokenFields,
-        page_id: page.id,
-        token_expires_at: tokenExpiresAt,
-      }, { onConflict: 'client_id,platform,external_id' });
-      if (fbErr) throw fbErr;
+      const fbOwners = findWorkspaceOwners('facebook', page.id);
+      const fbOwnedByCurrent = fbOwners.some((row) => row.client_id === clientId);
+
+      if (!fbOwners.length) {
+        const { error: fbErr } = await service.from('social_accounts').upsert({
+          workspace_id: workspaceId,
+          client_id: clientId,
+          platform: 'facebook',
+          external_id: page.id,
+          name: page.name,
+          username: page.name,
+          profile_picture_url: pagePictureUrl,
+          ...tokenFields,
+          page_id: page.id,
+          token_expires_at: tokenExpiresAt,
+        }, { onConflict: 'client_id,platform,external_id' });
+        if (fbErr) throw fbErr;
+      } else {
+        await refreshWorkspaceAccountTokens('facebook', page.id, tokenFields);
+        if (fbOwnedByCurrent) {
+          const { error: fbErr } = await service.from('social_accounts').upsert({
+            workspace_id: workspaceId,
+            client_id: clientId,
+            platform: 'facebook',
+            external_id: page.id,
+            name: page.name,
+            username: page.name,
+            profile_picture_url: pagePictureUrl,
+            ...tokenFields,
+            page_id: page.id,
+            token_expires_at: tokenExpiresAt,
+          }, { onConflict: 'client_id,platform,external_id' });
+          if (fbErr) throw fbErr;
+        }
+      }
 
       importedFbIds.add(page.id);
       if (!firstFbExternalId) firstFbExternalId = page.id;
@@ -153,20 +205,43 @@ Deno.serve(async (req) => {
           user_access_token: longToken,
         });
 
-        const { error: igErr } = await service.from('social_accounts').upsert({
-          workspace_id: workspaceId,
-          client_id: clientId,
-          platform: 'instagram',
-          external_id: igData.id,
-          name: igData.username || `IG ${igData.id}`,
-          username: igData.username || null,
-          profile_picture_url: igData.profile_picture_url || null,
-          ...igTokenFields,
-          page_id: page.id,
-          ig_user_id: igData.id,
-          token_expires_at: tokenExpiresAt,
-        }, { onConflict: 'client_id,platform,external_id' });
-        if (igErr) throw igErr;
+        const igOwners = findWorkspaceOwners('instagram', igData.id);
+        const igOwnedByCurrent = igOwners.some((row) => row.client_id === clientId);
+
+        if (!igOwners.length) {
+          const { error: igErr } = await service.from('social_accounts').upsert({
+            workspace_id: workspaceId,
+            client_id: clientId,
+            platform: 'instagram',
+            external_id: igData.id,
+            name: igData.username || `IG ${igData.id}`,
+            username: igData.username || null,
+            profile_picture_url: igData.profile_picture_url || null,
+            ...igTokenFields,
+            page_id: page.id,
+            ig_user_id: igData.id,
+            token_expires_at: tokenExpiresAt,
+          }, { onConflict: 'client_id,platform,external_id' });
+          if (igErr) throw igErr;
+        } else {
+          await refreshWorkspaceAccountTokens('instagram', igData.id, igTokenFields);
+          if (igOwnedByCurrent) {
+            const { error: igErr } = await service.from('social_accounts').upsert({
+              workspace_id: workspaceId,
+              client_id: clientId,
+              platform: 'instagram',
+              external_id: igData.id,
+              name: igData.username || `IG ${igData.id}`,
+              username: igData.username || null,
+              profile_picture_url: igData.profile_picture_url || null,
+              ...igTokenFields,
+              page_id: page.id,
+              ig_user_id: igData.id,
+              token_expires_at: tokenExpiresAt,
+            }, { onConflict: 'client_id,platform,external_id' });
+            if (igErr) throw igErr;
+          }
+        }
 
         importedIgIds.add(igData.id);
         if (!firstIgExternalId && page.id === firstFbExternalId) {
@@ -211,7 +286,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    const encryptedUserToken = await encryptAccountTokenFields({ user_access_token: longToken });
     await service
       .from('social_accounts')
       .update({ ...encryptedUserToken, token_expires_at: tokenExpiresAt })

@@ -67,6 +67,12 @@ export default function ConnectedAccountsPage() {
       showToast({ title: 'Select a client before connecting Meta.', variant: 'error' });
       return;
     }
+    if (!await confirm({
+      title: rerequest ? 'Reconnect Meta' : 'Connect Meta',
+      description:
+        'When Meta shows Edit configuration, select every Facebook Page you use in SocialHyve — including pages for your other clients. SocialHyve will link new pages to this client and refresh tokens for pages already connected elsewhere.',
+      confirmLabel: rerequest ? 'Continue to Meta' : 'Connect',
+    })) return;
     setBusy(true);
     try {
       const { url } = await invokeFunction('metaOAuthStart', {
@@ -233,8 +239,10 @@ export default function ConnectedAccountsPage() {
           </div>
           {hasAccounts && (
             <p className="text-xs text-muted-foreground">
-              Reconnect runs Meta login again and refreshes tokens for the Pages you select.
-              Pick the same Pages to keep your current setup.
+              One Facebook login manages all your clients. On Meta&apos;s Edit configuration screen,
+              always tick every Page you publish from across all clients, even when connecting one
+              client. Tokens for existing clients are refreshed automatically; only new pages are
+              added to {activeClient?.name || 'this client'}.
             </p>
           )}
 

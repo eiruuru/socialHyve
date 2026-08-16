@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/brand/Logo';
+import { showToast } from '@/lib/toast';
 
 async function fetchReviewPost(token) {
   return invokeFunction('reviewByToken', { token });
@@ -31,7 +32,11 @@ export default function ReviewLinkPage() {
 
   const handleSubmit = async (approvalAction) => {
     if (approvalAction === 'require_edits' && !comment.trim()) {
-      alert('Please add a comment explaining what needs to change.');
+      showToast({
+        title: 'Comment required',
+        description: 'Please explain what needs to change.',
+        variant: 'error',
+      });
       return;
     }
     setSubmitting(true);
@@ -44,7 +49,7 @@ export default function ReviewLinkPage() {
       });
       setDone(true);
     } catch (err) {
-      alert(err.message);
+      showToast({ title: 'Review failed', description: err.message, variant: 'error' });
     } finally {
       setSubmitting(false);
     }

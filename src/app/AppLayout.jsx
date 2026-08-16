@@ -10,6 +10,8 @@ import {
   Building2,
   Eye,
   User,
+  Upload,
+  HelpCircle,
 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useMembership } from '@/lib/membershipContext';
@@ -54,6 +56,12 @@ const orgNavGroups = [
         icon: Calendar,
         show: (m) => m.isOrgTeam && !m.isClientOnly,
       },
+      {
+        to: '/app/posts/import',
+        label: 'Import CSV',
+        icon: Upload,
+        show: (m, c) => m.isOrgTeam && !m.isClientOnly && c.clients.length > 0,
+      },
     ],
   },
   {
@@ -92,7 +100,15 @@ const orgNavGroups = [
   },
   {
     label: 'Account',
-    items: [accountNavItem],
+    items: [
+      accountNavItem,
+      {
+        to: '/app/help',
+        label: 'Help',
+        icon: HelpCircle,
+        show: () => true,
+      },
+    ],
   },
 ];
 
@@ -107,7 +123,13 @@ function buildNavGroups(membership, clientCtx) {
 
     return [
       { label: 'Review', items: reviewItems },
-      { label: 'Account', items: [accountNavItem] },
+      {
+        label: 'Account',
+        items: [
+          accountNavItem,
+          { to: '/app/help', label: 'Help', icon: HelpCircle, show: () => true },
+        ],
+      },
     ].filter((group) => group.items.length > 0);
   }
 
@@ -125,10 +147,10 @@ function SidebarLink({ to, label, icon: Icon, highlight = false }) {
       to={to}
       className={({ isActive }) =>
         cn(
-          'flex items-center gap-3 rounded-hyve-sm px-3 py-2 text-sm font-medium transition-colors',
+          'flex min-h-9 items-center gap-3 rounded-hyve-sm px-3 py-2 text-sm font-medium transition-colors',
           highlight
             ? cn(
-                'bg-honey text-white shadow-hyve-sm',
+                'mb-1 bg-honey text-white shadow-hyve-sm',
                 isActive ? 'ring-2 ring-honey-light/60' : 'hover:bg-honey-dark',
               )
             : isActive
@@ -137,17 +159,17 @@ function SidebarLink({ to, label, icon: Icon, highlight = false }) {
         )
       }
     >
-      <Icon className="h-4 w-4" />
-      {label}
+      <Icon className="h-4 w-4 shrink-0" />
+      <span className="truncate">{label}</span>
     </NavLink>
   );
 }
 
 function NavGroup({ label, items }) {
   return (
-    <div className="space-y-1">
+    <div className="space-y-0.5">
       {label && (
-        <p className="px-3 pb-1 pt-4 text-[10px] font-semibold uppercase tracking-wider text-neutral-500 first:pt-0">
+        <p className="px-3 pb-1.5 pt-5 text-[10px] font-semibold uppercase tracking-wider text-neutral-500 first:pt-1">
           {label}
         </p>
       )}
@@ -195,7 +217,7 @@ export function AppLayout() {
             <p className="mt-0.5 text-xs capitalize text-neutral-500">{roleDisplay}</p>
           )}
         </div>
-        <nav className="flex-1 space-y-1 p-4">
+        <nav className="flex-1 space-y-2 overflow-y-auto px-3 py-4">
           {navGroups.map((group) => (
             <NavGroup key={group.label ?? 'primary'} label={group.label} items={group.items} />
           ))}

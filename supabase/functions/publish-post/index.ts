@@ -1,4 +1,7 @@
 import { handleOptions, jsonResponse } from '../_shared/cors.ts';
+import { verifyCronSecret } from '../_shared/cronAuth.ts';
+import { readToken, writeToken } from '../_shared/accountTokens.ts';
+import { notifyPublishFailed } from '../_shared/workflowNotify.ts';
 import { debugTokenInfo, isValidPageTokenFor, resolvePageAccessToken } from '../_shared/metaPages.ts';
 import { getServiceClient, META_GRAPH } from '../_shared/supabase.ts';
 import { resolvePostAccounts } from '../_shared/socialAccounts.ts';
@@ -13,6 +16,43 @@ type MediaItem = {
   sort_order?: number;
 };
 
+type PlatformOverrides = {
+  facebook?: { caption?: string; scheduled_at?: string };
+  instagram?: { caption?: string; scheduled_at?: string };
+};
+
+function resolvePlatformCaption(post: Record<string, unknown>, platform: 'facebook' | 'instagram'): string {
+  const overrides = (post.platform_overrides || {}) as PlatformOverrides;
+  const override = overrides[platform]?.caption;
+  if (override != null && String(override).trim() !== '') return String(override);
+  return (post.caption as string) || '';
+}
+
+function resolvePlatformSchedule(
+  post: Record<string, unknown>,
+  platform: 'facebook' | 'instagram',
+): string | null {
+  const overrides = (post.platform_overrides || {}) as PlatformOverrides;
+  return overrides[platform]?.scheduled_at ?? (post.scheduled_at as string | null) ?? null;
+}
+
+async function publishInstagramFirstComment(
+  mediaId: string,
+  comment: string,
+  token: string,
+): Promise<void> {
+  const trimmed = comment.trim();
+  if (!trimmed) return;
+
+  const res = await fetch(`${META_GRAPH}/${mediaId}/comments`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ access_token: token, message: trimmed }),
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+}
+
 Deno.serve(async (req) => {
   const opt = handleOptions(req);
   if (opt) return opt;
@@ -22,6 +62,9 @@ Deno.serve(async (req) => {
     const service = getServiceClient();
 
     if (body.mode === 'queue') {
+      if (!verifyCronSecret(req)) {
+        return jsonResponse({ error: 'Unauthorized' }, 401);
+      }
       const now = new Date().toISOString();
       const { data: duePosts } = await service
         .from('posts')
@@ -64,7 +107,7 @@ async function ensurePageAccessToken(
   options: { forceRefresh?: boolean } = {},
 ): Promise<string> {
   const pageId = String(account.page_id || account.external_id || '');
-  const stored = (account.page_access_token || account.access_token) as string;
+  const stored = await readToken((account.page_access_token || account.access_token) as string);
   if (!pageId || !stored) {
     throw new Error('Missing Page credentials. Reconnect Meta in Settings → Accounts.');
   }
@@ -74,8 +117,9 @@ async function ensurePageAccessToken(
     return stored;
   }
 
+  const rawUserToken = account.user_access_token as string | undefined;
   const userToken =
-    (account.user_access_token as string | undefined) ||
+    (rawUserToken ? await readToken(rawUserToken) : undefined) ||
     (storedInfo.type === 'USER' ? stored : undefined);
 
   if (userToken) {
@@ -87,10 +131,12 @@ async function ensurePageAccessToken(
       );
     }
     if (account.id) {
+      const encrypted = await writeToken(pageToken);
+      const encryptedUser = userToken ? await writeToken(userToken) : null;
       await service.from('social_accounts').update({
-        access_token: pageToken,
-        page_access_token: pageToken,
-        user_access_token: userToken,
+        access_token: encrypted,
+        page_access_token: encrypted,
+        user_access_token: encryptedUser,
       }).eq('id', account.id);
     }
     return pageToken;
@@ -150,6 +196,12 @@ async function publishPost(service: ReturnType<typeof getServiceClient>, postId:
     (a: MediaItem, b: MediaItem) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
   );
 
+  const fbCaption = resolvePlatformCaption(post, 'facebook');
+  const fbSchedule = resolvePlatformSchedule(post, 'facebook');
+  const igCaption = resolvePlatformCaption(post, 'instagram');
+  const igSchedule = resolvePlatformSchedule(post, 'instagram');
+  const firstComment = (post.first_comment as string | undefined) || '';
+
   let hasError = false;
   const errors: string[] = [];
 
@@ -160,7 +212,7 @@ async function publishPost(service: ReturnType<typeof getServiceClient>, postId:
         fbAccount,
         (token) => {
           const fbWithToken = { ...fbAccount, page_access_token: token, access_token: token };
-          return publishToFacebook(fbWithToken, post.caption, media, post.scheduled_at);
+          return publishToFacebook(fbWithToken, fbCaption, media, fbSchedule);
         },
       );
       const permalink = await fetchMetaPermalink(externalId, pageToken);
@@ -201,10 +253,19 @@ async function publishPost(service: ReturnType<typeof getServiceClient>, postId:
         igAccount,
         (token) => {
           const igWithToken = { ...igAccount, page_access_token: token, access_token: token };
-          return publishToInstagram(igWithToken, post.caption, media, post.scheduled_at);
+          return publishToInstagram(igWithToken, igCaption, media, igSchedule);
         },
       );
       const permalink = await fetchMetaPermalink(externalId, pageToken);
+      if (firstComment.trim() && !isFutureSchedule(igSchedule)) {
+        try {
+          await publishInstagramFirstComment(externalId, firstComment, pageToken);
+        } catch (commentErr) {
+          hasError = true;
+          const msg = `Instagram comment: ${(commentErr as Error).message}`;
+          errors.push(msg);
+        }
+      }
       await service.from('post_targets').upsert({
         post_id: postId,
         platform: 'instagram',
@@ -261,6 +322,7 @@ async function publishPost(service: ReturnType<typeof getServiceClient>, postId:
       await service.from('posts').update({ status: 'scheduled' }).eq('id', postId);
     } else {
       await service.from('publish_jobs').delete().eq('post_id', postId);
+      await notifyPublishFailed(service, post);
     }
   } else {
     await service.from('publish_jobs').delete().eq('post_id', postId);

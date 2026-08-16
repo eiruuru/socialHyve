@@ -18,6 +18,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { showToast } from '@/lib/toast';
 
 export default function ClientMembersPage() {
   const { clientId } = useParams();
@@ -82,11 +83,15 @@ export default function ClientMembersPage() {
       } catch {
         // email optional
       }
-      alert(`Client invite link copied for ${email}`);
+      showToast({
+        title: 'Invite link copied',
+        description: `Share the link with ${email}`,
+        variant: 'success',
+      });
       setEmail('');
       queryClient.invalidateQueries({ queryKey: ['client-invites', clientId] });
     } catch (err) {
-      alert(err.message);
+      showToast({ title: 'Invite failed', description: err.message, variant: 'error' });
     } finally {
       setInviting(false);
     }
@@ -101,7 +106,7 @@ export default function ClientMembersPage() {
       setManagerUserId('');
       queryClient.invalidateQueries({ queryKey: ['client-managers', clientId] });
     } catch (err) {
-      alert(err.message);
+      showToast({ title: 'Invite failed', description: err.message, variant: 'error' });
     } finally {
       setAssigning(false);
     }
@@ -112,7 +117,7 @@ export default function ClientMembersPage() {
       await removeManagerFromClient(clientId, userId);
       queryClient.invalidateQueries({ queryKey: ['client-managers', clientId] });
     } catch (err) {
-      alert(err.message);
+      showToast({ title: 'Invite failed', description: err.message, variant: 'error' });
     }
   };
 

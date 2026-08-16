@@ -1,9 +1,10 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Check, Link2, Pencil, RefreshCw, RotateCcw, Trash2 } from 'lucide-react';
+import { ArrowLeft, Check, Copy, Link2, Pencil, RefreshCw, RotateCcw, Trash2 } from 'lucide-react';
 import {
   getPost,
   deletePost,
+  duplicatePost,
   updateApprovalStatus,
   updatePost,
   listPostActivity,
@@ -25,6 +26,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatScheduledLabel } from '@/lib/scheduleTime';
 import { PostNavigation } from '@/features/posts/PostNavigation';
 import { usePostNavigation } from '@/features/posts/usePostNavigation';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
+import { useFocusedPostPolling } from '@/lib/useLivePosts';
+import { showToast } from '@/lib/toast';
+import { notifyWorkflowEvent, getPostAuthorUserIds } from '@/lib/profile';
 
 const APPROVAL_OPTIONS = [
   { value: 'draft', label: 'Draft' },
@@ -44,6 +49,7 @@ export default function PostDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { confirm, dialog: confirmDialog } = useConfirm();
 
   const { data: post, isLoading } = useQuery({
     queryKey: ['post', id],
@@ -69,6 +75,8 @@ export default function PostDetailPage() {
 
   const postNav = usePostNavigation(id);
 
+  useFocusedPostPolling(id, { enabled: !!id });
+
   if (isLoading) return <p className="text-muted-foreground">Loading…</p>;
   if (!post) return <p className="text-destructive">Post not found</p>;
 
@@ -93,10 +101,24 @@ export default function PostDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (!confirm('Delete this post?')) return;
+    const ok = await confirm({
+      title: 'Delete post?',
+      description: 'This permanently removes the post and cannot be undone.',
+      confirmLabel: 'Delete',
+      variant: 'destructive',
+      onConfirm: async () => true,
+    });
+    if (!ok) return;
     await deletePost(id);
     queryClient.invalidateQueries({ queryKey: ['posts'] });
+    showToast({ title: 'Post deleted', variant: 'success' });
     navigate('/app/calendar');
+  };
+
+  const handleDuplicate = async () => {
+    const copy = await duplicatePost(id);
+    showToast({ title: 'Post duplicated', variant: 'success' });
+    navigate(`/app/posts/${copy.id}/edit`);
   };
 
   const handleRetry = async () => {
@@ -109,6 +131,12 @@ export default function PostDetailPage() {
     await updateApprovalStatus(id, 'approved');
     queryClient.invalidateQueries({ queryKey: ['post', id] });
     queryClient.invalidateQueries({ queryKey: ['posts'] });
+    showToast({ title: 'Post approved', variant: 'success' });
+    notifyWorkflowEvent({
+      event: 'approved',
+      postId: id,
+      recipientUserIds: getPostAuthorUserIds(post),
+    }).catch(() => {});
   };
 
   const handleResubmit = async () => {
@@ -143,7 +171,7 @@ export default function PostDetailPage() {
     const row = await createReviewLink(id);
     const link = `${window.location.origin}/review/${row.token}`;
     await navigator.clipboard.writeText(link);
-    alert('Review link copied to clipboard');
+    showToast({ title: 'Review link copied', variant: 'success' });
   };
 
   const scheduleSummary = [];
@@ -200,6 +228,11 @@ export default function PostDetailPage() {
               </Button>
             </IconTooltip>
           )}
+          <IconTooltip title="Duplicate post" description="Create a copy as a new draft">
+            <Button size="icon" variant="outline" onClick={handleDuplicate} aria-label="Duplicate post">
+              <Copy className="h-4 w-4" />
+            </Button>
+          </IconTooltip>
           <IconTooltip title="Copy review link" description="Share a link for external approval">
             <Button size="icon" variant="outline" onClick={handleCopyReviewLink} aria-label="Copy review link">
               <Link2 className="h-4 w-4" />
@@ -229,6 +262,8 @@ export default function PostDetailPage() {
           </div>
         </div>
       </div>
+
+      {confirmDialog}
 
       {post.error_message && (
         <div className="rounded-hyve-md bg-[#FCE4E3] p-4 text-sm text-[#A62E2B]">

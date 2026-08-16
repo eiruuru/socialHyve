@@ -63,5 +63,8 @@ verify_jwt = false
 [functions.send-invite-email]
 verify_jwt = true
 
+[functions.send-workflow-email]
+verify_jwt = true
+
 [storage.buckets.post-media]
 public = true

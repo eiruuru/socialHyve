@@ -1,4 +1,6 @@
 import { handleOptions, jsonResponse } from '../_shared/cors.ts';
+import { verifyCronSecret } from '../_shared/cronAuth.ts';
+import { readToken, writeToken } from '../_shared/accountTokens.ts';
 import { getServiceClient, META_GRAPH, refreshCanvaToken } from '../_shared/supabase.ts';
 
 const META_APP_ID = Deno.env.get('META_APP_ID') || '';
@@ -11,6 +13,9 @@ Deno.serve(async (req) => {
   if (opt) return opt;
 
   try {
+    if (!verifyCronSecret(req)) {
+      return jsonResponse({ error: 'Unauthorized' }, 401);
+    }
     const service = getServiceClient();
     const refreshBefore = new Date(Date.now() + REFRESH_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
@@ -48,9 +53,10 @@ async function refreshMetaAccounts(service: ReturnType<typeof getServiceClient>,
       continue;
     }
 
-    const token = account.access_token;
-    if (seenTokens.has(token)) continue;
-    seenTokens.add(token);
+    const rawToken = account.access_token as string;
+    const token = await readToken(rawToken);
+    if (seenTokens.has(rawToken)) continue;
+    seenTokens.add(rawToken);
 
     try {
       const url = new URL(`${META_GRAPH}/oauth/access_token`);
@@ -64,10 +70,11 @@ async function refreshMetaAccounts(service: ReturnType<typeof getServiceClient>,
       if (data.error) throw new Error(data.error.message);
 
       const expiresAt = new Date(Date.now() + (data.expires_in || 5184000) * 1000).toISOString();
+      const encrypted = await writeToken(data.access_token);
       await service
         .from('social_accounts')
-        .update({ access_token: data.access_token, page_access_token: data.access_token, token_expires_at: expiresAt })
-        .eq('access_token', token);
+        .update({ access_token: encrypted, page_access_token: encrypted, token_expires_at: expiresAt })
+        .eq('access_token', rawToken);
 
       results.push({ token: token.slice(0, 8) + '...', status: 'refreshed', expiresAt });
     } catch (err) {

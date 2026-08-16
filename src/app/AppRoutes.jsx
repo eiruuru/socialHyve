@@ -22,6 +22,7 @@ const ClientsPage = lazy(() => import('@/pages/ClientsPage'));
 const TeamPage = lazy(() => import('@/pages/TeamPage'));
 const ClientMembersPage = lazy(() => import('@/pages/ClientMembersPage'));
 const ClientReviewPage = lazy(() => import('@/pages/ClientReviewPage'));
+const HelpPage = lazy(() => import('@/pages/HelpPage'));
 
 function Lazy({ children }) {
   return (
@@ -62,6 +63,7 @@ export function AppRoutes() {
           <Route path="settings/account" element={<Lazy><AccountSettingsPage /></Lazy>} />
           <Route path="settings/accounts" element={<Lazy><ConnectedAccountsPage /></Lazy>} />
           <Route path="settings/canva" element={<Lazy><CanvaSettingsPage /></Lazy>} />
+          <Route path="help" element={<Lazy><HelpPage /></Lazy>} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/app/calendar" replace />} />

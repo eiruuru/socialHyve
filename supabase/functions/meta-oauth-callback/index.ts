@@ -1,5 +1,6 @@
 import { handleOptions, redirectResponse } from '../_shared/cors.ts';
 import { getServiceClient, META_GRAPH } from '../_shared/supabase.ts';
+import { encryptAccountTokenFields } from '../_shared/accountTokens.ts';
 import { debugTokenType, fetchGrantedPages, getGrantedScopes, resolvePageAccessToken } from '../_shared/metaPages.ts';
 
 const META_APP_ID = Deno.env.get('META_APP_ID') || '';
@@ -105,6 +106,12 @@ Deno.serve(async (req) => {
         pageToken = await resolvePageAccessToken(page.id, longToken, appAccessToken);
       }
 
+      const tokenFields = await encryptAccountTokenFields({
+        access_token: pageToken,
+        page_access_token: pageToken,
+        user_access_token: longToken,
+      });
+
       const { error: fbErr } = await service.from('social_accounts').upsert({
         workspace_id: workspaceId,
         client_id: clientId,
@@ -113,9 +120,7 @@ Deno.serve(async (req) => {
         name: page.name,
         username: page.name,
         profile_picture_url: pagePictureUrl,
-        access_token: pageToken,
-        page_access_token: pageToken,
-        user_access_token: longToken,
+        ...tokenFields,
         page_id: page.id,
         token_expires_at: tokenExpiresAt,
       }, { onConflict: 'client_id,platform,external_id' });
@@ -130,6 +135,12 @@ Deno.serve(async (req) => {
         );
         const igData = await igRes.json();
 
+        const igTokenFields = await encryptAccountTokenFields({
+          access_token: pageToken,
+          page_access_token: pageToken,
+          user_access_token: longToken,
+        });
+
         const { error: igErr } = await service.from('social_accounts').upsert({
           workspace_id: workspaceId,
           client_id: clientId,
@@ -138,9 +149,7 @@ Deno.serve(async (req) => {
           name: igData.username || `IG ${igData.id}`,
           username: igData.username || null,
           profile_picture_url: igData.profile_picture_url || null,
-          access_token: pageToken,
-          page_access_token: pageToken,
-          user_access_token: longToken,
+          ...igTokenFields,
           page_id: page.id,
           ig_user_id: igData.id,
           token_expires_at: tokenExpiresAt,
@@ -171,9 +180,10 @@ Deno.serve(async (req) => {
       }
     }
 
+    const encryptedUserToken = await encryptAccountTokenFields({ user_access_token: longToken });
     await service
       .from('social_accounts')
-      .update({ user_access_token: longToken, token_expires_at: tokenExpiresAt })
+      .update({ ...encryptedUserToken, token_expires_at: tokenExpiresAt })
       .eq('client_id', clientId);
 
     if (!hasPrimary('instagram') && firstIgExternalId) {

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { PlatformChip } from '@/components/brand/PlatformChip';
 import { setPrimarySocialAccount } from '@/lib/posts';
 import { findLinkedInstagram } from '@/lib/socialAccounts';
+import { showToast } from '@/lib/toast';
 
 function AccountOption({ account, platform, selected, onSelect }) {
   const label = platform === 'instagram' ? `@${account.username || account.name}` : account.name;
@@ -74,7 +75,7 @@ export function AccountPickerModal({
       await onSaved?.();
       onOpenChange(false);
     } catch (err) {
-      alert(err.message);
+      showToast({ title: 'Could not save defaults', description: err.message, variant: 'error' });
     } finally {
       setSaving(false);
     }

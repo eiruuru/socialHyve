@@ -1,5 +1,7 @@
 import { Image } from 'https://deno.land/x/imagescript@1.3.0/mod.ts';
 import { handleOptions, jsonResponse } from '../_shared/cors.ts';
+import { verifyCronSecret } from '../_shared/cronAuth.ts';
+import { readToken } from '../_shared/accountTokens.ts';
 import { getServiceClient, META_GRAPH } from '../_shared/supabase.ts';
 
 const BUCKET = 'post-media';
@@ -33,6 +35,9 @@ Deno.serve(async (req) => {
   if (opt) return opt;
 
   try {
+    if (!verifyCronSecret(req)) {
+      return jsonResponse({ error: 'Unauthorized' }, 401);
+    }
     const body = await req.json().catch(() => ({}));
     const service = getServiceClient();
     const mode = body.mode || 'all';
@@ -213,7 +218,7 @@ async function getPlatformToken(
     : query.eq('workspace_id', post.workspace_id);
   const { data } = await query.eq('platform', platform).maybeSingle();
   if (!data) return null;
-  return (data.page_access_token || data.access_token) as string;
+  return readToken((data.page_access_token || data.access_token) as string);
 }
 
 async function fetchIgThumbnailUrls(externalPostId: string, token: string): Promise<string[]> {

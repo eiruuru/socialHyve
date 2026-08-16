@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { readToken, writeToken } from './accountTokens.ts';
 
 export function getServiceClient(): SupabaseClient {
   const url = Deno.env.get('SUPABASE_URL')!;
@@ -69,7 +70,12 @@ export async function getCanvaConnection(
   }
   const { data, error } = await query.maybeSingle();
   if (error) throw error;
-  return data;
+  if (!data) return null;
+  return {
+    ...data,
+    access_token: await readToken(data.access_token as string),
+    refresh_token: await readToken(data.refresh_token as string),
+  };
 }
 
 export async function refreshCanvaToken(
@@ -80,6 +86,7 @@ export async function refreshCanvaToken(
   const clientSecret = Deno.env.get('CANVA_CLIENT_SECRET') || '';
   const credentials = btoa(`${clientId}:${clientSecret}`);
 
+  const refreshToken = await readToken(connection.refresh_token as string);
   const res = await fetch(`${CANVA_API}/oauth/token`, {
     method: 'POST',
     headers: {
@@ -88,7 +95,7 @@ export async function refreshCanvaToken(
     },
     body: new URLSearchParams({
       grant_type: 'refresh_token',
-      refresh_token: connection.refresh_token as string,
+      refresh_token: refreshToken,
     }),
   });
   const data = await res.json();
@@ -96,8 +103,8 @@ export async function refreshCanvaToken(
 
   const expiresAt = new Date(Date.now() + (data.expires_in || 3600) * 1000).toISOString();
   await service.from('canva_connections').update({
-    access_token: data.access_token,
-    refresh_token: data.refresh_token || connection.refresh_token,
+    access_token: await writeToken(data.access_token),
+    refresh_token: await writeToken(data.refresh_token || refreshToken),
     token_expires_at: expiresAt,
   }).eq('id', connection.id);
 

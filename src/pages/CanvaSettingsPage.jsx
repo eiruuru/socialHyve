@@ -4,6 +4,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { invokeFunction } from '@/lib/supabaseFunctions';
 import { getCanvaConnection, disconnectCanva } from '@/lib/posts';
 import { getActiveClientId, useClient } from '@/lib/clientContext';
+import { showToast } from '@/lib/toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -34,14 +35,14 @@ export default function CanvaSettingsPage() {
 
   const connectCanva = async () => {
     if (!clientId) {
-      alert('Select a client first.');
+      showToast({ title: 'Select a client first', variant: 'error' });
       return;
     }
     try {
       const { url } = await invokeFunction('canvaOAuthStart', { clientId });
       window.location.href = url;
     } catch (err) {
-      alert(err.message);
+      showToast({ title: 'Could not connect Canva', description: err.message, variant: 'error' });
     }
   };
 

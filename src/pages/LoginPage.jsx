@@ -21,6 +21,7 @@ export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(searchParams.get('signup') === '1');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
   const [invitePreview, setInvitePreview] = useState(null);
   const [inviteLoading, setInviteLoading] = useState(!!inviteToken);
 
@@ -64,6 +65,26 @@ export default function LoginPage() {
       }
 
       navigate('/app/calendar');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    if (!email.trim()) {
+      setError('Enter your email first, then request a reset link.');
+      return;
+    }
+    setError('');
+    setLoading(true);
+    try {
+      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/app/login`,
+      });
+      if (resetErr) throw resetErr;
+      setResetSent(true);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -123,9 +144,22 @@ export default function LoginPage() {
                 required
               />
               {error && <p className="text-sm text-destructive">{error}</p>}
+              {resetSent && (
+                <p className="text-sm text-status-published">Password reset link sent — check your email.</p>
+              )}
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? 'Loading...' : invitePreview ? 'Accept & continue' : isSignUp ? 'Sign up' : 'Sign in'}
               </Button>
+              {!invitePreview && !isSignUp && (
+                <button
+                  type="button"
+                  className="w-full text-sm text-muted-foreground hover:text-foreground"
+                  onClick={handlePasswordReset}
+                  disabled={loading}
+                >
+                  Forgot password?
+                </button>
+              )}
               {!invitePreview && (
                 <button
                   type="button"

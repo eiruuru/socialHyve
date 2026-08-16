@@ -39,6 +39,7 @@ echo "Linking project $PROJECT_REF..."
 TMP_SQL=$(mktemp)
 sed \
   -e "s|YOUR_SERVICE_ROLE_KEY|${SUPABASE_SERVICE_ROLE_KEY}|g" \
+  -e "s|YOUR_CRON_SECRET|${CRON_SECRET:-}|g" \
   supabase/setup/cron.sql > "$TMP_SQL"
 
 echo "Applying cron setup to $PROJECT_REF..."

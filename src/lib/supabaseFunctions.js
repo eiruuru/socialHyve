@@ -16,6 +16,7 @@ const FUNCTION_MAP = {
   reviewByToken: 'review-by-token',
   acceptInvite: 'accept-invite',
   sendInviteEmail: 'send-invite-email',
+  sendWorkflowEmail: 'send-workflow-email',
 };
 
 async function functionErrorMessage(error) {

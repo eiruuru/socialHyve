@@ -53,6 +53,10 @@ if [ -n "${TOKEN_ENCRYPTION_KEY:-}" ]; then
   args+=("TOKEN_ENCRYPTION_KEY=${TOKEN_ENCRYPTION_KEY}")
 fi
 
+if [ -n "${CRON_SECRET:-}" ]; then
+  args+=("CRON_SECRET=${CRON_SECRET}")
+fi
+
 if [ -n "${RESEND_API_KEY:-}" ]; then
   args+=("RESEND_API_KEY=${RESEND_API_KEY}")
 fi

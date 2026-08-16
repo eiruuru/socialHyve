@@ -10,7 +10,12 @@ import {
   displayMember,
   sendInviteEmail,
   getOrganization,
+  updateOrganizationSettings,
+  revokeOrganizationInvite,
+  removeOrganizationMember,
 } from '@/lib/organization';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
+import { showToast } from '@/lib/toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,9 +25,16 @@ export default function TeamPage() {
   const { user } = useAuth();
   const { canManageTeam, loading: membershipLoading } = useMembership();
   const queryClient = useQueryClient();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('editor');
   const [inviting, setInviting] = useState(false);
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  const { data: org, refetch: refetchOrg } = useQuery({
+    queryKey: ['organization'],
+    queryFn: getOrganization,
+  });
 
   useEffect(() => {
     if (membershipLoading) return;
@@ -60,18 +72,63 @@ export default function TeamPage() {
       } catch {
         // email optional
       }
-      alert(`Invite link copied to clipboard for ${email}`);
+      showToast({ title: 'Invite link copied', description: email.trim(), variant: 'success' });
       setEmail('');
       queryClient.invalidateQueries({ queryKey: ['org-invites'] });
     } catch (err) {
-      alert(err.message);
+      showToast({ title: 'Invite failed', description: err.message, variant: 'error' });
     } finally {
       setInviting(false);
     }
   };
 
+  const handleRevokeInvite = async (inviteId) => {
+    const ok = await confirm({
+      title: 'Revoke invite?',
+      description: 'The invite link will stop working.',
+      confirmLabel: 'Revoke',
+      variant: 'destructive',
+      onConfirm: async () => true,
+    });
+    if (!ok) return;
+    await revokeOrganizationInvite(inviteId);
+    queryClient.invalidateQueries({ queryKey: ['org-invites'] });
+    showToast({ title: 'Invite revoked', variant: 'success' });
+  };
+
+  const handleToggleApproval = async (checked) => {
+    setSavingSettings(true);
+    try {
+      await updateOrganizationSettings({ require_approval_before_publish: checked });
+      await refetchOrg();
+      showToast({
+        title: checked ? 'Approval required before publish' : 'Approval gate disabled',
+        variant: 'success',
+      });
+    } catch (err) {
+      showToast({ title: 'Could not save setting', description: err.message, variant: 'error' });
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  const handleRemoveMember = async (member) => {
+    const ok = await confirm({
+      title: 'Remove team member?',
+      description: `${displayMember(member)} will lose access to this organization.`,
+      confirmLabel: 'Remove',
+      variant: 'destructive',
+      onConfirm: async () => true,
+    });
+    if (!ok) return;
+    await removeOrganizationMember(member.user_id);
+    queryClient.invalidateQueries({ queryKey: ['org-members'] });
+    showToast({ title: 'Member removed', variant: 'success' });
+  };
+
   return (
     <div className="space-y-6">
+      {confirmDialog}
       <div>
         <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Organization</p>
         <h2 className="font-display text-2xl font-bold">Team</h2>
@@ -115,6 +172,29 @@ export default function TeamPage() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Publishing workflow</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <label className="flex items-start gap-3 text-sm">
+            <input
+              type="checkbox"
+              className="mt-1 accent-honey-dark"
+              checked={org?.require_approval_before_publish !== false}
+              disabled={savingSettings}
+              onChange={(e) => handleToggleApproval(e.target.checked)}
+            />
+            <span>
+              <span className="font-medium">Require approval before schedule or publish</span>
+              <span className="mt-1 block text-muted-foreground">
+                When enabled, posts must be approved before scheduling or publishing. Admins can still override on post detail.
+              </span>
+            </span>
+          </label>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -123,14 +203,21 @@ export default function TeamPage() {
           <CardContent>
             <ul className="space-y-2">
               {members.map((m) => (
-                <li key={m.id} className="flex items-center justify-between rounded-hyve-sm border px-3 py-2 text-sm">
+                <li key={m.id} className="flex items-center justify-between gap-2 rounded-hyve-sm border px-3 py-2 text-sm">
                   <div>
                     <p className="font-medium">{displayMember(m)}</p>
                     {m.profiles?.email && m.profiles.full_name && (
                       <p className="text-xs text-muted-foreground">{m.profiles.email}</p>
                     )}
                   </div>
-                  <span className="capitalize text-muted-foreground">{m.role}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="capitalize text-muted-foreground">{m.role}</span>
+                    {m.user_id !== user?.id && m.role !== 'owner' && (
+                      <Button size="sm" variant="outline" onClick={() => handleRemoveMember(m)}>
+                        Remove
+                      </Button>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>
@@ -147,9 +234,14 @@ export default function TeamPage() {
             ) : (
               <ul className="space-y-2">
                 {invites.map((inv) => (
-                  <li key={inv.id} className="rounded-hyve-sm border px-3 py-2 text-sm">
-                    <p className="font-medium">{inv.email}</p>
-                    <p className="text-xs text-muted-foreground capitalize">{inv.role} · expires {new Date(inv.expires_at).toLocaleDateString()}</p>
+                  <li key={inv.id} className="flex items-start justify-between gap-2 rounded-hyve-sm border px-3 py-2 text-sm">
+                    <div>
+                      <p className="font-medium">{inv.email}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{inv.role} · expires {new Date(inv.expires_at).toLocaleDateString()}</p>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => handleRevokeInvite(inv.id)}>
+                      Revoke
+                    </Button>
                   </li>
                 ))}
               </ul>

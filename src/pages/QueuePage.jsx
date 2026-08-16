@@ -1,15 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { useClient } from '@/lib/clientContext';
 import { listPosts, updateApprovalStatus, addPostComment } from '@/lib/posts';
+import { notifyWorkflowEvent, getPostAuthorUserIds } from '@/lib/profile';
 import { invokeFunction } from '@/lib/supabaseFunctions';
+import { useLivePosts } from '@/lib/useLivePosts';
+import { showToast } from '@/lib/toast';
 import { PostQueueCard } from '@/features/queue/PostQueueCard';
 import { QueueViewToggle } from '@/features/queue/QueueViewToggle';
 import { EmptyHiveState } from '@/components/EmptyHiveState';
-import { filterQueuePosts } from '@/features/queue/postStatus';
+import { filterQueuePosts, canTransitionApproval } from '@/features/queue/postStatus';
 import { TabsRoot, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { canTransitionApproval } from '@/features/queue/postStatus';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { buildPostNavSearch } from '@/features/posts/postNavUtils';
 
@@ -36,27 +40,63 @@ const EMPTY_COPY = {
   },
 };
 
+function QueueLegend() {
+  return (
+    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+      <span className="font-medium text-ink">Schedule urgency:</span>
+      <span className="inline-flex items-center gap-1.5">
+        <span className="h-3 w-3 rounded-full bg-red-600" /> Less than 2 days
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <span className="h-3 w-3 rounded-full bg-amber-500" /> Less than 5 days
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <span className="h-3 w-3 rounded-full bg-emerald-600" /> 5+ days
+      </span>
+    </div>
+  );
+}
+
 export default function QueuePage() {
   const { user } = useAuth();
   const { activeClient } = useClient();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState('review');
+  const [search, setSearch] = useState('');
+  const [selectedIds, setSelectedIds] = useState([]);
   const [viewMode, setViewMode] = useState(() => {
     const saved = localStorage.getItem(QUEUE_VIEW_KEY);
     return saved === 'grid' ? 'grid' : 'list';
   });
 
+  useLivePosts(activeClient?.id, { enabled: !!activeClient, showStatusToasts: true });
+
   useEffect(() => {
     localStorage.setItem(QUEUE_VIEW_KEY, viewMode);
   }, [viewMode]);
+
+  useEffect(() => {
+    setSelectedIds([]);
+  }, [tab, activeClient?.id]);
 
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ['posts', activeClient?.id],
     queryFn: () => listPosts(),
     enabled: !!activeClient,
+    refetchInterval: 30000,
   });
 
-  const filtered = filterQueuePosts(posts, tab);
+  const filtered = useMemo(() => {
+    let items = filterQueuePosts(posts, tab);
+    const q = search.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter((post) =>
+      (post.caption || '').toLowerCase().includes(q)
+      || (post.internal_name || '').toLowerCase().includes(q)
+      || (post.label || '').toLowerCase().includes(q),
+    );
+  }, [posts, tab, search]);
+
   const empty = EMPTY_COPY[tab];
   const navSearch = buildPostNavSearch({ nav: 'queue', tab });
 
@@ -64,31 +104,65 @@ export default function QueuePage() {
     queryClient.invalidateQueries({ queryKey: ['posts'] });
   };
 
+  const toggleSelected = (postId) => {
+    setSelectedIds((current) =>
+      current.includes(postId) ? current.filter((id) => id !== postId) : [...current, postId],
+    );
+  };
+
   const handleApprove = async (postId) => {
     const post = posts.find((p) => p.id === postId);
     if (!post || !canTransitionApproval(post.approval_status || 'draft', 'approved')) {
-      alert('Cannot approve this post.');
+      showToast({ title: 'Cannot approve this post', variant: 'error' });
       return;
     }
     await updateApprovalStatus(postId, 'approved');
     invalidate();
+    showToast({ title: 'Post approved', variant: 'success' });
+    notifyWorkflowEvent({
+      event: 'approved',
+      postId,
+      recipientUserIds: getPostAuthorUserIds(post),
+    }).catch(() => {});
+  };
+
+  const handleBulkApprove = async () => {
+    const eligible = selectedIds.filter((postId) => {
+      const post = posts.find((p) => p.id === postId);
+      return post && canTransitionApproval(post.approval_status || 'draft', 'approved');
+    });
+    if (!eligible.length) {
+      showToast({ title: 'No selected posts can be approved', variant: 'error' });
+      return;
+    }
+    await Promise.all(eligible.map((postId) => updateApprovalStatus(postId, 'approved')));
+    invalidate();
+    setSelectedIds([]);
+    showToast({ title: `${eligible.length} post${eligible.length === 1 ? '' : 's'} approved`, variant: 'success' });
   };
 
   const handleRequestChanges = async (postId, note) => {
     const post = posts.find((p) => p.id === postId);
     if (!post || !canTransitionApproval(post.approval_status || 'draft', 'changes_requested')) {
-      alert('Cannot request changes on this post.');
+      showToast({ title: 'Cannot request changes on this post', variant: 'error' });
       return;
     }
     await addPostComment(postId, note);
     await updateApprovalStatus(postId, 'changes_requested');
     invalidate();
+    showToast({ title: 'Changes requested', description: 'Feedback sent to the author', variant: 'info' });
+    notifyWorkflowEvent({
+      event: 'changes_requested',
+      postId,
+      recipientUserIds: getPostAuthorUserIds(post),
+    }).catch(() => {});
   };
 
   const handlePublish = async (postId) => {
     await invokeFunction('publishPost', { postId });
     invalidate();
     queryClient.invalidateQueries({ queryKey: ['post', postId] });
+    showToast({ title: 'Publishing post…', variant: 'info' });
   };
 
   return (
@@ -100,6 +174,22 @@ export default function QueuePage() {
           <p className="text-muted-foreground">Review and approve posts before they go live</p>
         </div>
         <QueueViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+      </div>
+
+      <QueueLegend />
+
+      <div className="flex flex-wrap items-center gap-3">
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search caption, name, or label…"
+          className="max-w-sm"
+        />
+        {selectedIds.length > 0 && tab === 'review' && (
+          <Button size="sm" onClick={handleBulkApprove}>
+            Approve selected ({selectedIds.length})
+          </Button>
+        )}
       </div>
 
       <TabsRoot value={tab} onValueChange={setTab}>
@@ -131,6 +221,9 @@ export default function QueuePage() {
                     variant={viewMode}
                     navSearch={navSearch}
                     authorEmail={user?.email}
+                    selectable={tab === 'review' && viewMode === 'list'}
+                    selected={selectedIds.includes(post.id)}
+                    onSelectChange={() => toggleSelected(post.id)}
                     onApprove={handleApprove}
                     onRequestChanges={handleRequestChanges}
                     onPublish={handlePublish}

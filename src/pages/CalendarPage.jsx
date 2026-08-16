@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { listPosts } from '@/lib/posts';
 import { useClient } from '@/lib/clientContext';
 import { useMembership } from '@/lib/membershipContext';
+import { useLivePosts } from '@/lib/useLivePosts';
 import { ContentCalendar } from '@/features/calendar/ContentCalendar';
 import { EmptyHiveState } from '@/components/EmptyHiveState';
 import { Button } from '@/components/ui/button';
@@ -14,7 +15,10 @@ export default function CalendarPage() {
     queryKey: ['posts', activeClient?.id],
     queryFn: () => listPosts(),
     enabled: !!activeClient,
+    refetchInterval: 30000,
   });
+
+  useLivePosts(activeClient?.id, { enabled: !!activeClient, showStatusToasts: true });
 
   if (!clientsLoading && clients.length === 0) {
     return (

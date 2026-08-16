@@ -52,6 +52,7 @@ FUNCTIONS=(
   review-by-token
   accept-invite
   send-invite-email
+  send-workflow-email
 )
 
 for fn in "${FUNCTIONS[@]}"; do

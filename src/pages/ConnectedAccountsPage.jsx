@@ -14,11 +14,14 @@ import { Badge } from '@/components/ui/badge';
 import { PlatformChip } from '@/components/brand/PlatformChip';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AccountPickerModal } from '@/features/settings/AccountPickerModal';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
+import { showToast } from '@/lib/toast';
 
 export default function ConnectedAccountsPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { activeClient } = useClient();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const connected = searchParams.get('connected');
   const error = searchParams.get('error');
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -51,7 +54,7 @@ export default function ConnectedAccountsPage() {
 
   const startMetaOAuth = async ({ rerequest = false } = {}) => {
     if (!activeClient?.id) {
-      alert('Select a client before connecting Meta.');
+      showToast({ title: 'Select a client before connecting Meta.', variant: 'error' });
       return;
     }
     setBusy(true);
@@ -62,7 +65,7 @@ export default function ConnectedAccountsPage() {
       });
       window.location.href = url;
     } catch (err) {
-      alert(err.message);
+      showToast({ title: 'Connection failed', description: err.message, variant: 'error' });
       setBusy(false);
     }
   };
@@ -71,29 +74,36 @@ export default function ConnectedAccountsPage() {
     const label = acc.platform === 'instagram'
       ? `@${acc.username || acc.name}`
       : acc.name;
-    if (!confirm(`Disconnect ${label} from ${activeClient?.name || 'this client'}?`)) return;
+    if (!await confirm({
+      title: `Disconnect ${label}?`,
+      description: `Remove this account from ${activeClient?.name || 'this client'}.`,
+      confirmLabel: 'Disconnect',
+      variant: 'destructive',
+    })) return;
     setBusy(true);
     try {
       await disconnectSocialAccount(acc.id);
       await refetch();
     } catch (err) {
-      alert(err.message);
+      showToast({ title: 'Could not disconnect', description: err.message, variant: 'error' });
     } finally {
       setBusy(false);
     }
   };
 
   const disconnectAll = async () => {
-    if (!confirm(
-      `Disconnect all Meta accounts from ${activeClient?.name || 'this client'}? `
-      + 'You can reconnect anytime to refresh tokens.',
-    )) return;
+    if (!await confirm({
+      title: 'Disconnect all Meta accounts?',
+      description: `Remove all connections from ${activeClient?.name || 'this client'}. You can reconnect anytime.`,
+      confirmLabel: 'Disconnect all',
+      variant: 'destructive',
+    })) return;
     setBusy(true);
     try {
       await disconnectAllSocialAccounts();
       await refetch();
     } catch (err) {
-      alert(err.message);
+      showToast({ title: 'Could not disconnect', description: err.message, variant: 'error' });
     } finally {
       setBusy(false);
     }
@@ -108,7 +118,7 @@ export default function ConnectedAccountsPage() {
       });
       await refetch();
     } catch (err) {
-      alert(err.message);
+      showToast({ title: 'Could not disconnect', description: err.message, variant: 'error' });
     } finally {
       setBusy(false);
     }
@@ -243,6 +253,7 @@ export default function ConnectedAccountsPage() {
         igAccounts={igAccounts}
         onSaved={refetch}
       />
+      {confirmDialog}
     </div>
   );
 }

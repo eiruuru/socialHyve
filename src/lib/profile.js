@@ -67,3 +67,53 @@ export async function updatePassword({ currentPassword, newPassword }) {
   if (error) throw error;
   return data;
 }
+
+const DEFAULT_NOTIFICATION_PREFERENCES = {
+  submitted_for_review: true,
+  approved: true,
+  changes_requested: true,
+  publish_failed: true,
+};
+
+export async function updateNotificationPreferences({
+  emailNotificationsEnabled,
+  notificationPreferences,
+}) {
+  const { data: { user }, error: userErr } = await supabase.auth.getUser();
+  if (userErr) throw userErr;
+  if (!user) throw new Error('Not signed in');
+
+  const payload = { updated_at: new Date().toISOString() };
+  if (emailNotificationsEnabled != null) {
+    payload.email_notifications_enabled = emailNotificationsEnabled;
+  }
+  if (notificationPreferences != null) {
+    payload.notification_preferences = {
+      ...DEFAULT_NOTIFICATION_PREFERENCES,
+      ...notificationPreferences,
+    };
+  }
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(payload)
+    .eq('id', user.id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function notifyWorkflowEvent({ event, postId, recipientUserIds = [] }) {
+  const unique = [...new Set(recipientUserIds.filter(Boolean))];
+  if (!unique.length) return null;
+  const { invokeFunction } = await import('./supabaseFunctions');
+  return invokeFunction('sendWorkflowEmail', { event, postId, recipientUserIds: unique });
+}
+
+export function getPostAuthorUserIds(post) {
+  const ids = [];
+  if (post?.created_by) ids.push(post.created_by);
+  else if (post?.assigned_to) ids.push(post.assigned_to);
+  return ids;
+}

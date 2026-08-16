@@ -1,5 +1,6 @@
 import { handleOptions, jsonResponse } from '../_shared/cors.ts';
 import { getServiceClient, META_GRAPH, requireUser } from '../_shared/supabase.ts';
+import { readToken } from '../_shared/accountTokens.ts';
 import { pickPrimaryAccount } from '../_shared/socialAccounts.ts';
 
 type IgMediaItem = {
@@ -35,7 +36,7 @@ Deno.serve(async (req) => {
     if (!account) return jsonResponse({ media: [] });
 
     const igUserId = account.ig_user_id || account.external_id;
-    const token = account.page_access_token || account.access_token;
+    const token = await readToken((account.page_access_token || account.access_token) as string);
     if (!igUserId || !token) return jsonResponse({ media: [] });
 
     const url = new URL(`${META_GRAPH}/${igUserId}/media`);

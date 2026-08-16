@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
-import { getProfile, updateEmail, updatePassword, updateProfile } from '@/lib/profile';
+import { getProfile, updateEmail, updateNotificationPreferences, updatePassword, updateProfile } from '@/lib/profile';
+import { showToast } from '@/lib/toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -53,6 +54,14 @@ export default function AccountSettingsPage() {
   const [savingName, setSavingName] = useState(false);
   const [savingEmail, setSavingEmail] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
+  const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(false);
+  const [notificationPrefs, setNotificationPrefs] = useState({
+    submitted_for_review: true,
+    approved: true,
+    changes_requested: true,
+    publish_failed: true,
+  });
+  const [savingNotifications, setSavingNotifications] = useState(false);
 
   useEffect(() => {
     if (profile?.full_name) setFullName(profile.full_name);
@@ -61,6 +70,14 @@ export default function AccountSettingsPage() {
   useEffect(() => {
     if (user?.email) setNewEmail(user.email);
   }, [user?.email]);
+
+  useEffect(() => {
+    if (!profile) return;
+    setEmailNotificationsEnabled(!!profile.email_notifications_enabled);
+    if (profile.notification_preferences) {
+      setNotificationPrefs((current) => ({ ...current, ...profile.notification_preferences }));
+    }
+  }, [profile]);
 
   const handleSaveName = async (e) => {
     e.preventDefault();
@@ -71,6 +88,7 @@ export default function AccountSettingsPage() {
       await queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
       await queryClient.invalidateQueries({ queryKey: ['org-members'] });
       setNameStatus({ message: 'Name updated.', tone: 'success' });
+      showToast({ title: 'Name updated', variant: 'success' });
     } catch (err) {
       setNameStatus({ message: err.message, tone: 'error' });
     } finally {
@@ -117,6 +135,23 @@ export default function AccountSettingsPage() {
       setPasswordStatus({ message: err.message, tone: 'error' });
     } finally {
       setSavingPassword(false);
+    }
+  };
+
+  const handleSaveNotifications = async (e) => {
+    e.preventDefault();
+    setSavingNotifications(true);
+    try {
+      await updateNotificationPreferences({
+        emailNotificationsEnabled,
+        notificationPreferences: notificationPrefs,
+      });
+      await queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
+      showToast({ title: 'Notification preferences saved', variant: 'success' });
+    } catch (err) {
+      showToast({ title: 'Could not save preferences', description: err.message, variant: 'error' });
+    } finally {
+      setSavingNotifications(false);
     }
   };
 
@@ -229,6 +264,52 @@ export default function AccountSettingsPage() {
             <StatusBanner message={passwordStatus.message} tone={passwordStatus.tone} />
             <Button type="submit" disabled={savingPassword}>
               {savingPassword ? 'Saving…' : 'Update password'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Notifications</CardTitle>
+          <CardDescription>
+            In-app toasts always appear. Email is optional and off by default.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSaveNotifications} className="space-y-4">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={emailNotificationsEnabled}
+                onChange={(e) => setEmailNotificationsEnabled(e.target.checked)}
+              />
+              Email me about posts I care about
+            </label>
+            {emailNotificationsEnabled && (
+              <div className="space-y-2 pl-6 text-sm">
+                {[
+                  ['submitted_for_review', 'Submitted for review'],
+                  ['approved', 'Approved'],
+                  ['changes_requested', 'Changes requested'],
+                  ['publish_failed', 'Publish failed'],
+                ].map(([key, label]) => (
+                  <label key={key} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={notificationPrefs[key] !== false}
+                      onChange={(e) => setNotificationPrefs((current) => ({
+                        ...current,
+                        [key]: e.target.checked,
+                      }))}
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            )}
+            <Button type="submit" disabled={savingNotifications}>
+              {savingNotifications ? 'Saving…' : 'Save notification preferences'}
             </Button>
           </form>
         </CardContent>

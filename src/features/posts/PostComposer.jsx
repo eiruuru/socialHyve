@@ -14,8 +14,13 @@ import {
 } from '@/lib/posts';
 import { invokeFunction } from '@/lib/supabaseFunctions';
 import { useClient } from '@/lib/clientContext';
+import { useMembership } from '@/lib/membershipContext';
+import { getOrganization, listWorkflowApproverUserIds } from '@/lib/organization';
+import { notifyWorkflowEvent } from '@/lib/profile';
+import { showToast } from '@/lib/toast';
 import { findLinkedInstagram, pickPrimaryAccount } from '@/lib/socialAccounts';
 import {
+  formatScheduledLabel,
   getBrowserTimezone,
   resolveScheduleTimezone,
   utcToZonedLocalInput,
@@ -57,6 +62,7 @@ export function PostComposer({ editPostId = null }) {
   const [searchParams] = useSearchParams();
   const presetDate = searchParams.get('date');
   const { activeClient } = useClient();
+  const { canManageTeam } = useMembership();
   const isEditMode = !!editPostId;
   const hydratedRef = useRef(false);
   const accountsInitializedRef = useRef(false);
@@ -77,6 +83,14 @@ export function PostComposer({ editPostId = null }) {
     queryFn: listSocialAccounts,
     enabled: !!activeClient?.id,
   });
+
+  const { data: org } = useQuery({
+    queryKey: ['organization'],
+    queryFn: getOrganization,
+  });
+
+  const requireApproval = org?.require_approval_before_publish !== false;
+  const canBypassApproval = canManageTeam || !requireApproval;
 
   const fbAccounts = socialAccounts.filter((a) => a.platform === 'facebook');
   const igAccounts = socialAccounts.filter((a) => a.platform === 'instagram');
@@ -295,18 +309,18 @@ export function PostComposer({ editPostId = null }) {
 
   const runWithValidation = async (action) => {
     if (isPublished) {
-      alert('Published posts cannot be edited.');
+      showToast({ title: 'Published posts cannot be edited', variant: 'error' });
       return;
     }
     if (validationErrors.length) {
-      alert(validationErrors.join('\n'));
+      showToast({ title: 'Fix validation errors', description: validationErrors[0], variant: 'error' });
       return;
     }
     setSaving(true);
     try {
       await action();
     } catch (err) {
-      alert(err.message);
+      showToast({ title: 'Something went wrong', description: err.message, variant: 'error' });
     } finally {
       setSaving(false);
     }
@@ -332,33 +346,46 @@ export function PostComposer({ editPostId = null }) {
 
   const handleSchedule = () =>
     runWithValidation(async () => {
+      if (approvalStatus !== 'approved' && requireApproval && !canManageTeam) {
+        showToast({ title: 'Approval required', description: 'Submit for review and get approval before scheduling.', variant: 'info' });
+        return;
+      }
       if (!scheduledAt) {
-        alert('Please set a schedule date and time');
+        showToast({ title: 'Schedule time required', variant: 'error' });
         return;
       }
       if (!scheduledAtUtc) {
-        alert('Invalid schedule time');
+        showToast({ title: 'Invalid schedule time', variant: 'error' });
         return;
       }
       const scheduleDate = new Date(scheduledAtUtc);
       const minSchedule = new Date(Date.now() + 10 * 60 * 1000);
       if (scheduleDate < minSchedule) {
-        alert('Schedule time must be at least 10 minutes in the future');
+        showToast({ title: 'Schedule too soon', description: 'Pick a time at least 10 minutes from now.', variant: 'error' });
         return;
       }
       const id = await ensureDraft();
       await updatePost(id, buildPayload('scheduled'));
       await schedulePost(id, scheduledAtUtc);
+      showToast({
+        title: 'Post scheduled',
+        description: formatScheduledLabel(scheduledAtUtc, scheduleTimezone),
+        variant: 'success',
+      });
       navigate('/app/calendar');
     });
 
   const handlePublishNow = async () => {
     if (isPublished) {
-      alert('Published posts cannot be edited.');
+      showToast({ title: 'Published posts cannot be edited', variant: 'error' });
+      return;
+    }
+    if (approvalStatus !== 'approved' && requireApproval && !canManageTeam) {
+      showToast({ title: 'Approval required', description: 'Submit for review and get approval before publishing.', variant: 'info' });
       return;
     }
     if (validationErrors.length) {
-      alert(validationErrors.join('\n'));
+      showToast({ title: 'Fix validation errors', description: validationErrors[0], variant: 'error' });
       return;
     }
 
@@ -410,10 +437,11 @@ export function PostComposer({ editPostId = null }) {
         value: 100,
         indeterminate: false,
       });
+      showToast({ title: 'Post published', variant: 'success' });
       await new Promise((resolve) => { setTimeout(resolve, 400); });
       navigate(`/app/posts/${id}`);
     } catch (err) {
-      alert(err.message);
+      showToast({ title: 'Publish failed', description: err.message, variant: 'error' });
     } finally {
       setSaving(false);
       setPublishProgress(null);
@@ -424,6 +452,15 @@ export function PostComposer({ editPostId = null }) {
     runWithValidation(async () => {
       const id = await ensureDraft();
       await updatePost(id, buildPayload('draft', 'pending'));
+      setApprovalStatus('pending');
+      showToast({ title: 'Post submitted for review', variant: 'success' });
+      listWorkflowApproverUserIds()
+        .then((recipientUserIds) => notifyWorkflowEvent({
+          event: 'submitted_for_review',
+          postId: id,
+          recipientUserIds,
+        }))
+        .catch(() => {});
       navigate('/app/queue');
     });
 
@@ -511,6 +548,8 @@ export function PostComposer({ editPostId = null }) {
         isEditMode={isEditMode}
         scheduledAt={scheduledAt}
         scheduleTimezone={scheduleTimezone}
+        approvalStatus={approvalStatus}
+        canBypassApproval={canBypassApproval}
         onSaveDraft={handleSaveDraft}
         onSaveChanges={handleSaveChanges}
         onSubmitForReview={handleSubmitForReview}

@@ -342,3 +342,65 @@ export async function removeManagerFromClient(clientId, userId) {
     .eq('user_id', userId);
   if (error) throw error;
 }
+
+export async function revokeOrganizationInvite(inviteId) {
+  const { error } = await supabase.from('organization_invites').delete().eq('id', inviteId);
+  if (error) throw error;
+}
+
+export async function removeOrganizationMember(userId) {
+  const org = await getOrganization();
+  if (!org) throw new Error('No organization');
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user?.id === userId) throw new Error('You cannot remove yourself');
+  const { error } = await supabase
+    .from('organization_members')
+    .delete()
+    .eq('organization_id', org.id)
+    .eq('user_id', userId);
+  if (error) throw error;
+}
+
+export async function updateOrganizationMemberRole(userId, role) {
+  const org = await getOrganization();
+  if (!org) throw new Error('No organization');
+  const { data, error } = await supabase
+    .from('organization_members')
+    .update({ role })
+    .eq('organization_id', org.id)
+    .eq('user_id', userId)
+    .select('*, profiles(id, email, full_name)')
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateOrganizationSettings(updates) {
+  const org = await getOrganization();
+  if (!org) throw new Error('No organization');
+
+  const { data, error } = await supabase
+    .from('organizations')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', org.id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function listWorkflowApproverUserIds() {
+  const org = await getOrganization();
+  if (!org) return [];
+
+  const { data: members, error } = await supabase
+    .from('organization_members')
+    .select('user_id, role')
+    .eq('organization_id', org.id)
+    .in('role', ['owner', 'admin', 'manager']);
+  if (error) throw error;
+
+  const ids = new Set((members || []).map((m) => m.user_id));
+  if (org.owner_id) ids.add(org.owner_id);
+  return [...ids];
+}

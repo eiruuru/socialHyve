@@ -1,5 +1,6 @@
 import { handleOptions, redirectResponse } from '../_shared/cors.ts';
 import { getServiceClient } from '../_shared/supabase.ts';
+import { encryptAccountTokenFields } from '../_shared/accountTokens.ts';
 
 const CANVA_CLIENT_ID = Deno.env.get('CANVA_CLIENT_ID') || '';
 const CANVA_CLIENT_SECRET = Deno.env.get('CANVA_CLIENT_SECRET') || '';
@@ -32,11 +33,14 @@ async function saveCanvaConnection(
   tokens: { access_token: string; refresh_token: string; expires_in?: number },
 ) {
   const expiresAt = new Date(Date.now() + (tokens.expires_in || 3600) * 1000).toISOString();
+  const tokenFields = await encryptAccountTokenFields({
+    access_token: tokens.access_token,
+    refresh_token: tokens.refresh_token,
+  });
   const payload = {
     workspace_id: oauthState.workspace_id,
     client_id: oauthState.client_id,
-    access_token: tokens.access_token,
-    refresh_token: tokens.refresh_token,
+    ...tokenFields,
     token_expires_at: expiresAt,
   };
 

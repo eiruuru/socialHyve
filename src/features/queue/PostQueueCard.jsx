@@ -4,6 +4,7 @@ import { Check, X } from 'lucide-react';
 import { PlatformChip } from '@/components/brand/PlatformChip';
 import { StatusBadge } from '@/components/brand/StatusBadge';
 import { Button } from '@/components/ui/button';
+import { showToast } from '@/lib/toast';
 import { getPostDisplayBadges } from './postStatus';
 import { getScheduleUrgency } from './scheduleUrgency';
 import { normalizeMediaList, isVideo } from '@/features/posts/previews/mediaUtils';
@@ -72,6 +73,9 @@ export function PostQueueCard({
   showActions = true,
   variant = 'list',
   navSearch = '',
+  selectable = false,
+  selected = false,
+  onSelectChange,
 }) {
   const navigate = useNavigate();
   const [rejectOpen, setRejectOpen] = useState(false);
@@ -84,7 +88,7 @@ export function PostQueueCard({
 
   const handleReject = () => {
     if (!rejectNote.trim()) {
-      alert('Please add a comment explaining the requested changes.');
+      showToast({ title: 'Add feedback', description: 'Explain what needs to change.', variant: 'error' });
       return;
     }
     onRequestChanges?.(post.id, rejectNote.trim());
@@ -188,9 +192,21 @@ export function PostQueueCard({
     <div className={cn(
       'relative grid grid-cols-[72px_1fr_auto] items-start gap-4 rounded-hyve-md bg-white p-5',
       cardBorderClass,
+      selected && 'ring-2 ring-honey',
     )}>
-      <div className="h-[72px] w-[72px] shrink-0 overflow-hidden">
-        <PostThumb post={post} />
+      <div className="flex items-start gap-2">
+        {selectable && (
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={onSelectChange}
+            className="mt-1"
+            aria-label="Select post"
+          />
+        )}
+        <div className="h-[72px] w-[72px] shrink-0 overflow-hidden">
+          <PostThumb post={post} />
+        </div>
       </div>
 
       <div className="relative min-w-0 pr-2">

@@ -4,6 +4,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { listPostComments, addPostComment } from '@/lib/posts';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { showToast } from '@/lib/toast';
 
 function CommentBubble({ comment, isOwn }) {
   const initial = (comment.authorEmail || '?').slice(0, 2).toUpperCase();
@@ -73,7 +74,7 @@ export function CommentThread({ postId, readOnly = false, teamView = true }) {
       setIsPrivate(false);
       queryClient.invalidateQueries({ queryKey: ['post-comments', postId] });
     } catch (err) {
-      alert(err.message);
+      showToast({ title: 'Could not post comment', description: err.message, variant: 'error' });
     } finally {
       setSaving(false);
     }

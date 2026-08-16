@@ -9,6 +9,7 @@ import { CommentThread } from '@/features/queue/CommentThread';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { showToast } from '@/lib/toast';
 
 export default function ClientReviewPage() {
   const { clientId } = useParams();
@@ -32,7 +33,11 @@ export default function ClientReviewPage() {
   const handleAction = async (action) => {
     if (!selected) return;
     if (action === 'changes_requested' && !comment.trim()) {
-      alert('Please add a comment explaining what needs to change.');
+      showToast({
+        title: 'Comment required',
+        description: 'Please explain what needs to change.',
+        variant: 'error',
+      });
       return;
     }
     setSubmitting(true);
@@ -47,7 +52,7 @@ export default function ClientReviewPage() {
       setComment('');
       queryClient.invalidateQueries({ queryKey: ['client-review', clientId] });
     } catch (err) {
-      alert(err.message);
+      showToast({ title: 'Action failed', description: err.message, variant: 'error' });
     } finally {
       setSubmitting(false);
     }

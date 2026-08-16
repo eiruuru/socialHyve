@@ -11,8 +11,11 @@ import { Button } from '@/components/ui/button';
 import { IconTooltip } from '@/components/ui/IconTooltip';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
+import { showToast } from '@/lib/toast';
 
 function ClientRow({ client, onUpdated, onDeleted, canManage }) {
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(client.name);
   const [timezone, setTimezone] = useState(client.default_timezone || getBrowserTimezone());
@@ -36,22 +39,26 @@ function ClientRow({ client, onUpdated, onDeleted, canManage }) {
       onUpdated();
       setEditing(false);
     } catch (err) {
-      alert(err.message);
+      showToast({ title: 'Could not save client', description: err.message, variant: 'error' });
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async () => {
-    const confirmed = confirm(
-      `Delete "${client.name}"?\n\nThis will permanently delete all posts, connections, and members for this client. This cannot be undone.`
-    );
-    if (!confirmed) return;
+    const ok = await confirm({
+      title: `Delete "${client.name}"?`,
+      description: 'This permanently deletes all posts, connections, and members for this client.',
+      confirmLabel: 'Delete client',
+      variant: 'destructive',
+    });
+    if (!ok) return;
     try {
       await deleteClient(client.id);
       onDeleted(client.id);
+      showToast({ title: 'Client deleted', variant: 'success' });
     } catch (err) {
-      alert(err.message);
+      showToast({ title: 'Could not delete client', description: err.message, variant: 'error' });
     }
   };
 
@@ -135,6 +142,7 @@ function ClientRow({ client, onUpdated, onDeleted, canManage }) {
           </Button>
         </div>
       )}
+      {confirmDialog}
     </li>
   );
 }
@@ -162,7 +170,7 @@ export default function ClientsPage() {
       setActiveClient(client);
       queryClient.invalidateQueries({ queryKey: ['clients'] });
     } catch (err) {
-      alert(err.message);
+      showToast({ title: 'Could not create client', description: err.message, variant: 'error' });
     } finally {
       setCreating(false);
     }

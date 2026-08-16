@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { PlatformChip } from '@/components/brand/PlatformChip';
 import { getScheduleUrgency } from '@/features/queue/scheduleUrgency';
 import { PostStatusIconRow } from '@/features/queue/postStatusIcons';
-import { isQueuedToPublish } from '@/lib/publishStatus';
+import { shouldShowScheduleUrgency } from '@/lib/publishStatus';
 import { isVideo } from '@/features/posts/previews/mediaUtils';
 import { cn } from '@/lib/utils';
 
@@ -47,10 +47,10 @@ export function CalendarPostCard({
 }) {
   const navigate = useNavigate();
   const didDragRef = useRef(false);
-  const scheduleUrgency = isQueuedToPublish(post) ? null : getScheduleUrgency(post.scheduled_at);
-  const cardBorderClass = isQueuedToPublish(post)
-    ? 'border-neutral-200'
-    : scheduleUrgency?.borderClass ?? 'border-neutral-200';
+  const scheduleUrgency = shouldShowScheduleUrgency(post)
+    ? getScheduleUrgency(post.scheduled_at)
+    : null;
+  const cardBorderClass = scheduleUrgency?.borderClass ?? 'border-neutral-200';
   const media = (post.post_media || []).sort(
     (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
   );

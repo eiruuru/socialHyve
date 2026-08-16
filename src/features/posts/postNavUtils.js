@@ -1,5 +1,21 @@
-import { compareAsc, endOfMonth, startOfMonth } from 'date-fns';
+import { compareAsc, endOfMonth, format, isValid, parse, startOfMonth } from 'date-fns';
 import { filterQueuePosts } from '@/features/queue/postStatus';
+
+export function parseCalendarMonthParam(month) {
+  if (!month || !/^\d{4}-\d{2}$/.test(month)) return null;
+  const parsed = parse(`${month}-01`, 'yyyy-MM-dd', new Date());
+  return isValid(parsed) ? parsed : null;
+}
+
+export function buildScheduleReturnPath({ scheduledAtUtc, nav, tab, month } = {}) {
+  if (nav === 'queue') {
+    return `/app/queue${buildPostNavSearch({ nav: 'queue', tab })}`;
+  }
+  const scheduledMonth = scheduledAtUtc
+    ? format(new Date(scheduledAtUtc), 'yyyy-MM')
+    : month;
+  return `/app/calendar${buildPostNavSearch({ month: scheduledMonth })}`;
+}
 
 export function buildPostNavSearch({ nav, tab, month } = {}) {
   const params = new URLSearchParams();

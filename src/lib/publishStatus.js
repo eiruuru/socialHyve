@@ -24,3 +24,15 @@ export function isApprovedNotQueued(post) {
 export function isQueuedToPublish(post) {
   return post?.approval_status === 'approved' && getEffectivePublishStatus(post) === 'scheduled';
 }
+
+export function isTerminalPublishState(post) {
+  return TERMINAL_PUBLISH_STATES.has(getEffectivePublishStatus(post));
+}
+
+/** Countdown borders/badges apply only to not-yet-published calendar plans. */
+export function shouldShowScheduleUrgency(post) {
+  if (!post?.scheduled_at) return false;
+  if (isTerminalPublishState(post)) return false;
+  if (isQueuedToPublish(post)) return false;
+  return true;
+}

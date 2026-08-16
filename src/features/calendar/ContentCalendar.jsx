@@ -12,7 +12,8 @@ import {
   subWeeks,
 } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useClient } from '@/lib/clientContext';
 import { reschedulePostToDay } from '@/lib/posts';
@@ -24,7 +25,7 @@ import { PostStatusLegend } from '@/features/queue/postStatusIcons';
 import { Button } from '@/components/ui/button';
 import { IconTooltip } from '@/components/ui/IconTooltip';
 import { TabsRoot, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { buildPostNavSearch } from '@/features/posts/postNavUtils';
+import { buildPostNavSearch, parseCalendarMonthParam } from '@/features/posts/postNavUtils';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -39,11 +40,25 @@ function mondayEndWeek(date) {
 export function ContentCalendar({ posts = [], readOnly = false }) {
   const queryClient = useQueryClient();
   const { activeClient } = useClient();
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [searchParams, setSearchParams] = useSearchParams();
+  const monthParam = searchParams.get('month');
+  const [currentDate, setCurrentDate] = useState(() => parseCalendarMonthParam(monthParam) || new Date());
   const [view, setView] = useState('month');
   const [draggingPostId, setDraggingPostId] = useState(null);
   const [dropTargetDay, setDropTargetDay] = useState(null);
   const [rescheduling, setRescheduling] = useState(false);
+
+  useEffect(() => {
+    const parsed = parseCalendarMonthParam(monthParam);
+    if (parsed) setCurrentDate(parsed);
+  }, [monthParam]);
+
+  const syncMonthParam = (date) => {
+    if (view !== 'month') return;
+    const nextMonth = format(date, 'yyyy-MM');
+    if (monthParam === nextMonth) return;
+    setSearchParams({ month: nextMonth }, { replace: true });
+  };
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
@@ -138,13 +153,23 @@ export function ContentCalendar({ posts = [], readOnly = false }) {
   });
 
   const goPrev = () => {
-    if (view === 'week') setCurrentDate(subWeeks(currentDate, 1));
-    else setCurrentDate(subMonths(currentDate, 1));
+    if (view === 'week') {
+      setCurrentDate(subWeeks(currentDate, 1));
+      return;
+    }
+    const nextDate = subMonths(currentDate, 1);
+    setCurrentDate(nextDate);
+    syncMonthParam(nextDate);
   };
 
   const goNext = () => {
-    if (view === 'week') setCurrentDate(addWeeks(currentDate, 1));
-    else setCurrentDate(addMonths(currentDate, 1));
+    if (view === 'week') {
+      setCurrentDate(addWeeks(currentDate, 1));
+      return;
+    }
+    const nextDate = addMonths(currentDate, 1);
+    setCurrentDate(nextDate);
+    syncMonthParam(nextDate);
   };
 
   const periodLabel = view === 'week'

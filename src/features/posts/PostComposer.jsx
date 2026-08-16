@@ -40,6 +40,7 @@ import {
 import { FineTunePanel } from '@/features/posts/composer/FineTunePanel';
 import { PlatformPreviewTabs } from '@/features/posts/previews/PlatformPreviewTabs';
 import { MAX_CAROUSEL_ITEMS } from '@/features/posts/MediaStrip';
+import { buildScheduleReturnPath } from '@/features/posts/postNavUtils';
 
 const IG_CAPTION_LIMIT = 2200;
 const FB_CAPTION_LIMIT = 63206;
@@ -66,6 +67,9 @@ export function PostComposer({ editPostId = null }) {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const presetDate = searchParams.get('date');
+  const navFrom = searchParams.get('nav') || undefined;
+  const navTab = searchParams.get('tab') || undefined;
+  const navMonth = searchParams.get('month') || undefined;
   const { activeClient } = useClient();
   const membership = useMembership();
   const { canManageTeam } = membership;
@@ -396,12 +400,19 @@ export function PostComposer({ editPostId = null }) {
       const id = await ensureDraft();
       await updatePost(id, buildPayload('scheduled'));
       await schedulePost(id, scheduledAtUtc);
+      await queryClient.invalidateQueries({ queryKey: ['posts'] });
+      await queryClient.invalidateQueries({ queryKey: ['post', id] });
       showToast({
         title: 'Post scheduled',
         description: formatScheduledLabel(scheduledAtUtc, scheduleTimezone),
         variant: 'success',
       });
-      navigate('/app/calendar');
+      navigate(buildScheduleReturnPath({
+        scheduledAtUtc,
+        nav: navFrom,
+        tab: navTab,
+        month: navMonth,
+      }));
     });
 
   const handlePublishNow = async () => {

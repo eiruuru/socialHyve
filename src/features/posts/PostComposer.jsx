@@ -23,6 +23,7 @@ import { findLinkedInstagram, pickPrimaryAccount } from '@/lib/socialAccounts';
 import {
   formatScheduledLabel,
   getBrowserTimezone,
+  isScheduleInPast,
   resolveScheduleTimezone,
   utcToZonedLocalInput,
   zonedLocalToUtc,
@@ -340,6 +341,14 @@ export function PostComposer({ editPostId = null }) {
 
   const handleSaveChanges = () =>
     runWithValidation(async () => {
+      if (scheduledAtUtc && isScheduleInPast(scheduledAtUtc, { bufferMs: 10 * 60 * 1000 })) {
+        showToast({
+          title: 'Schedule in the past',
+          description: 'Pick a time at least 10 minutes from now.',
+          variant: 'error',
+        });
+        return;
+      }
       const id = await ensureDraft();
       if (isEditMode) {
         await logPostActivity(id, 'updated', 'Post content updated');

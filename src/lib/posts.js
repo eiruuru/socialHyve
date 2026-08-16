@@ -3,7 +3,12 @@ import { filterClientActivity } from '@/features/posts/postActivityUtils';
 import { stampWorkspaceId, getCurrentWorkspaceId } from './workspace';
 import { getActiveClientId } from './clientContext';
 import { format } from 'date-fns';
-import { rescheduleUtcToDay, resolveScheduleTimezone } from './scheduleTime';
+import {
+  isPastCalendarDay,
+  isScheduleInPast,
+  rescheduleUtcToDay,
+  resolveScheduleTimezone,
+} from './scheduleTime';
 export {
   listSocialAccounts,
   setPrimarySocialAccount,
@@ -184,12 +189,19 @@ export async function schedulePost(postId, scheduledAt) {
 }
 
 export async function reschedulePostToDay(postId, targetDay, post, clientTimezone) {
+  if (isPastCalendarDay(targetDay)) {
+    throw new Error('Cannot reschedule to a date in the past');
+  }
+
   const timeZone = resolveScheduleTimezone({
     postTimezone: post.schedule_timezone,
     clientTimezone,
   });
   const scheduledAt = rescheduleUtcToDay(post.scheduled_at, timeZone, targetDay);
   if (!scheduledAt) throw new Error('Could not compute new schedule time');
+  if (isScheduleInPast(scheduledAt)) {
+    throw new Error('Cannot reschedule to a time in the past');
+  }
 
   const updated = await updatePost(postId, { scheduled_at: scheduledAt });
   await logPostActivity(

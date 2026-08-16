@@ -4,6 +4,8 @@ import {
   zonedLocalToUtc,
   utcToZonedLocalInput,
   resolveScheduleTimezone,
+  isPastCalendarDay,
+  isScheduleInPast,
 } from '../src/lib/scheduleTime.js';
 
 test('zonedLocalToUtc converts Manila local time to UTC', () => {
@@ -28,4 +30,23 @@ test('resolveScheduleTimezone prefers post then client then browser', () => {
     'Asia/Tokyo',
   );
   assert.equal(resolveScheduleTimezone({ clientTimezone: 'Europe/London' }), 'Europe/London');
+});
+
+test('isPastCalendarDay detects days before today', () => {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  assert.equal(isPastCalendarDay(yesterday), true);
+  assert.equal(isPastCalendarDay(new Date()), false);
+  assert.equal(isPastCalendarDay(tomorrow), false);
+});
+
+test('isScheduleInPast detects elapsed schedule times', () => {
+  const past = new Date(Date.now() - 60_000).toISOString();
+  const future = new Date(Date.now() + 60 * 60_000).toISOString();
+
+  assert.equal(isScheduleInPast(past), true);
+  assert.equal(isScheduleInPast(future), false);
 });

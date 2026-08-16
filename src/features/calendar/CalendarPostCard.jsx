@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { PlatformChip } from '@/components/brand/PlatformChip';
 import { getPostDisplayBadges } from '@/features/queue/postStatus';
+import { getScheduleUrgency } from '@/features/queue/scheduleUrgency';
 import { StatusBadge } from '@/components/brand/StatusBadge';
 import { isVideo } from '@/features/posts/previews/mediaUtils';
 import { cn } from '@/lib/utils';
@@ -47,6 +48,8 @@ export function CalendarPostCard({
   const navigate = useNavigate();
   const didDragRef = useRef(false);
   const badges = getPostDisplayBadges(post);
+  const scheduleUrgency = getScheduleUrgency(post.scheduled_at);
+  const cardBorderClass = scheduleUrgency?.borderClass ?? 'border-neutral-200';
   const media = (post.post_media || []).sort(
     (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
   );
@@ -85,7 +88,8 @@ export function CalendarPostCard({
         type="button"
         onClick={handleClick}
         className={cn(
-          'flex w-full items-center gap-3 overflow-hidden rounded-hyve-sm border border-neutral-200 bg-white text-left shadow-sm transition-shadow hover:shadow-md',
+          'flex w-full items-center gap-3 overflow-hidden rounded-hyve-sm border bg-white text-left shadow-sm transition-shadow hover:shadow-md',
+          cardBorderClass,
           isDragging && 'opacity-50',
           className,
         )}
@@ -97,6 +101,17 @@ export function CalendarPostCard({
             {badges.map((b) => (
               <StatusBadge key={b.variant} variant={b.variant} label={b.label} className="scale-90 origin-left" />
             ))}
+            {scheduleUrgency && (
+              <span
+                className={cn(
+                  'rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-tight',
+                  scheduleUrgency.badgeClass,
+                )}
+                title={scheduleUrgency.urgencyLabel}
+              >
+                {scheduleUrgency.shortLabel}
+              </span>
+            )}
           </div>
           <div className="flex gap-1">
             {post.publish_facebook && <PlatformChip platform="facebook" iconOnly />}
@@ -115,13 +130,25 @@ export function CalendarPostCard({
       onDragStart={draggable ? handleDragStart : undefined}
       onDragEnd={draggable ? handleDragEnd : undefined}
       className={cn(
-        'mb-1.5 w-full overflow-hidden rounded-hyve-sm border border-neutral-200 bg-white text-left shadow-sm transition-shadow hover:shadow-md',
+        'relative mb-1.5 w-full overflow-hidden rounded-hyve-sm border bg-white text-left shadow-sm transition-shadow hover:shadow-md',
+        cardBorderClass,
         draggable && 'cursor-grab active:cursor-grabbing',
         isDragging && 'opacity-50',
         className,
       )}
     >
       <PostThumbnail thumb={thumb} isCarousel={isCarousel} className="h-14 w-full" />
+      {scheduleUrgency && (
+        <span
+          className={cn(
+            'absolute right-1 top-1 z-10 rounded-full px-1.5 py-0.5 text-[9px] font-semibold leading-tight shadow-sm',
+            scheduleUrgency.badgeClass,
+          )}
+          title={scheduleUrgency.urgencyLabel}
+        >
+          {scheduleUrgency.shortLabel}
+        </span>
+      )}
       <div className="space-y-0.5 p-1.5">
         <p className="truncate text-xs font-medium leading-tight">{title}</p>
         {timeLabel && (

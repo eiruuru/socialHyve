@@ -106,6 +106,27 @@ export function resolveScheduleTimezone({ postTimezone, clientTimezone }) {
   return postTimezone || clientTimezone || getBrowserTimezone();
 }
 
+/** Calendar day (local midnight) is strictly before today. */
+export function isPastCalendarDay(day) {
+  if (!day || Number.isNaN(day.getTime())) return false;
+  const start = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  return start(day).getTime() < start(new Date()).getTime();
+}
+
+/** Scheduled instant is already in the past (optional buffer for "schedule soon" rules). */
+export function isScheduleInPast(iso, { bufferMs = 0 } = {}) {
+  if (!iso) return false;
+  const ms = new Date(iso).getTime();
+  if (Number.isNaN(ms)) return false;
+  return ms < Date.now() - bufferMs;
+}
+
+/** Minimum value for `<input type="datetime-local">` in a given timezone. */
+export function minScheduleLocalInput(timeZone, bufferMinutes = 10) {
+  const minUtc = new Date(Date.now() + bufferMinutes * 60 * 1000).toISOString();
+  return utcToZonedLocalInput(minUtc, timeZone || getBrowserTimezone());
+}
+
 export function rescheduleUtcToDay(iso, timeZone, targetDay) {
   if (!targetDay || Number.isNaN(targetDay.getTime())) return null;
 

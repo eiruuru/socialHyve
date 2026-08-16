@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { OptimizationTips } from '@/features/posts/composer/OptimizationTips';
 import { AccountSelect } from '@/features/posts/composer/AccountSelect';
-import { formatTimezoneLabel } from '@/lib/scheduleTime';
+import { formatTimezoneLabel, minScheduleLocalInput } from '@/lib/scheduleTime';
 import { uploadDraftMediaFile } from '@/lib/posts';
 
 const LABEL_PRESETS = ['Campaign', 'Product launch', 'Evergreen', 'Promo', 'Event'];
@@ -204,6 +204,7 @@ export function GenericContentStep({
             <Input
               type="datetime-local"
               value={scheduledAt}
+              min={minScheduleLocalInput(scheduleTimezone)}
               onChange={(e) => setScheduledAt(e.target.value)}
             />
             <TimezoneSelect

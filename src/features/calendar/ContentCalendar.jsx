@@ -10,6 +10,7 @@ import {
   addMonths,
   subMonths,
   compareAsc,
+  startOfDay,
 } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
@@ -17,6 +18,8 @@ import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useClient } from '@/lib/clientContext';
 import { reschedulePostToDay } from '@/lib/posts';
+import { isPastCalendarDay } from '@/lib/scheduleTime';
+import { showToast } from '@/lib/toast';
 import { CalendarPostCard, isPostDraggable } from './CalendarPostCard';
 import { Button } from '@/components/ui/button';
 import { IconTooltip } from '@/components/ui/IconTooltip';
@@ -89,6 +92,16 @@ export function ContentCalendar({ posts = [], readOnly = false }) {
     const post = posts.find((p) => p.id === postId);
     if (!post || !isPostDraggable(post)) return;
 
+    if (isPastCalendarDay(day)) {
+      showToast({
+        title: 'Cannot reschedule',
+        description: 'Pick today or a future date.',
+        variant: 'error',
+      });
+      setDraggingPostId(null);
+      return;
+    }
+
     const currentDate = post.scheduled_at || post.created_at;
     if (currentDate && isSameDay(new Date(currentDate), day)) {
       setDraggingPostId(null);
@@ -100,7 +113,11 @@ export function ContentCalendar({ posts = [], readOnly = false }) {
       await reschedulePostToDay(postId, day, post, activeClient?.default_timezone);
       await queryClient.invalidateQueries({ queryKey: ['posts', activeClient?.id] });
     } catch (err) {
-      console.error('Failed to reschedule post:', err);
+      showToast({
+        title: 'Could not reschedule',
+        description: err.message || 'Try again.',
+        variant: 'error',
+      });
     } finally {
       setRescheduling(false);
       setDraggingPostId(null);
@@ -147,18 +164,26 @@ export function ContentCalendar({ posts = [], readOnly = false }) {
           <div className="grid grid-cols-7">
             {days.map((day) => {
               const dayPosts = getPostsForDay(day);
+              const isPastDay = isPastCalendarDay(day);
               const isDropTarget = dropTargetDay && isSameDay(dropTargetDay, day);
+              const isToday = isSameDay(startOfDay(day), startOfDay(new Date()));
               return (
                 <div
                   key={day.toISOString()}
                   className={cn(
                     'min-h-[180px] border-b border-r border-neutral-200 p-2 transition-colors',
                     !isSameMonth(day, currentDate) && 'bg-neutral-50 text-muted-foreground',
-                    isDropTarget && 'bg-honey-light/30 ring-2 ring-inset ring-honey',
+                    isPastDay && 'bg-neutral-100/80',
+                    isDropTarget && !isPastDay && 'bg-honey-light/30 ring-2 ring-inset ring-honey',
                   )}
                   onDragOver={readOnly ? undefined : (e) => {
                     if (!draggingPostId) return;
                     e.preventDefault();
+                    if (isPastDay) {
+                      e.dataTransfer.dropEffect = 'none';
+                      setDropTargetDay(null);
+                      return;
+                    }
                     e.dataTransfer.dropEffect = 'move';
                     setDropTargetDay(day);
                   }}
@@ -172,12 +197,24 @@ export function ContentCalendar({ posts = [], readOnly = false }) {
                   onDrop={readOnly ? undefined : (e) => handleDropOnDay(day, e)}
                 >
                   {readOnly ? (
-                    <span className="mb-1 block text-sm font-medium">{format(day, 'd')}</span>
+                    <span className={cn('mb-1 block text-sm font-medium', isToday && 'font-bold text-primary')}>
+                      {format(day, 'd')}
+                    </span>
                   ) : (
                     <button
                       type="button"
-                      className="mb-1 text-sm font-medium hover:text-primary"
-                      onClick={() => navigate(`/app/posts/new?date=${day.toISOString()}`)}
+                      disabled={isPastDay}
+                      className={cn(
+                        'mb-1 text-sm font-medium',
+                        isToday && 'font-bold text-primary',
+                        isPastDay
+                          ? 'cursor-not-allowed text-muted-foreground/60'
+                          : 'hover:text-primary',
+                      )}
+                      onClick={() => {
+                        if (isPastDay) return;
+                        navigate(`/app/posts/new?date=${day.toISOString()}`);
+                      }}
                     >
                       {format(day, 'd')}
                     </button>

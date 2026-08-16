@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { showToast } from '@/lib/toast';
 import { getPostDisplayBadges, isApprovedDraft } from './postStatus';
 import { getScheduleUrgency } from './scheduleUrgency';
+import { isQueuedToPublish } from '@/lib/publishStatus';
 import { normalizeMediaList, isVideo } from '@/features/posts/previews/mediaUtils';
 import { formatScheduledLabel, resolveScheduleTimezone } from '@/lib/scheduleTime';
 import { cn } from '@/lib/utils';
@@ -96,11 +97,13 @@ export function PostQueueCard({
   const badges = getPostDisplayBadges(post);
   const approval = post.approval_status || 'draft';
   const needsSchedule = isApprovedDraft(post);
-  const scheduleUrgency = getScheduleUrgency(post.scheduled_at);
+  const scheduleUrgency = isQueuedToPublish(post) ? null : getScheduleUrgency(post.scheduled_at);
   const scheduleTimezone = resolveScheduleTimezone({ postTimezone: post.schedule_timezone });
   const cardBorderClass = needsSchedule
     ? 'border-2 border-dashed border-honey-dark/40'
-    : scheduleUrgency?.borderClass ?? 'border border-neutral-200';
+    : isQueuedToPublish(post)
+      ? 'border border-neutral-200'
+      : scheduleUrgency?.borderClass ?? 'border border-neutral-200';
 
   const handleReject = () => {
     if (!rejectNote.trim()) {

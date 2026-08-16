@@ -19,3 +19,8 @@ export function getEffectivePublishStatus(post) {
 export function isApprovedNotQueued(post) {
   return post?.approval_status === 'approved' && getEffectivePublishStatus(post) === 'draft';
 }
+
+/** Approved and publish state is scheduled — queued to go live. */
+export function isQueuedToPublish(post) {
+  return post?.approval_status === 'approved' && getEffectivePublishStatus(post) === 'scheduled';
+}

@@ -216,9 +216,9 @@ export function AppLayout() {
         <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-sidebar-border bg-sidebar px-4 sm:px-5">
           <div className="flex items-center gap-3">
             <Logo variant="dark" />
-            <NotificationBell variant="icon" />
           </div>
           <div className="flex min-w-0 items-center gap-3">
+            <NotificationBell variant="icon" />
             <button
               type="button"
               onClick={logout}

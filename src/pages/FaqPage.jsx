@@ -15,7 +15,7 @@ export default function FaqPage() {
           `,
         }}
       >
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-4">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
           <Logo />
           <Link
             to="/"
@@ -27,11 +27,11 @@ export default function FaqPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-6 py-12">
+      <main className="mx-auto max-w-6xl px-6 py-12">
         <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Help</p>
         <h1 className="mt-2 font-display text-4xl font-bold text-ink">Frequently asked questions</h1>
         <p className="mt-3 text-neutral-600">
-          Practical answers for workspace setup, Meta pool, drafting, approving, and publishing across clients.
+          Step-by-step guides for workspace setup, composing, approvals, calendar, integrations, roles, and notifications.
         </p>
         <FaqContent className="mt-10" />
       </main>

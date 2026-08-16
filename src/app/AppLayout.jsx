@@ -207,16 +207,20 @@ export function AppLayout() {
   return (
     <NotificationsProvider>
       <PendingClientInviteNotifier />
-      <div className="flex min-h-screen bg-paper">
-        <aside className="relative flex w-60 shrink-0 flex-col bg-sidebar text-sidebar-foreground">
-        <div className="border-b border-sidebar-border px-5 py-6">
+      <div className="flex min-h-screen flex-col bg-paper">
+        <header className="relative z-40 flex h-14 shrink-0 items-center gap-3 border-b border-sidebar-border bg-sidebar px-4 sm:px-5">
           <Logo variant="dark" />
+          <NotificationBell variant="icon" />
+        </header>
+        <div className="flex min-h-0 flex-1">
+        <aside className="flex w-60 shrink-0 flex-col bg-sidebar text-sidebar-foreground">
+        <div className="border-b border-sidebar-border px-5 py-4">
           {!membership.isClientOnly && (
-            <div className="mt-4">
+            <div>
               <ClientSwitcher />
             </div>
           )}
-          <p className="mt-2 truncate text-xs text-neutral-400">
+          <p className={cn('truncate text-xs text-neutral-400', !membership.isClientOnly && 'mt-3')}>
             Signed in as {user?.email}
           </p>
           {roleDisplay && (
@@ -227,12 +231,6 @@ export function AppLayout() {
           {navGroups.map((group) => (
             <NavGroup key={group.label ?? 'primary'} label={group.label} items={group.items} />
           ))}
-          <div className="space-y-0.5">
-            <p className="px-3 pb-1.5 pt-5 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
-              Inbox
-            </p>
-            <NotificationBell panelPlacement="right" />
-          </div>
         </nav>
         <div className="border-t border-sidebar-border p-4">
           <button
@@ -250,6 +248,7 @@ export function AppLayout() {
           <Outlet />
         </div>
       </main>
+        </div>
       </div>
     </NotificationsProvider>
   );

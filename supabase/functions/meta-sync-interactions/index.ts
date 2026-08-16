@@ -11,6 +11,19 @@ import {
 
 const SYNC_DAYS = 30;
 
+async function runStep(
+  label: string,
+  fn: () => Promise<number>,
+  errors: string[],
+): Promise<number> {
+  try {
+    return await fn();
+  } catch (err) {
+    errors.push(`${label}: ${(err as Error).message}`);
+    return 0;
+  }
+}
+
 Deno.serve(async (req) => {
   const opt = handleOptions(req);
   if (opt) return opt;
@@ -42,18 +55,32 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      try {
-        if (account.platform === 'facebook') {
-          total += await syncFacebookComments(service, clientId, account, token, sinceUnix);
-          total += await syncPageConversations(service, clientId, account, token, 'facebook');
-        } else if (account.platform === 'instagram') {
-          total += await syncInstagramComments(service, clientId, account, token, sinceIso);
-          total += await syncPageConversations(service, clientId, account, token, 'instagram');
-        }
-        await markSyncState(service, clientId, account.id);
-      } catch (err) {
-        errors.push(`${account.platform}: ${(err as Error).message}`);
+      const label = account.platform;
+      if (account.platform === 'facebook') {
+        total += await runStep(
+          `${label} comments`,
+          () => syncFacebookComments(service, clientId, account, token, sinceUnix),
+          errors,
+        );
+        total += await runStep(
+          `${label} messenger`,
+          () => syncPageConversations(service, clientId, account, token, 'facebook'),
+          errors,
+        );
+      } else if (account.platform === 'instagram') {
+        total += await runStep(
+          `${label} comments`,
+          () => syncInstagramComments(service, clientId, account, token, sinceIso),
+          errors,
+        );
+        total += await runStep(
+          `${label} dms`,
+          () => syncPageConversations(service, clientId, account, token, 'instagram'),
+          errors,
+        );
       }
+
+      await markSyncState(service, clientId, account.id);
     }
 
     return jsonResponse({ synced: total, errors });

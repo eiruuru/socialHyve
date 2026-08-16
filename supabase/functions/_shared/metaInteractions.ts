@@ -261,8 +261,17 @@ export async function syncPageConversations(
   token: string,
   platform: 'facebook' | 'instagram',
 ): Promise<number> {
-  const pageId = String(account.page_id || account.external_id || '');
-  if (!pageId) return 0;
+  // Conversations API uses the linked Facebook Page ID (not the IG user id).
+  const pageId = platform === 'instagram'
+    ? String(account.page_id || '')
+    : String(account.page_id || account.external_id || '');
+  if (!pageId) {
+    throw new Error(
+      platform === 'instagram'
+        ? 'Instagram account is missing a linked Facebook Page ID'
+        : 'Facebook account is missing a Page ID',
+    );
+  }
 
   const graphPlatform = platform === 'instagram' ? 'instagram' : 'messenger';
   const url =

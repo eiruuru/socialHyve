@@ -35,6 +35,24 @@ import { cn } from '@/lib/utils';
 
 const QUICK_EMOJIS = ['👍', '❤️', '😊', '🎉', '🙏', '✨'];
 
+function describeSyncResult(result) {
+  const synced = result?.synced ?? 0;
+  const errors = result?.errors ?? [];
+  if (errors.length) {
+    const detail = errors.slice(0, 2).join(' · ');
+    return {
+      title: synced > 0 ? 'Inbox partially synced' : 'Sync completed with errors',
+      description: `${synced} items synced. ${detail}`,
+      variant: synced > 0 ? 'default' : 'error',
+    };
+  }
+  return {
+    title: 'Inbox synced',
+    description: `${synced} items updated`,
+    variant: 'default',
+  };
+}
+
 function ThreadAvatar({ thread }) {
   if (thread.participant_avatar_url) {
     return (
@@ -135,9 +153,13 @@ export default function InteractionsPage() {
     (async () => {
       setSyncing(true);
       try {
-        await syncInteractions(clientId);
+        const result = await syncInteractions(clientId);
         if (!cancelled) {
           await queryClient.invalidateQueries({ queryKey: ['interaction-threads', clientId] });
+          const toast = describeSyncResult(result);
+          if (toast.variant === 'error' || result?.errors?.length) {
+            showToast(toast);
+          }
         }
       } catch (err) {
         if (!cancelled) {
@@ -164,10 +186,7 @@ export default function InteractionsPage() {
       if (selectedThreadId) {
         await queryClient.invalidateQueries({ queryKey: ['interaction-messages', selectedThreadId] });
       }
-      showToast({
-        title: 'Inbox synced',
-        description: result?.synced != null ? `${result.synced} items updated` : 'Latest comments and DMs loaded',
-      });
+      showToast(describeSyncResult(result));
     } catch (err) {
       showToast({ title: 'Sync failed', description: err.message, variant: 'error' });
     } finally {

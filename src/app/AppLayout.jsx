@@ -61,16 +61,21 @@ const orgNavGroups = [
         show: (m) => m.isOrgTeam && !m.isClientOnly,
       },
       {
-        to: '/app/interactions',
-        label: 'Interactions',
-        icon: MessageCircle,
-        show: (m) => m.isOrgTeam && !m.isClientOnly,
-      },
-      {
         to: '/app/posts/import',
         label: 'Import CSV',
         icon: Upload,
         show: (m, c) => m.isOrgTeam && !m.isClientOnly && c.clients.length > 0,
+      },
+    ],
+  },
+  {
+    label: 'Engagement',
+    items: [
+      {
+        to: '/app/interactions',
+        label: 'Interactions',
+        icon: MessageCircle,
+        show: (m) => m.isOrgTeam && !m.isClientOnly,
       },
     ],
   },

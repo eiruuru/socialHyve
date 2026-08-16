@@ -69,7 +69,7 @@ const FAQ_SECTIONS = [
           <HelpList>
             <li><strong>Top bar</strong> — logo, notification bell, Sign out.</li>
             <li><strong>Sidebar top</strong> — honey workspace name badge, client switcher, your email and role.</li>
-            <li><strong>Sidebar nav</strong> — New Post, Content (Queue, Calendar, Interactions, Import CSV), Integrations (Social Links, Canva), Support (Settings, Help).</li>
+            <li><strong>Sidebar nav</strong> — New Post, Content (Queue, Calendar, Import CSV), Engagement (Interactions), Integrations (Social Links, Canva), Support (Settings, Help).</li>
           </HelpList>
         </HelpSubsection>
 
@@ -536,7 +536,7 @@ const FAQ_SECTIONS = [
     content: (
       <>
         <p>
-          <strong>Content → Interactions</strong> syncs post comments and direct messages from assigned Meta accounts.
+          <strong>Engagement → Interactions</strong> syncs post comments and direct messages from assigned Meta accounts.
           Reply, assign teammates, archive threads, and jump to the related socialHyve post when a comment matches a published target.
         </p>
 

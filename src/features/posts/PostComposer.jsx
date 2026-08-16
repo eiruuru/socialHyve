@@ -21,7 +21,7 @@ import { hasCreativesQaAccess } from '@/lib/clientRoles';
 import { getOrganization, listWorkflowApproverUserIds } from '@/lib/organization';
 import { notifyWorkflowEvent } from '@/lib/profile';
 import { showToast } from '@/lib/toast';
-import { resolvePublishStatus } from '@/lib/publishStatus';
+import { getEffectivePublishStatus, resolvePublishStatus } from '@/lib/publishStatus';
 import { findLinkedInstagram, pickPrimaryAccount } from '@/lib/socialAccounts';
 import {
   formatScheduledLabel,
@@ -212,6 +212,7 @@ export function PostComposer({ editPostId = null }) {
   };
 
   const isPublished = existingPost?.status === 'published';
+  const isQueued = isEditMode && getEffectivePublishStatus(existingPost) === 'scheduled';
   const validationErrors = validatePost({ caption, media, publishInstagram, publishFacebook });
   const captionHint = publishInstagram
     ? `${caption.length}/${IG_CAPTION_LIMIT} (Instagram)`
@@ -580,6 +581,7 @@ export function PostComposer({ editPostId = null }) {
         saving={saving}
         publishing={!!publishProgress}
         isEditMode={isEditMode}
+        isQueued={isQueued}
         scheduledAt={scheduledAt}
         scheduleTimezone={scheduleTimezone}
         approvalStatus={approvalStatus}

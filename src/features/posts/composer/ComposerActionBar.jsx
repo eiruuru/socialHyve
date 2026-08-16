@@ -7,6 +7,7 @@ export function ComposerActionBar({
   saving,
   publishing,
   isEditMode = false,
+  isQueued = false,
   scheduledAt,
   scheduleTimezone,
   approvalStatus = 'draft',
@@ -36,7 +37,15 @@ export function ComposerActionBar({
           {approvalHint ? (
             <span>{approvalHint}</span>
           ) : isEditMode ? (
-            <span>{canPublishNow ? 'Save your edits, or reschedule and publish from here.' : 'Save your edits or pick a schedule time and click Schedule.'}</span>
+            <span>
+              {canPublishNow
+                ? (isQueued
+                  ? 'Save your edits, or reschedule and publish from here.'
+                  : 'Save your edits, or schedule to queue for publishing.')
+                : (isQueued
+                  ? 'Save your edits or click Reschedule to change the publish time.'
+                  : 'Pick a schedule time and click Schedule to queue for publishing.')}
+            </span>
           ) : scheduledAt ? (
             <span>
               Scheduled for{' '}
@@ -76,7 +85,7 @@ export function ComposerActionBar({
             title={publishBlocked ? approvalHint : undefined}
           >
             <Calendar className="mr-2 h-4 w-4" />
-            {isEditMode ? 'Reschedule' : 'Schedule'}
+            {isQueued ? 'Reschedule' : 'Schedule'}
           </Button>
           {canPublishNow && (
           <Button

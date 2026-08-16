@@ -29,6 +29,9 @@ Deno.serve(async (req) => {
     const workspace = await getWorkspaceForUser(supabase, user.id);
     const state = randomString(32);
 
+    const forceScopes = Deno.env.get('META_OAUTH_USE_SCOPES') === '1' || body.useScopes === true;
+    const useConfigId = Boolean(META_CONFIG_ID) && !forceScopes;
+
     const service = getServiceClient();
     await service.from('oauth_states').insert({
       workspace_id: workspace.id,
@@ -42,7 +45,7 @@ Deno.serve(async (req) => {
     authUrl.searchParams.set('redirect_uri', META_REDIRECT_URI);
     authUrl.searchParams.set('state', state);
     authUrl.searchParams.set('response_type', 'code');
-    if (META_CONFIG_ID) {
+    if (useConfigId) {
       // Login for Business: config_id replaces scope — do not send scope or auth_type (causes generic FB error).
       authUrl.searchParams.set('config_id', META_CONFIG_ID);
     } else {
@@ -52,7 +55,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    return jsonResponse({ url: authUrl.toString() });
+    return jsonResponse({ url: authUrl.toString(), mode: useConfigId ? 'config' : 'scopes' });
   } catch (err) {
     return jsonResponse({ error: (err as Error).message }, 400);
   }

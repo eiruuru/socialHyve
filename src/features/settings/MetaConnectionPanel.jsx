@@ -41,10 +41,10 @@ export function MetaConnectionPanel() {
 
   const clearParams = () => navigate('/app/settings/account?tab=meta', { replace: true });
 
-  const startMetaOAuth = async ({ rerequest = false } = {}) => {
+  const startMetaOAuth = async ({ rerequest = false, useScopes = false } = {}) => {
     setBusy(true);
     try {
-      const { url } = await invokeFunction('metaOAuthStart', { rerequest });
+      const { url } = await invokeFunction('metaOAuthStart', { rerequest, useScopes });
       window.location.href = url;
     } catch (err) {
       showToast({ title: 'Connection failed', description: err.message, variant: 'error' });
@@ -100,13 +100,32 @@ export function MetaConnectionPanel() {
             Comments and DMs require updated Facebook permissions. Reconnect each account below so
             socialHyve can sync your inbox.
           </p>
-          <div className="mt-3">
-            <Button size="sm" onClick={() => startMetaOAuth({ rerequest: true })} disabled={busy}>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button size="sm" onClick={() => startMetaOAuth()} disabled={busy}>
               Reconnect with new permissions
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => startMetaOAuth({ useScopes: true })} disabled={busy}>
+              Fallback: connect without Business config
             </Button>
           </div>
         </div>
       )}
+
+      <div className="rounded-hyve-md border border-neutral-200 bg-paper-alt p-4 text-sm text-neutral-700">
+        <p className="font-medium">Facebook login shows an error?</p>
+        <p className="mt-1">
+          A 500 or &quot;Something went wrong&quot; usually means your Login for Business configuration
+          (<code className="text-xs">META_CONFIG_ID</code>) is invalid after adding permissions like{' '}
+          <code className="text-xs">pages_messaging</code>. In Meta Developer Console, create a{' '}
+          <strong>new</strong> Login for Business configuration (User access token), add the redirect URI, copy the new Config ID into{' '}
+          <code className="text-xs">.env</code>, run <code className="text-xs">bash scripts/set-secrets.sh</code>, then reconnect.
+        </p>
+        <div className="mt-3">
+          <Button size="sm" variant="outline" onClick={() => startMetaOAuth({ useScopes: true })} disabled={busy}>
+            Connect without Business config (no Messenger)
+          </Button>
+        </div>
+      </div>
 
       {connected === 'meta' && (
         <div className="rounded-hyve-md bg-[#DFF3E6] p-4 text-sm text-status-published">
@@ -119,9 +138,12 @@ export function MetaConnectionPanel() {
       {error && (
         <div className="rounded-md bg-red-50 p-4 text-sm text-red-700">
           Connection error: {decodeURIComponent(error)}
-          <div className="mt-2">
-            <Button size="sm" variant="outline" onClick={() => startMetaOAuth({ rerequest: true })} disabled={busy}>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={() => startMetaOAuth()} disabled={busy}>
               Try again
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => startMetaOAuth({ useScopes: true })} disabled={busy}>
+              Try without Business config
             </Button>
           </div>
         </div>

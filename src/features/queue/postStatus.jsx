@@ -6,14 +6,14 @@ export function getPostDisplayBadges(post) {
   if (post.status === 'published') {
     return [{ variant: 'published', label: STATUS_LABELS.published }];
   }
-  if (post.status === 'scheduled') {
-    return [{ variant: 'scheduled', label: STATUS_LABELS.scheduled }];
-  }
   if (post.status === 'publishing') {
     return [{ variant: 'publishing', label: STATUS_LABELS.publishing }];
   }
   if (post.status === 'failed') {
     return [{ variant: 'failed', label: STATUS_LABELS.failed }];
+  }
+  if (post.status === 'scheduled' || (post.approval_status === 'approved' && post.scheduled_at)) {
+    return [{ variant: 'scheduled', label: STATUS_LABELS.scheduled }];
   }
 
   const approval = post.approval_status || 'draft';

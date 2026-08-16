@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { RequireAuth } from './RequireAuth';
 import { AppLayout } from './AppLayout';
@@ -7,22 +7,23 @@ import { ClientProvider } from '@/lib/clientContext';
 import { MembershipProvider } from '@/lib/membershipContext';
 import { ClientOnlyRedirect } from './ClientOnlyRedirect';
 import { EmptyHiveState } from '@/components/EmptyHiveState';
+import { lazyWithRetry } from './lazyWithRetry';
 
-const LoginPage = lazy(() => import('@/pages/LoginPage'));
-const CalendarPage = lazy(() => import('@/pages/CalendarPage'));
-const QueuePage = lazy(() => import('@/pages/QueuePage'));
-const PostComposerPage = lazy(() => import('@/pages/PostComposerPage'));
-const PostImportPage = lazy(() => import('@/pages/PostImportPage'));
-const EditPostPage = lazy(() => import('@/pages/EditPostPage'));
-const PostDetailPage = lazy(() => import('@/pages/PostDetailPage'));
-const ConnectedAccountsPage = lazy(() => import('@/pages/ConnectedAccountsPage'));
-const CanvaSettingsPage = lazy(() => import('@/pages/CanvaSettingsPage'));
-const AccountSettingsPage = lazy(() => import('@/pages/AccountSettingsPage'));
-const ClientsPage = lazy(() => import('@/pages/ClientsPage'));
-const TeamPage = lazy(() => import('@/pages/TeamPage'));
-const ClientMembersPage = lazy(() => import('@/pages/ClientMembersPage'));
-const ClientReviewPage = lazy(() => import('@/pages/ClientReviewPage'));
-const HelpPage = lazy(() => import('@/pages/HelpPage'));
+const LoginPage = lazyWithRetry(() => import('@/pages/LoginPage'));
+const CalendarPage = lazyWithRetry(() => import('@/pages/CalendarPage'));
+const QueuePage = lazyWithRetry(() => import('@/pages/QueuePage'));
+const PostComposerPage = lazyWithRetry(() => import('@/pages/PostComposerPage'));
+const PostImportPage = lazyWithRetry(() => import('@/pages/PostImportPage'));
+const EditPostPage = lazyWithRetry(() => import('@/pages/EditPostPage'));
+const PostDetailPage = lazyWithRetry(() => import('@/pages/PostDetailPage'));
+const ConnectedAccountsPage = lazyWithRetry(() => import('@/pages/ConnectedAccountsPage'));
+const CanvaSettingsPage = lazyWithRetry(() => import('@/pages/CanvaSettingsPage'));
+const AccountSettingsPage = lazyWithRetry(() => import('@/pages/AccountSettingsPage'));
+const ClientsPage = lazyWithRetry(() => import('@/pages/ClientsPage'));
+const TeamPage = lazyWithRetry(() => import('@/pages/TeamPage'));
+const ClientMembersPage = lazyWithRetry(() => import('@/pages/ClientMembersPage'));
+const ClientReviewPage = lazyWithRetry(() => import('@/pages/ClientReviewPage'));
+const HelpPage = lazyWithRetry(() => import('@/pages/HelpPage'));
 
 function Lazy({ children }) {
   return (

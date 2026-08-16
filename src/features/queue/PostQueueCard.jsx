@@ -55,7 +55,7 @@ function ScheduleSection({ post, scheduleTimezone }) {
   if (!post.scheduled_at) return null;
 
   return (
-    <div className="mt-4 border-t border-neutral-200 pt-3">
+    <div className="mt-3 border-t border-neutral-200 pt-3">
       <p className="text-xs leading-relaxed text-muted-foreground">
         <span className="font-medium text-ink">Scheduled · </span>
         {formatScheduledLabel(post.scheduled_at, scheduleTimezone)}
@@ -151,15 +151,28 @@ export function PostQueueCard({
 
   const metaRow = (
     <>
-      <div className="mb-2 flex flex-wrap items-center gap-2 pr-14">
-        {post.publish_instagram && <PlatformChip platform="instagram" />}
-        {post.publish_facebook && <PlatformChip platform="facebook" />}
-        {badges.map((b) => (
-          <StatusBadge key={b.variant} variant={b.variant} label={b.label} />
-        ))}
+      <div className="mb-2 flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {post.publish_instagram && <PlatformChip platform="instagram" />}
+          {post.publish_facebook && <PlatformChip platform="facebook" />}
+          {badges.map((b) => (
+            <StatusBadge key={b.variant} variant={b.variant} label={b.label} />
+          ))}
+        </div>
+        {variant === 'list' && scheduleUrgency && (
+          <span
+            className={cn(
+              'shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold leading-tight',
+              scheduleUrgency.badgeClass,
+            )}
+            title={scheduleUrgency.urgencyLabel}
+          >
+            {scheduleUrgency.shortLabel}
+          </span>
+        )}
       </div>
       {authorEmail && variant === 'list' && (
-        <p className="mb-1 text-xs text-neutral-500">Posted by {authorEmail}</p>
+        <p className="mb-1.5 text-xs text-neutral-500">Posted by {authorEmail}</p>
       )}
       <p className={cn('text-sm leading-relaxed text-ink', variant === 'list' ? 'line-clamp-2' : 'line-clamp-3')}>
         {post.caption || post.internal_name || 'Untitled post'}
@@ -193,32 +206,36 @@ export function PostQueueCard({
 
   return (
     <div className={cn(
-      'relative grid grid-cols-[72px_1fr_auto] items-start gap-4 rounded-hyve-md bg-white p-5',
+      'relative flex items-start gap-3 rounded-hyve-md bg-white p-4 sm:gap-4 sm:p-5',
       cardBorderClass,
       selected && 'ring-2 ring-honey',
     )}>
-      <div className="flex items-start gap-2">
-        {selectable && (
+      {selectable && (
+        <label className="flex shrink-0 items-center self-center">
           <input
             type="checkbox"
             checked={selected}
             onChange={onSelectChange}
-            className="mt-1"
+            className="h-4 w-4"
             aria-label="Select post"
           />
-        )}
-        <div className="h-[72px] w-[72px] shrink-0 overflow-hidden">
-          <PostThumb post={post} />
-        </div>
-      </div>
+        </label>
+      )}
 
-      <div className="relative min-w-0 pr-2">
-        <UrgencyBadge scheduleUrgency={scheduleUrgency} className="right-0 top-0" />
+      <button
+        type="button"
+        onClick={() => navigate(`/app/posts/${post.id}${navSearch}`)}
+        className="h-[72px] w-[72px] shrink-0 overflow-hidden rounded-[10px] bg-neutral-100"
+      >
+        <PostThumb post={post} />
+      </button>
+
+      <div className="min-w-0 flex-1">
         {metaRow}
         {rejectForm}
       </div>
 
-      <div className="self-center">{actionButtons}</div>
+      <div className="flex shrink-0 items-center self-center">{actionButtons}</div>
     </div>
   );
 }

@@ -81,7 +81,7 @@ export function PostComposer({ editPostId = null }) {
 
   const { data: socialAccounts = [] } = useQuery({
     queryKey: ['social-accounts', activeClient?.id],
-    queryFn: listSocialAccounts,
+    queryFn: () => listSocialAccounts({ clientId: activeClient.id }),
     enabled: !!activeClient?.id,
   });
 
@@ -171,6 +171,10 @@ export function PostComposer({ editPostId = null }) {
       sortedMedia.map((m) => m.storage_path).filter(Boolean),
     );
   }, [existingPost, activeClient?.default_timezone]);
+
+  useEffect(() => {
+    accountsInitializedRef.current = false;
+  }, [activeClient?.id]);
 
   useEffect(() => {
     if (!socialAccounts.length || accountsInitializedRef.current) return;

@@ -11,7 +11,7 @@ export function usePreviewAccounts({
   const clientId = clientIdProp || getActiveClientId();
   const { data: accounts = [] } = useQuery({
     queryKey: ['social-accounts', clientId],
-    queryFn: listSocialAccounts,
+    queryFn: () => listSocialAccounts({ clientId }),
     enabled: !!clientId,
   });
 

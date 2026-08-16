@@ -8,6 +8,12 @@ const META_APP_SECRET = Deno.env.get('META_APP_SECRET') || '';
 const META_REDIRECT_URI = Deno.env.get('META_REDIRECT_URI') || '';
 const APP_URL = Deno.env.get('APP_URL') || 'http://localhost:5173';
 
+function accountsRedirect(params: Record<string, string>, clientId?: string | null) {
+  const search = new URLSearchParams(params);
+  if (clientId) search.set('clientId', clientId);
+  return redirectResponse(`${APP_URL}/app/settings/accounts?${search}`);
+}
+
 async function exchangeCode(code: string): Promise<string> {
   const url = new URL(`${META_GRAPH}/oauth/access_token`);
   url.searchParams.set('client_id', META_APP_ID);
@@ -49,6 +55,8 @@ Deno.serve(async (req) => {
     return redirectResponse(`${APP_URL}/app/settings/accounts?error=missing_code`);
   }
 
+  let connectedClientId: string | null = null;
+
   try {
     const service = getServiceClient();
     const { data: oauthState, error: stateErr } = await service
@@ -76,11 +84,12 @@ Deno.serve(async (req) => {
       const msg =
         'No Facebook Pages found after login. Pages managed in Meta Business require the business_management permission. ' +
         `Granted scopes: ${scopes}. Add business_management to your Login for Business configuration, set META_CONFIG_ID, and reconnect.`;
-      return redirectResponse(`${APP_URL}/app/settings/accounts?error=${encodeURIComponent(msg)}`);
+      return redirectResponse(`${APP_URL}/app/settings/accounts?error=${encodeURIComponent(msg)}&clientId=${clientId}`);
     }
 
     const workspaceId = oauthState.workspace_id;
     const clientId = oauthState.client_id;
+    connectedClientId = clientId;
 
     let existingAccounts: { platform: string; is_primary?: boolean }[] = [];
     const { data: primaryRows, error: primaryErr } = await service
@@ -199,9 +208,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    return redirectResponse(`${APP_URL}/app/settings/accounts?connected=meta`);
+    return accountsRedirect({ connected: 'meta' }, clientId);
   } catch (err) {
     const msg = encodeURIComponent((err as Error).message);
-    return redirectResponse(`${APP_URL}/app/settings/accounts?error=${msg}`);
+    return accountsRedirect({ error: msg }, connectedClientId);
   }
 });

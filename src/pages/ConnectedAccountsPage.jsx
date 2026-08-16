@@ -20,16 +20,18 @@ import { showToast } from '@/lib/toast';
 export default function ConnectedAccountsPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { activeClient } = useClient();
+  const { activeClient, clients, setActiveClient } = useClient();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const connected = searchParams.get('connected');
+  const clientIdParam = searchParams.get('clientId');
   const error = searchParams.get('error');
   const [pickerOpen, setPickerOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const { data: accounts = [], refetch, isLoading, isError, error: queryError } = useQuery({
     queryKey: ['social-accounts', activeClient?.id],
-    queryFn: listSocialAccounts,
+    queryFn: () => listSocialAccounts({ clientId: activeClient.id }),
+    enabled: !!activeClient?.id,
   });
 
   const fbAccounts = accounts.filter((a) => a.platform === 'facebook');
@@ -37,10 +39,18 @@ export default function ConnectedAccountsPage() {
   const hasAccounts = accounts.length > 0;
 
   useEffect(() => {
+    if (!clientIdParam || !clients.length) return;
+    const match = clients.find((c) => c.id === clientIdParam);
+    if (match && match.id !== activeClient?.id) {
+      setActiveClient(match);
+    }
+  }, [clientIdParam, clients, activeClient?.id, setActiveClient]);
+
+  useEffect(() => {
     if (connected === 'meta') {
       refetch();
     }
-  }, [connected, refetch]);
+  }, [connected, refetch, activeClient?.id]);
 
   useEffect(() => {
     if (connected === 'meta' && fbAccounts.length > 1) {
@@ -100,7 +110,7 @@ export default function ConnectedAccountsPage() {
     })) return;
     setBusy(true);
     try {
-      await disconnectAllSocialAccounts();
+      await disconnectAllSocialAccounts({ clientId: activeClient.id });
       await refetch();
     } catch (err) {
       showToast({ title: 'Could not disconnect', description: err.message, variant: 'error' });

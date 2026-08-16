@@ -198,10 +198,10 @@ export async function reschedulePostToDay(postId, targetDay, post, clientTimezon
   return updated;
 }
 
-export async function listSocialAccounts() {
-  const clientId = getActiveClientId();
+export async function listSocialAccounts({ clientId } = {}) {
+  const resolvedClientId = clientId ?? getActiveClientId();
   let query = supabase.from('social_accounts').select('*');
-  if (clientId) query = query.eq('client_id', clientId);
+  if (resolvedClientId) query = query.eq('client_id', resolvedClientId);
   const { data, error } = await query;
   if (error) throw error;
   return (data || []).slice().sort((a, b) => {
@@ -213,7 +213,7 @@ export async function listSocialAccounts() {
 }
 
 export async function setPrimarySocialAccount(accountId, options = {}) {
-  const clientId = getActiveClientId();
+  const clientId = options.clientId ?? getActiveClientId();
   const { data: account, error: fetchErr } = await supabase
     .from('social_accounts')
     .select('*')
@@ -240,7 +240,7 @@ export async function setPrimarySocialAccount(accountId, options = {}) {
   if (setErr) throw setErr;
 
   if (options.linkInstagram && account.platform === 'facebook' && account.page_id) {
-    const allAccounts = await listSocialAccounts();
+    const allAccounts = await listSocialAccounts({ clientId: account.client_id });
     const hasIgPrimary = allAccounts.some(
       (a) => a.platform === 'instagram' && a.is_primary,
     );
@@ -283,14 +283,14 @@ export async function disconnectSocialAccount(id) {
   }
 }
 
-export async function disconnectAllSocialAccounts() {
-  const clientId = getActiveClientId();
-  if (!clientId) throw new Error('No active client selected');
+export async function disconnectAllSocialAccounts({ clientId } = {}) {
+  const resolvedClientId = clientId ?? getActiveClientId();
+  if (!resolvedClientId) throw new Error('No active client selected');
 
   const { error } = await supabase
     .from('social_accounts')
     .delete()
-    .eq('client_id', clientId);
+    .eq('client_id', resolvedClientId);
   if (error) throw error;
 }
 

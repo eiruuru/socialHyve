@@ -75,7 +75,7 @@ export default function PostDetailPage() {
 
   const { data: socialAccounts = [] } = useQuery({
     queryKey: ['social-accounts', post?.client_id],
-    queryFn: listSocialAccounts,
+    queryFn: () => listSocialAccounts({ clientId: post.client_id }),
     enabled: !!post?.client_id,
   });
 

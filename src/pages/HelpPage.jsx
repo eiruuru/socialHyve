@@ -4,10 +4,10 @@ export default function HelpPage() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Settings</p>
+        <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Support</p>
         <h2 className="font-display text-2xl font-bold">Help</h2>
         <p className="text-muted-foreground">
-          How to use the hive — from first client setup to publishing approved posts.
+          How to use the hive — workspace setup, Meta pool, Social Links, approvals, and publishing.
         </p>
       </div>
 

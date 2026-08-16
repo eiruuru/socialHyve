@@ -62,26 +62,31 @@ const FAQ_SECTIONS = [
     content: (
       <>
         <p>
-          Start by creating a client under <strong>Settings → Clients</strong> — each client is a brand or account you manage.
-          Switch clients from the sidebar dropdown; posts, integrations, and approvals are scoped to the active client.
+          Name your workspace under <strong>Settings → Workspace</strong> (shown in the sidebar). Create clients under{' '}
+          <strong>Clients</strong> — each client is a brand or account you manage. Switch clients from the sidebar
+          dropdown; posts, integrations, and approvals stay scoped to the active client.
         </p>
         <p>
-          Connect Facebook under <strong>Settings → Meta Accounts</strong>, then assign pages to each client under{' '}
-          <strong>Social Links</strong>.
+          Connect Facebook under <strong>Meta Accounts</strong> at the workspace level — you can add multiple Facebook
+          logins if you manage pages from different accounts. Then assign imported Pages and Instagram accounts to each
+          client under <strong>Social Links</strong>.
         </p>
         <p>
           Create your first post from <strong>New Post</strong>: write a caption, attach media, pick FB/IG targets, and
           save as draft or submit for approval.
         </p>
         <Example>
-          Add client &quot;River Café&quot;, connect their Meta Page + IG account, then draft a weekend special post and
-          submit it for the café owner to approve.
+          Add client &quot;River Café&quot;, connect Meta and assign their Page from the workspace pool, then draft a
+          weekend special post and submit it for the café owner to approve.
         </Example>
         <ChromeFrame url="app.socialhyve.com/settings/account?tab=clients">
           <div className="space-y-2 p-4">
+            <div className="rounded-hyve-sm bg-honey px-3 py-2 text-sm font-semibold text-white shadow-hyve-sm">
+              River Agency
+            </div>
             <div className="flex items-center justify-between rounded-hyve-sm border border-neutral-200 px-3 py-2">
               <span className="font-medium">River Café</span>
-              <span className="text-xs text-status-published">Meta connected</span>
+              <span className="text-xs text-status-published">2 pages assigned</span>
             </div>
             <div className="flex items-center justify-between rounded-hyve-sm border border-dashed border-neutral-300 px-3 py-2 text-neutral-500">
               + Add client
@@ -101,8 +106,8 @@ const FAQ_SECTIONS = [
           Instagram publishing with the account picker.
         </p>
         <p>
-          Import designs from Canva without leaving the flow — connect Canva per client under Settings, then pick a
-          design from the composer media step.
+          Import designs from Canva without leaving the flow — connect Canva per client under{' '}
+          <strong>Integrations → Canva</strong>, then pick a design from the composer media step.
         </p>
         <p>
           Use <strong>Fine tune</strong> to override captions, schedule times, or add an Instagram first comment when
@@ -133,7 +138,7 @@ const FAQ_SECTIONS = [
   },
   {
     title: 'Approval queue',
-    summary: 'List or grid views, urgency borders, approve or request changes.',
+    summary: 'List or grid views, schedule urgency, approve or request changes.',
     content: (
       <>
         <p>
@@ -141,31 +146,37 @@ const FAQ_SECTIONS = [
           views — list is great for captions; grid highlights visuals.
         </p>
         <p>
-          Scheduled posts get urgency borders and badges (e.g. &quot;Today&quot;, &quot;Soon&quot;) so Creatives QA know what
-          needs attention first.
+          Posts with a schedule time show urgency borders and badges — <strong>Past due</strong>,{' '}
+          <strong>&lt;2 days</strong>, <strong>&lt;5 days</strong>, or days remaining — so Creatives QA know what
+          needs attention first. The same badges appear on calendar cards.
         </p>
         <p>
-          Creatives QA can <strong>Approve</strong> to move a post toward publishing, or <strong>Request changes</strong>{' '}
+          A post still waiting on approval does <strong>not</strong> auto-publish when its scheduled time passes. Approve
+          it first, then schedule or publish. Creatives QA can <strong>Approve</strong> or <strong>Request changes</strong>{' '}
           with comments that loop back to the author.
         </p>
         <Example>
-          A post scheduled for 4 PM today shows an amber urgency border — the client Creatives QA approves from the review link before
-          the cutoff.
+          A post scheduled for 4 PM today still shows in Needs review with a red Past due badge until the client
+          approves — then your team schedules or publishes it.
         </Example>
       </>
     ),
   },
   {
     title: 'Calendar',
-    summary: 'Month and list views, drag to reschedule, bulk CSV import.',
+    summary: 'Month and list views, drag to reschedule, past-due badges, bulk CSV import.',
     content: (
       <>
         <p>
           The calendar shows scheduled and published posts in <strong>month</strong> or <strong>list</strong> view.
-          Drag a post to a new day to reschedule without reopening the composer.
+          Drag a post to a new day to reschedule without reopening the composer — you cannot drop posts on past dates.
         </p>
         <p>
-          Bulk-plan content with <strong>CSV import</strong> under Posts → Import. Map columns to captions, dates, and
+          Overdue and upcoming posts show the same urgency badges as the queue. Pending posts that missed their intended
+          time stay on the calendar with a <strong>Past due</strong> label until someone approves and schedules them.
+        </p>
+        <p>
+          Bulk-plan content with <strong>Import CSV</strong> in the sidebar. Map columns to captions, dates, and
           platforms, then review imported drafts in the queue.
         </p>
         <Example>
@@ -229,8 +240,8 @@ const FAQ_SECTIONS = [
     content: (
       <>
         <p>
-          <strong>Org team</strong> members (owners, editors) manage clients, compose posts, and connect integrations.
-          Invite them from <strong>Settings → Team</strong>.
+          <strong>Org team</strong> members (owners, editors, managers) manage clients, compose posts, and connect
+          integrations. Invite them from <strong>Settings → Team</strong> (Workspace Settings).
         </p>
         <p>
           <strong>Creatives QA</strong> and <strong>Guests</strong> are scoped to a single client — they review and comment without full app
@@ -249,20 +260,25 @@ const FAQ_SECTIONS = [
   },
   {
     title: 'Integrations',
-    summary: 'Meta connections at the org level and Canva design imports.',
+    summary: 'Workspace Meta pool, Social Links assignments, and Canva imports.',
     content: (
       <>
         <p>
-          Connect Facebook accounts under <strong>Settings → Meta Accounts</strong>, then assign pages to each client
-          under <strong>Social Links</strong>. Re-authorize if tokens expire or Pages change.
+          Under <strong>Settings → Meta Accounts</strong>, connect each Facebook login your agency uses. Imported Pages
+          and linked Instagram accounts appear in a workspace pool with assignment status (assigned vs unassigned).
         </p>
         <p>
-          Canva connects separately per client under Settings → Canva. Once linked, browse designs in the composer and
-          export them as post attachments.
+          Assign pages to clients under <strong>Integrations → Social Links</strong> for the active client. Each page
+          can only belong to one client at a time. Reconnect Meta if tokens expire or your Page list changes — only
+          that login&apos;s pages are refreshed, not the whole workspace.
+        </p>
+        <p>
+          Canva connects separately per client under <strong>Integrations → Canva</strong>. Once linked, browse designs
+          in the composer and export them as post attachments.
         </p>
         <Example>
-          Client A uses their own Meta Business account; Client B uses a different Page — each stays isolated with its
-          own Canva workspace too.
+          Connect your personal Facebook for Client A&apos;s pages and a business login for Client B — assign from the
+          same pool without cross-client token conflicts.
         </Example>
       </>
     ),
@@ -273,13 +289,14 @@ const FAQ_SECTIONS = [
     content: (
       <>
         <p>
-          Under <strong>Settings → Workspace</strong>, set your organization name (shown in the top bar). Under{' '}
-          <strong>Profile</strong>, update your display name, change email (confirmation sent to the new
-          address), or set a new password.
+          Open <strong>Settings</strong> in the sidebar (under Support) to reach <strong>Workspace Settings</strong>.
+          On the <strong>Workspace</strong> tab, set your organization name — it appears in a honey badge at the top of
+          the sidebar for your whole team.
         </p>
         <p>
-          Opt in to <strong>email notifications</strong> for workflow events — submitted for review, approved, changes
-          requested, and publish failures — so you stay in the loop without checking the app constantly.
+          On <strong>Profile</strong>, update your display name, change email (confirmation sent to the new address), or
+          set a new password. Configure <strong>in-app</strong> and <strong>email notifications</strong> for workflow
+          events — submitted for review, approved, changes requested, and publish failures.
         </p>
         <Example>
           Turn on email notifications when you&apos;re the account manager so you get pinged the moment a client requests

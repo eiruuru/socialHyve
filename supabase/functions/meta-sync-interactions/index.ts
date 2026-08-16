@@ -10,6 +10,9 @@ import {
 } from '../_shared/metaInteractions.ts';
 
 const SYNC_DAYS = 30;
+// FB post comments need pages_read_engagement (+ pages_manage_engagement to reply).
+// Opt in with META_SYNC_FB_COMMENTS=1 once Login for Business config supports it.
+const SYNC_FACEBOOK_COMMENTS = Deno.env.get('META_SYNC_FB_COMMENTS') === '1';
 
 async function runStep(
   label: string,
@@ -57,11 +60,13 @@ Deno.serve(async (req) => {
 
       const label = account.platform;
       if (account.platform === 'facebook') {
-        total += await runStep(
-          `${label} comments`,
-          () => syncFacebookComments(service, clientId, account, token, sinceUnix),
-          errors,
-        );
+        if (SYNC_FACEBOOK_COMMENTS) {
+          total += await runStep(
+            `${label} comments`,
+            () => syncFacebookComments(service, clientId, account, token, sinceUnix),
+            errors,
+          );
+        }
         total += await runStep(
           `${label} messenger`,
           () => syncPageConversations(service, clientId, account, token, 'facebook'),

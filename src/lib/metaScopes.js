@@ -1,9 +1,14 @@
-/** Scopes required for Interactions inbox (comments + IG DMs + page conversations). */
+/** Scopes required for Interactions inbox (DMs + IG comments; FB comments optional). */
 export const META_INTERACTIONS_SCOPES = [
-  'pages_manage_engagement',
   'pages_manage_metadata',
   'instagram_manage_comments',
   'instagram_manage_messages',
+];
+
+/** Needed for Facebook post comment sync/reply — enable when Login for Business allows it. */
+export const META_FB_COMMENT_SCOPES = [
+  'pages_read_engagement',
+  'pages_manage_engagement',
 ];
 
 /** Facebook Messenger also needs pages_messaging — configure via Login for Business, not scope=. */

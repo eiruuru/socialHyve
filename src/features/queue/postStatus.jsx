@@ -1,5 +1,9 @@
 import { StatusBadge, STATUS_LABELS } from '@/components/brand/StatusBadge';
 
+export function isApprovedDraft(post) {
+  return post?.approval_status === 'approved' && post?.status === 'draft' && !post?.scheduled_at;
+}
+
 export function getPostDisplayBadges(post) {
   if (!post) return [];
 
@@ -14,6 +18,9 @@ export function getPostDisplayBadges(post) {
   }
   if (post.status === 'scheduled' || (post.approval_status === 'approved' && post.scheduled_at)) {
     return [{ variant: 'scheduled', label: STATUS_LABELS.scheduled }];
+  }
+  if (isApprovedDraft(post)) {
+    return [{ variant: 'approved_draft', label: STATUS_LABELS.approved_draft }];
   }
 
   const approval = post.approval_status || 'draft';

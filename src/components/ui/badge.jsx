@@ -12,6 +12,7 @@ const legacyMap = {
   instagram: 'instagram',
   pending: 'pending',
   approved: 'approved',
+  approved_draft: 'approved_draft',
   changes_requested: 'changes_requested',
 };
 

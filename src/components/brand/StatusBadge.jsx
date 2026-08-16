@@ -10,6 +10,7 @@ const VARIANTS = {
   published: 'bg-[#DFF3E6] text-status-published',
   failed: 'bg-[#FCE4E3] text-[#A62E2B]',
   publishing: 'bg-honey-light text-honey-dark',
+  approved_draft: 'bg-honey-light text-honey-dark ring-1 ring-honey-dark/25',
   default: 'bg-neutral-100 text-neutral-600',
   facebook: 'bg-[#E4E8FD] text-platform-fb',
   instagram: 'bg-gradient-to-r from-[#FCE4E3] to-[#F3E4FD] text-[#8134AF]',
@@ -25,6 +26,7 @@ const DOT_COLORS = {
   published: 'bg-status-published',
   failed: 'bg-status-changes',
   publishing: 'bg-status-pending',
+  approved_draft: 'bg-honey-dark',
 };
 
 const LABELS = {
@@ -37,6 +39,7 @@ const LABELS = {
   published: 'Published',
   failed: 'Failed',
   publishing: 'Publishing…',
+  approved_draft: 'Approved · needs schedule',
 };
 
 export function StatusBadge({ variant = 'default', label, className, showDot = true }) {

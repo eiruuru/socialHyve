@@ -5,7 +5,7 @@ import { PlatformChip } from '@/components/brand/PlatformChip';
 import { StatusBadge } from '@/components/brand/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { showToast } from '@/lib/toast';
-import { getPostDisplayBadges } from './postStatus';
+import { getPostDisplayBadges, isApprovedDraft } from './postStatus';
 import { getScheduleUrgency } from './scheduleUrgency';
 import { normalizeMediaList, isVideo } from '@/features/posts/previews/mediaUtils';
 import { formatScheduledLabel, resolveScheduleTimezone } from '@/lib/scheduleTime';
@@ -64,6 +64,16 @@ function ScheduleSection({ post, scheduleTimezone }) {
   );
 }
 
+function NeedsScheduleSection() {
+  return (
+    <div className="mt-3 border-t border-honey-dark/20 pt-3">
+      <p className="text-xs font-medium leading-relaxed text-honey-dark">
+        Not scheduled yet — open Edit to pick a date or publish now.
+      </p>
+    </div>
+  );
+}
+
 export function PostQueueCard({
   post,
   authorEmail,
@@ -83,9 +93,12 @@ export function PostQueueCard({
   const [rejectNote, setRejectNote] = useState('');
   const badges = getPostDisplayBadges(post);
   const approval = post.approval_status || 'draft';
+  const needsSchedule = isApprovedDraft(post);
   const scheduleUrgency = getScheduleUrgency(post.scheduled_at);
   const scheduleTimezone = resolveScheduleTimezone({ postTimezone: post.schedule_timezone });
-  const cardBorderClass = scheduleUrgency?.borderClass ?? 'border border-neutral-200';
+  const cardBorderClass = needsSchedule
+    ? 'border-2 border-dashed border-honey-dark/40'
+    : scheduleUrgency?.borderClass ?? 'border border-neutral-200';
 
   const handleReject = () => {
     if (!rejectNote.trim()) {
@@ -178,6 +191,7 @@ export function PostQueueCard({
         {post.caption || post.internal_name || 'Untitled post'}
       </p>
       <ScheduleSection post={post} scheduleTimezone={scheduleTimezone} />
+      {needsSchedule && <NeedsScheduleSection />}
     </>
   );
 

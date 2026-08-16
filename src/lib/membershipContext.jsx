@@ -79,27 +79,28 @@ export function MembershipProvider({ children }) {
       return;
     }
 
-    const [{ data: orgMember }, { data: clientMembers }] = await Promise.all([
+    const [{ data: orgMembers }, { data: ownedOrgs }, { data: clientMembers }] = await Promise.all([
       supabase
         .from('organization_members')
         .select('role, organization_id')
         .eq('user_id', user.id)
-        .maybeSingle(),
+        .order('created_at', { ascending: true }),
+      supabase
+        .from('organizations')
+        .select('id')
+        .eq('owner_id', user.id)
+        .order('created_at', { ascending: true })
+        .limit(1),
       supabase
         .from('client_members')
         .select('client_id, role, clients(id, name)')
         .eq('user_id', user.id),
     ]);
 
-    let orgRole = orgMember?.role || null;
-    if (!orgRole) {
-      const { data: owned } = await supabase
-        .from('organizations')
-        .select('id')
-        .eq('owner_id', user.id)
-        .maybeSingle();
-      if (owned) orgRole = 'owner';
-    }
+    let orgRole = orgMembers?.find((m) => m.role === 'owner')?.role
+      || orgMembers?.[0]?.role
+      || null;
+    if (!orgRole && ownedOrgs?.length) orgRole = 'owner';
 
     const clientMemberships = (clientMembers || []).map((m) => ({
       clientId: m.client_id,

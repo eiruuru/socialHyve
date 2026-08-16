@@ -16,12 +16,14 @@ export async function getWorkspace() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
-    const { data: existing } = await supabase
+    const { data: existingRows } = await supabase
       .from('workspaces')
       .select('*')
       .eq('owner_id', user.id)
-      .maybeSingle();
+      .order('created_at', { ascending: true })
+      .limit(1);
 
+    const existing = existingRows?.[0];
     if (existing) {
       _cachedWorkspace = existing;
       return existing;

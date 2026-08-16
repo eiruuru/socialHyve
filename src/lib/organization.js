@@ -54,23 +54,13 @@ export async function listClientsForUser() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
 
-  const org = await getOrganization();
-  if (org) {
-    const { data, error } = await supabase
-      .from('clients')
-      .select('*')
-      .eq('organization_id', org.id)
-      .order('name');
-    if (error) throw error;
-    return data;
-  }
-
+  // RLS scopes rows to every client this user can access (org team, manager, or client member).
   const { data, error } = await supabase
-    .from('client_members')
-    .select('clients(*)')
-    .eq('user_id', user.id);
+    .from('clients')
+    .select('*')
+    .order('name');
   if (error) throw error;
-  return (data || []).map((row) => row.clients).filter(Boolean);
+  return data || [];
 }
 
 
@@ -128,31 +118,35 @@ export async function getOrganization() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data: member } = await supabase
-    .from('organization_members')
-    .select('organization_id, organizations(*)')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (member?.organizations) return member.organizations;
-
-  const { data: owned } = await supabase
+  const { data: ownedOrgs } = await supabase
     .from('organizations')
     .select('*')
     .eq('owner_id', user.id)
-    .maybeSingle();
+    .order('created_at', { ascending: true });
 
-  if (owned) {
-    await ensureOwnerMembership(owned, user.id);
-    return owned;
+  if (ownedOrgs?.length) {
+    const org = ownedOrgs[0];
+    await ensureOwnerMembership(org, user.id);
+    return org;
   }
 
-  const { data: ws } = await supabase
+  const { data: memberships } = await supabase
+    .from('organization_members')
+    .select('organization_id, organizations(*)')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: true });
+
+  const memberOrg = memberships?.find((m) => m.organizations)?.organizations;
+  if (memberOrg) return memberOrg;
+
+  const { data: workspaces } = await supabase
     .from('workspaces')
     .select('*')
     .eq('owner_id', user.id)
-    .maybeSingle();
+    .order('created_at', { ascending: true })
+    .limit(1);
 
+  const ws = workspaces?.[0];
   if (!ws) return null;
 
   const { data: org, error } = await supabase

@@ -19,6 +19,7 @@ import { PlatformPreviewTabs } from '@/features/posts/previews/PlatformPreviewTa
 import { normalizeMediaList } from '@/features/posts/previews/mediaUtils';
 import { PostStatusBadges, canTransitionApproval } from '@/features/queue/postStatus';
 import { CommentThread } from '@/features/queue/CommentThread';
+import { PostActivityCard } from '@/features/posts/PostActivityCard';
 import { Button } from '@/components/ui/button';
 import { IconTooltip } from '@/components/ui/IconTooltip';
 import { Badge } from '@/components/ui/badge';
@@ -410,28 +411,7 @@ export default function PostDetailPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Activity</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {activity.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No activity yet.</p>
-              ) : (
-                <ul className="space-y-2">
-                  {activity.map((a) => (
-                    <li key={a.id} className="text-sm">
-                      <span className="text-muted-foreground">
-                        {new Date(a.created_at).toLocaleString()}
-                      </span>
-                      {' — '}
-                      {a.detail || a.action}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
+          <PostActivityCard activity={activity} />
 
           <Card>
             <CardContent className="pt-6">

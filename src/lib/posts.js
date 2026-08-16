@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { filterClientActivity } from '@/features/posts/postActivityUtils';
 import { stampWorkspaceId, getCurrentWorkspaceId } from './workspace';
 import { getActiveClientId } from './clientContext';
 import { format } from 'date-fns';
@@ -407,14 +408,15 @@ export async function logPostActivity(postId, action, detail) {
   });
 }
 
-export async function listPostActivity(postId) {
+export async function listPostActivity(postId, { clientView = false } = {}) {
   const { data, error } = await supabase
     .from('post_activity')
     .select('*')
     .eq('post_id', postId)
     .order('created_at', { ascending: false });
   if (error) throw error;
-  return data;
+  if (!clientView) return data || [];
+  return filterClientActivity(data);
 }
 
 export async function createReviewLink(postId) {

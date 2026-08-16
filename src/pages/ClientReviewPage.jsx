@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { listPosts, updateApprovalStatus, addPostComment } from '@/lib/posts';
+import { listPosts, updateApprovalStatus, addPostComment, listPostActivity } from '@/lib/posts';
+import { PostActivityCard } from '@/features/posts/PostActivityCard';
 import { notifyWorkflowEvent, getPostAuthorUserIds } from '@/lib/profile';
 import { PlatformPreviewTabs } from '@/features/posts/previews/PlatformPreviewTabs';
 import { normalizeMediaList } from '@/features/posts/previews/mediaUtils';
@@ -30,6 +31,12 @@ export default function ClientReviewPage() {
 
   const selected = posts.find((p) => p.id === selectedId) || posts[0];
   const mediaItems = normalizeMediaList(selected?.post_media || []);
+
+  const { data: activity = [] } = useQuery({
+    queryKey: ['post-activity', selected?.id, 'client'],
+    queryFn: () => listPostActivity(selected.id, { clientView: true }),
+    enabled: !!selected?.id,
+  });
 
   const handleAction = async (action) => {
     if (!selected) return;
@@ -60,6 +67,7 @@ export default function ClientReviewPage() {
       }).catch(() => {});
       setComment('');
       await queryClient.invalidateQueries({ queryKey: ['client-review', clientId] });
+      await queryClient.invalidateQueries({ queryKey: ['post-activity', selected.id] });
       const remaining = posts.filter((p) => p.id !== selected.id);
       if (remaining.length > 0) {
         const next = remaining[Math.min(currentIndex, remaining.length - 1)];
@@ -126,6 +134,7 @@ export default function ClientReviewPage() {
                     </div>
                   </CardContent>
                 </Card>
+                <PostActivityCard activity={activity} />
                 <Card>
                   <CardContent className="pt-6">
                     <CommentThread postId={selected.id} teamView={false} readOnly />

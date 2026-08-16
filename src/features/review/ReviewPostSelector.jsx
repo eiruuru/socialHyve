@@ -1,5 +1,4 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { PostStatusBadges } from '@/features/queue/postStatus';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -22,8 +21,7 @@ export function ReviewPostSelector({ posts, selectedId, onSelect }) {
   return (
     <Card>
       <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0 flex-1 space-y-1">
-          <PostStatusBadges post={selected} />
+        <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium">{postLabel(selected)}</p>
         </div>
 

@@ -8,6 +8,7 @@ import {
   uploadMediaFile,
   updatePost,
   getPost,
+  logPostActivity,
   removePostMedia,
   deleteStorageObject,
   listSocialAccounts,
@@ -335,6 +336,9 @@ export function PostComposer({ editPostId = null }) {
   const handleSaveChanges = () =>
     runWithValidation(async () => {
       const id = await ensureDraft();
+      if (isEditMode) {
+        await logPostActivity(id, 'updated', 'Post content updated');
+      }
       if (existingPost?.status === 'scheduled' && scheduledAtUtc) {
         await schedulePost(id, scheduledAtUtc);
       }
@@ -451,8 +455,13 @@ export function PostComposer({ editPostId = null }) {
   const handleSubmitForReview = () =>
     runWithValidation(async () => {
       const id = await ensureDraft();
+      const resubmitting = existingPost?.approval_status === 'changes_requested';
       await updatePost(id, buildPayload('draft', 'pending'));
       setApprovalStatus('pending');
+      if (resubmitting) {
+        await logPostActivity(id, 'updated', 'Post updated and resubmitted for review');
+      }
+      await logPostActivity(id, 'approval', 'Submitted for review');
       showToast({ title: 'Post submitted for review', variant: 'success' });
       listWorkflowApproverUserIds()
         .then((recipientUserIds) => notifyWorkflowEvent({

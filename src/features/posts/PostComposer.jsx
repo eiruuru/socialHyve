@@ -5,6 +5,7 @@ import {
   createPost,
   addPostMedia,
   schedulePost,
+  unschedulePost,
   uploadMediaFile,
   updatePost,
   getPost,
@@ -19,6 +20,7 @@ import { useMembership } from '@/lib/membershipContext';
 import { getOrganization, listWorkflowApproverUserIds } from '@/lib/organization';
 import { notifyWorkflowEvent } from '@/lib/profile';
 import { showToast } from '@/lib/toast';
+import { resolvePublishStatus } from '@/lib/publishStatus';
 import { findLinkedInstagram, pickPrimaryAccount } from '@/lib/socialAccounts';
 import {
   formatScheduledLabel,
@@ -216,13 +218,16 @@ export function PostComposer({ editPostId = null }) {
     ? zonedLocalToUtc(scheduledAt, scheduleTimezone)
     : null;
 
-  const buildPayload = (status, nextApprovalStatus = approvalStatus) => ({
+  const buildPayload = (requestedStatus, nextApprovalStatus = approvalStatus) => ({
     caption,
     internal_name: internalName || null,
     label: label || null,
     first_comment: firstComment || null,
     platform_overrides: platformOverrides,
-    status,
+    status: resolvePublishStatus({
+      status: requestedStatus ?? existingPost?.status ?? 'draft',
+      scheduled_at: scheduledAtUtc,
+    }),
     approval_status: nextApprovalStatus,
     publish_facebook: publishFacebook,
     publish_instagram: publishInstagram,
@@ -355,6 +360,8 @@ export function PostComposer({ editPostId = null }) {
       }
       if (existingPost?.status === 'scheduled' && scheduledAtUtc) {
         await schedulePost(id, scheduledAtUtc);
+      } else if (existingPost?.status === 'scheduled' && !scheduledAtUtc) {
+        await unschedulePost(id);
       }
       await queryClient.invalidateQueries({ queryKey: ['post', id] });
       await queryClient.invalidateQueries({ queryKey: ['posts'] });

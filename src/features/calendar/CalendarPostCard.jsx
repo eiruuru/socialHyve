@@ -99,7 +99,7 @@ export function CalendarPostCard({
           <p className="truncate text-sm font-medium leading-tight">{title}</p>
           <div className="flex flex-wrap items-center gap-1">
             {badges.map((b) => (
-              <StatusBadge key={b.variant} variant={b.variant} label={b.label} className="scale-90 origin-left" />
+              <StatusBadge key={b.key ?? b.variant} variant={b.variant} label={b.label} className="scale-90 origin-left" />
             ))}
             {scheduleUrgency && (
               <span
@@ -156,7 +156,7 @@ export function CalendarPostCard({
         )}
         <div className="flex items-center gap-1">
           {badges.map((b) => (
-            <StatusBadge key={b.variant} variant={b.variant} label={b.label} className="scale-90 origin-left" />
+            <StatusBadge key={b.key ?? b.variant} variant={b.variant} label={b.label} className="scale-90 origin-left" />
           ))}
         </div>
         <div className="flex gap-1 pt-0.5">

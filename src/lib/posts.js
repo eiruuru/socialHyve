@@ -188,6 +188,13 @@ export async function schedulePost(postId, scheduledAt) {
   return post;
 }
 
+export async function unschedulePost(postId) {
+  const post = await updatePost(postId, { status: 'draft', scheduled_at: null });
+  await supabase.from('publish_jobs').delete().eq('post_id', postId);
+  await logPostActivity(postId, 'unscheduled', 'Removed from publish queue');
+  return post;
+}
+
 export async function reschedulePostToDay(postId, targetDay, post, clientTimezone) {
   if (isPastCalendarDay(targetDay)) {
     throw new Error('Cannot reschedule to a date in the past');

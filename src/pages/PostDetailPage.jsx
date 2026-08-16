@@ -9,6 +9,8 @@ import {
   duplicatePost,
   updateApprovalStatus,
   updatePost,
+  schedulePost,
+  unschedulePost,
   listPostActivity,
   createReviewLink,
   logPostActivity,
@@ -49,6 +51,13 @@ const STATUS_OPTIONS = [
   { value: 'published', label: 'Published' },
   { value: 'failed', label: 'Failed' },
 ];
+
+const PUBLISH_STATE_HINTS = {
+  draft: 'Not queued to publish. Set a planned date and click Schedule in the composer to go live.',
+  scheduled: 'Queued to publish at the scheduled time.',
+  published: 'Already live on connected platforms.',
+  failed: 'Publish attempt failed — retry or edit.',
+};
 
 export default function PostDetailPage() {
   const { id } = useParams();
@@ -167,9 +176,24 @@ export default function PostDetailPage() {
   };
 
   const handleStatusChange = async (value) => {
-    await updatePost(id, { status: value });
-    await logPostActivity(id, 'status', `Status changed to ${value}`);
+    if (value === 'scheduled') {
+      if (!post.scheduled_at) {
+        showToast({
+          title: 'Schedule time required',
+          description: 'Edit the post and set a publish time before marking it scheduled.',
+          variant: 'error',
+        });
+        return;
+      }
+      await schedulePost(id, post.scheduled_at);
+    } else if (value === 'draft' && post.status === 'scheduled') {
+      await unschedulePost(id);
+    } else {
+      await updatePost(id, { status: value });
+      await logPostActivity(id, 'status', `Publish state changed to ${value}`);
+    }
     queryClient.invalidateQueries({ queryKey: ['post', id] });
+    queryClient.invalidateQueries({ queryKey: ['posts'] });
     queryClient.invalidateQueries({ queryKey: ['post-activity', id] });
   };
 
@@ -331,6 +355,9 @@ export default function PostDetailPage() {
                     <option key={o.value} value={o.value}>{o.label}</option>
                   ))}
                 </select>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {PUBLISH_STATE_HINTS[post.status] || PUBLISH_STATE_HINTS.draft}
+                </p>
               </div>
               <div className="sm:col-span-2">
                 <label className="mb-1 block text-xs font-medium">Assigned to</label>

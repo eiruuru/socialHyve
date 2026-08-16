@@ -64,11 +64,13 @@ function ScheduleSection({ post, scheduleTimezone }) {
   );
 }
 
-function NeedsScheduleSection() {
+function NeedsScheduleSection({ hasPlannedDate }) {
   return (
     <div className="mt-3 border-t border-honey-dark/20 pt-3">
       <p className="text-xs font-medium leading-relaxed text-honey-dark">
-        Not scheduled yet — open Edit to pick a date or publish now.
+        {hasPlannedDate
+          ? 'Planned on the calendar — open Edit and click Schedule to queue for publishing.'
+          : 'Not queued to publish — open Edit to pick a date and click Schedule.'}
       </p>
     </div>
   );
@@ -169,7 +171,7 @@ export function PostQueueCard({
           {post.publish_instagram && <PlatformChip platform="instagram" />}
           {post.publish_facebook && <PlatformChip platform="facebook" />}
           {badges.map((b) => (
-            <StatusBadge key={b.variant} variant={b.variant} label={b.label} />
+            <StatusBadge key={b.key ?? b.variant} variant={b.variant} label={b.label} />
           ))}
         </div>
         {variant === 'list' && scheduleUrgency && (
@@ -191,7 +193,7 @@ export function PostQueueCard({
         {post.caption || post.internal_name || 'Untitled post'}
       </p>
       <ScheduleSection post={post} scheduleTimezone={scheduleTimezone} />
-      {needsSchedule && <NeedsScheduleSection />}
+      {needsSchedule && <NeedsScheduleSection hasPlannedDate={!!post.scheduled_at} />}
     </>
   );
 

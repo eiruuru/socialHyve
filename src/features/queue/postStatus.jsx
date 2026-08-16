@@ -1,30 +1,36 @@
 import { StatusBadge, STATUS_LABELS } from '@/components/brand/StatusBadge';
+import { getEffectivePublishStatus, isApprovedNotQueued } from '@/lib/publishStatus';
 
 export function isApprovedDraft(post) {
-  return post?.approval_status === 'approved' && post?.status === 'draft' && !post?.scheduled_at;
+  return isApprovedNotQueued(post);
 }
 
 export function getPostDisplayBadges(post) {
   if (!post) return [];
 
-  if (post.status === 'published') {
-    return [{ variant: 'published', label: STATUS_LABELS.published }];
-  }
-  if (post.status === 'publishing') {
-    return [{ variant: 'publishing', label: STATUS_LABELS.publishing }];
-  }
-  if (post.status === 'failed') {
-    return [{ variant: 'failed', label: STATUS_LABELS.failed }];
-  }
-  if (post.status === 'scheduled' || (post.approval_status === 'approved' && post.scheduled_at)) {
-    return [{ variant: 'scheduled', label: STATUS_LABELS.scheduled }];
-  }
-  if (isApprovedDraft(post)) {
-    return [{ variant: 'approved_draft', label: STATUS_LABELS.approved_draft }];
+  const publishStatus = getEffectivePublishStatus(post);
+  const badges = [];
+
+  if (publishStatus === 'published') {
+    badges.push({ key: 'publish', variant: 'published', label: STATUS_LABELS.published });
+  } else if (publishStatus === 'publishing') {
+    badges.push({ key: 'publish', variant: 'publishing', label: STATUS_LABELS.publishing });
+  } else if (publishStatus === 'failed') {
+    badges.push({ key: 'publish', variant: 'failed', label: STATUS_LABELS.failed });
+  } else if (publishStatus === 'scheduled') {
+    badges.push({ key: 'publish', variant: 'scheduled', label: STATUS_LABELS.scheduled });
+  } else {
+    badges.push({ key: 'publish', variant: 'draft', label: STATUS_LABELS.draft });
   }
 
   const approval = post.approval_status || 'draft';
-  return [{ variant: approval, label: STATUS_LABELS[approval] || approval }];
+  if (approval === 'pending') {
+    badges.push({ key: 'approval', variant: 'pending', label: STATUS_LABELS.pending });
+  } else if (approval === 'changes_requested') {
+    badges.push({ key: 'approval', variant: 'changes_requested', label: STATUS_LABELS.changes_requested });
+  }
+
+  return badges;
 }
 
 export function PostStatusBadges({ post, className }) {
@@ -32,7 +38,7 @@ export function PostStatusBadges({ post, className }) {
   return (
     <span className={className}>
       {badges.map((b) => (
-        <StatusBadge key={b.variant} variant={b.variant} label={b.label} className="mr-1" />
+        <StatusBadge key={b.key} variant={b.variant} label={b.label} className="mr-1" />
       ))}
     </span>
   );

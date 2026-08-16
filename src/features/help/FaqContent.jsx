@@ -62,7 +62,7 @@ const FAQ_SECTIONS = [
     content: (
       <>
         <p>
-          Start by creating a client under <strong>Clients</strong> — each client is a brand or account you manage.
+          Start by creating a client under <strong>Account → Clients</strong> — each client is a brand or account you manage.
           Switch clients from the sidebar dropdown; posts, integrations, and approvals are scoped to the active client.
         </p>
         <p>
@@ -77,7 +77,7 @@ const FAQ_SECTIONS = [
           Add client &quot;River Café&quot;, connect their Meta Page + IG account, then draft a weekend special post and
           submit it for the café owner to approve.
         </Example>
-        <ChromeFrame url="app.socialhyve.com/clients">
+        <ChromeFrame url="app.socialhyve.com/settings/account?tab=clients">
           <div className="space-y-2 p-4">
             <div className="flex items-center justify-between rounded-hyve-sm border border-neutral-200 px-3 py-2">
               <span className="font-medium">River Café</span>
@@ -230,7 +230,7 @@ const FAQ_SECTIONS = [
       <>
         <p>
           <strong>Org team</strong> members (owners, editors) manage clients, compose posts, and connect integrations.
-          Invite them from <strong>Team</strong>.
+          Invite them from <strong>Account → Team</strong>.
         </p>
         <p>
           <strong>Creatives QA</strong> and <strong>Guests</strong> are scoped to a single client — they review and comment without full app

@@ -12,6 +12,8 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TabsRoot, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { MetaConnectionPanel } from '@/features/settings/MetaConnectionPanel';
+import { ClientsPanel } from '@/features/settings/ClientsPanel';
+import { TeamPanel } from '@/features/settings/TeamPanel';
 
 function Field({ label, htmlFor, children, hint }) {
   return (
@@ -39,22 +41,32 @@ function StatusBanner({ message, tone = 'success' }) {
 
 export default function AccountSettingsPage() {
   const { user } = useAuth();
-  const { isOwnerOrAdmin } = useMembership();
+  const { isOwnerOrAdmin, isOrgTeam, isClientOnly, canManageTeam } = useMembership();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = (
-    searchParams.get('tab') === 'meta'
-    || searchParams.get('connected') === 'meta'
-    || searchParams.get('error')
-  ) && isOwnerOrAdmin ? 'meta' : 'profile';
+  const showClientsTab = isOrgTeam && !isClientOnly;
+  const showTeamTab = canManageTeam;
+  const showMetaTab = isOwnerOrAdmin;
+
+  const activeTab = (() => {
+    const tab = searchParams.get('tab');
+    if (
+      (tab === 'meta' || searchParams.get('connected') === 'meta' || searchParams.get('error'))
+      && showMetaTab
+    ) {
+      return 'meta';
+    }
+    if (tab === 'clients' && showClientsTab) return 'clients';
+    if (tab === 'team' && showTeamTab) return 'team';
+    return 'profile';
+  })();
 
   const setActiveTab = (tab) => {
-    if (tab === 'meta') {
-      const next = new URLSearchParams({ tab: 'meta' });
-      setSearchParams(next, { replace: true });
+    if (tab === 'profile') {
+      setSearchParams({}, { replace: true });
       return;
     }
-    setSearchParams({}, { replace: true });
+    setSearchParams({ tab }, { replace: true });
   };
 
   const { data: profile, isLoading } = useQuery({
@@ -234,13 +246,15 @@ export default function AccountSettingsPage() {
       <div>
         <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Settings</p>
         <h2 className="font-display text-2xl font-bold">Account</h2>
-        <p className="text-muted-foreground">Profile, notifications, and organization Meta accounts</p>
+        <p className="text-muted-foreground">Profile, clients, team, notifications, and Meta accounts</p>
       </div>
 
       <TabsRoot value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="profile">Profile</TabsTrigger>
-          {isOwnerOrAdmin && <TabsTrigger value="meta">Meta Accounts</TabsTrigger>}
+          {showClientsTab && <TabsTrigger value="clients">Clients</TabsTrigger>}
+          {showTeamTab && <TabsTrigger value="team">Team</TabsTrigger>}
+          {showMetaTab && <TabsTrigger value="meta">Meta Accounts</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="profile" className="space-y-6">
@@ -446,7 +460,19 @@ export default function AccountSettingsPage() {
       </Card>
         </TabsContent>
 
-        {isOwnerOrAdmin && (
+        {showClientsTab && (
+          <TabsContent value="clients">
+            <ClientsPanel />
+          </TabsContent>
+        )}
+
+        {showTeamTab && (
+          <TabsContent value="team">
+            <TeamPanel />
+          </TabsContent>
+        )}
+
+        {showMetaTab && (
           <TabsContent value="meta">
             <MetaConnectionPanel />
           </TabsContent>

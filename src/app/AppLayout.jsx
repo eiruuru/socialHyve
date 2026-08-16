@@ -6,8 +6,6 @@ import {
   Link2,
   LogOut,
   Palette,
-  Users,
-  Building2,
   Eye,
   User,
   Upload,
@@ -65,23 +63,6 @@ const orgNavGroups = [
         label: 'Import CSV',
         icon: Upload,
         show: (m, c) => m.isOrgTeam && !m.isClientOnly && c.clients.length > 0,
-      },
-    ],
-  },
-  {
-    label: 'Organization',
-    items: [
-      {
-        to: '/app/clients',
-        label: 'Clients',
-        icon: Building2,
-        show: (m) => m.isOrgTeam && !m.isClientOnly,
-      },
-      {
-        to: '/app/team',
-        label: 'Team',
-        icon: Users,
-        show: (m) => m.canManageTeam,
       },
     ],
   },

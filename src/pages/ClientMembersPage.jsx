@@ -236,7 +236,7 @@ export default function ClientMembersPage() {
       {confirmDialog}
       <div>
         <Button variant="ghost" size="sm" asChild className="mb-2 -ml-2">
-          <Link to="/app/clients">← Clients</Link>
+          <Link to="/app/settings/account?tab=clients">← Clients</Link>
         </Button>
         <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Client access</p>
         <h2 className="font-display text-2xl font-bold">{client?.name || 'Client'} members</h2>
@@ -316,7 +316,7 @@ export default function ClientMembersPage() {
             </form>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Invite managers from the Team page, then assign them to this client.
+              Invite managers from <strong>Account → Team</strong>, then assign them to this client.
             </p>
           )}
           {clientManagers.length > 0 ? (

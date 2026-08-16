@@ -40,7 +40,7 @@ export default function CalendarPage() {
         {!readOnly && !isManager && (
           <div className="flex justify-center">
             <Button asChild>
-              <Link to="/app/clients">Go to Clients</Link>
+              <Link to="/app/settings/account?tab=clients">Go to Clients</Link>
             </Button>
           </div>
         )}

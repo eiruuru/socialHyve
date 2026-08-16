@@ -85,7 +85,7 @@ const orgNavGroups = [
     ],
   },
   {
-    label: 'Settings',
+    label: 'Support',
     items: [
       settingsNavItem,
       {
@@ -129,7 +129,7 @@ function buildNavGroups(membership, clientCtx) {
     }
 
     groups.push({
-      label: 'Settings',
+      label: 'Support',
       items: [
         settingsNavItem,
         { to: '/app/help', label: 'Help', icon: HelpCircle, show: () => true },
@@ -219,14 +219,6 @@ export function AppLayout() {
             <NotificationBell variant="icon" />
           </div>
           <div className="flex min-w-0 items-center gap-3">
-            {workspace?.name && !membership.isClientOnly && (
-              <span
-                className="max-w-[140px] truncate text-sm font-medium text-neutral-200 sm:max-w-[220px]"
-                title={workspace.name}
-              >
-                {workspace.name}
-              </span>
-            )}
             <button
               type="button"
               onClick={logout}
@@ -240,6 +232,14 @@ export function AppLayout() {
         <div className="flex flex-1 items-start">
         <aside className="sticky top-14 z-30 flex h-[calc(100dvh-3.5rem)] w-60 shrink-0 flex-col overflow-hidden bg-sidebar text-sidebar-foreground">
         <div className="border-b border-sidebar-border px-5 py-4">
+          {workspace?.name && !membership.isClientOnly && (
+            <div
+              className="mb-3 truncate rounded-hyve-sm bg-honey px-3 py-2 text-sm font-semibold text-white shadow-hyve-sm"
+              title={workspace.name}
+            >
+              {workspace.name}
+            </div>
+          )}
           {showClientSwitcher && (
             <div>
               <ClientSwitcher />

@@ -58,7 +58,7 @@ export function WorkspacePanel() {
         <CardHeader>
           <CardTitle>Workspace name</CardTitle>
           <CardDescription>
-            Shown beside Sign out in the header for everyone in this workspace.
+            Shown at the top of the sidebar for everyone in this workspace.
           </CardDescription>
         </CardHeader>
         <CardContent>

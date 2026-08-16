@@ -120,13 +120,13 @@ function buildNavGroups(membership, clientCtx) {
   if (membership.isClientOnly) {
     const reviewItems = membership.clientMemberships.map((cm) => ({
       to: `/app/client/${cm.clientId}/review`,
-      label: `${cm.name || 'Client'} review`,
+      label: cm.name || 'Client',
       icon: Eye,
       show: () => true,
     }));
 
     return [
-      { label: 'Review', items: reviewItems },
+      { label: 'Creative QA', items: reviewItems },
       {
         label: 'Account',
         items: [

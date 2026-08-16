@@ -308,7 +308,7 @@ const FAQ_SECTIONS = [
             <li><strong>Approve</strong> (green check) — moves approval status to Approved.</li>
             <li><strong>Request changes</strong> (red X) — requires feedback text; sets Changes requested and notifies the author.</li>
             <li><strong>Publish now</strong> — on Approved tab for draft posts (org team only, not Creatives QA).</li>
-            <li><strong>Edit / Schedule</strong> — opens the composer. Org team can edit anytime; Creatives QA can open approved posts to set a schedule time and queue them for publishing.</li>
+            <li><strong>Edit</strong> — opens the composer to update or schedule the post.</li>
             <li><strong>Click card</strong> — opens post detail.</li>
           </HelpList>
           <p>On Needs review + list view, select multiple posts and use <strong>Approve selected</strong> for bulk approval.</p>
@@ -514,7 +514,7 @@ const FAQ_SECTIONS = [
           <p><strong>Creative QA → [Client name]</strong> in the sidebar opens a focused review UI with two tabs:</p>
           <HelpList>
             <li><strong>Approval for content</strong> — preview posts, add feedback, Approve content or Require edits.</li>
-            <li><strong>Scheduling for publishing</strong> — pick a date/time and queue approved posts for publishing without opening the full composer.</li>
+            <li><strong>Scheduling for publishing</strong> — approved posts not yet queued; pick a date/time and queue them for publishing. Already scheduled posts do not appear here.</li>
           </HelpList>
           <p>On post detail, Creatives QA can also change publish state and schedule from the Status &amp; scheduling card.</p>
         </HelpSubsection>

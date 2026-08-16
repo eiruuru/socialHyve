@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDocumentMeta } from '@/components/DocumentMeta';
 import { PAGE_DESCRIPTIONS } from '@/lib/pageMeta';
 import { listPosts, updateApprovalStatus, addPostComment, listPostActivity } from '@/lib/posts';
-import { getEffectivePublishStatus } from '@/lib/publishStatus';
+import { getEffectivePublishStatus, isApprovedNotQueued } from '@/lib/publishStatus';
 import { PostActivityCard } from '@/features/posts/PostActivityCard';
 import { notifyWorkflowEvent, getPostAuthorUserIds } from '@/lib/profile';
 import { PlatformPreviewTabs } from '@/features/posts/previews/PlatformPreviewTabs';
@@ -24,10 +24,7 @@ function filterApprovalPosts(posts) {
 }
 
 function filterSchedulingPosts(posts) {
-  return posts.filter((p) =>
-    p.approval_status === 'approved'
-    && !['published', 'publishing'].includes(p.status),
-  );
+  return posts.filter(isApprovedNotQueued);
 }
 
 export default function ClientReviewPage() {
@@ -214,7 +211,7 @@ export default function ClientReviewPage() {
           {schedulingPosts.length === 0 ? (
             <Card>
               <CardContent className="py-8 text-center text-muted-foreground">
-                No approved posts ready to schedule. Approve content first, then queue posts here.
+                No approved posts waiting to be scheduled. Queue posts here after approval — once scheduled, they leave this tab.
               </CardContent>
             </Card>
           ) : (

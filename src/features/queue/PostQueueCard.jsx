@@ -146,7 +146,7 @@ export function PostQueueCard({
       )}
       {(allowManageActions || allowScheduleActions) && (
         <Button size="sm" variant="outline" onClick={() => navigate(`/app/posts/${post.id}/edit${navSearch}`)}>
-          {allowScheduleActions && !allowManageActions ? 'Schedule' : 'Edit'}
+          Edit
         </Button>
       )}
     </div>

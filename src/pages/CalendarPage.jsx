@@ -10,7 +10,9 @@ import { Button } from '@/components/ui/button';
 
 export default function CalendarPage() {
   const { activeClient, clients, loading: clientsLoading } = useClient();
-  const { isManager } = useMembership();
+  const membership = useMembership();
+  const { isManager, isClientOnly } = membership;
+  const readOnly = isClientOnly;
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ['posts', activeClient?.id],
     queryFn: () => listPosts(),
@@ -24,14 +26,16 @@ export default function CalendarPage() {
     return (
       <div className="space-y-4">
         <EmptyHiveState
-          title={isManager ? 'No clients assigned yet' : 'No clients yet'}
+          title={readOnly ? 'No clients assigned yet' : isManager ? 'No clients assigned yet' : 'No clients yet'}
           description={
-            isManager
-              ? 'Ask your admin to assign you to a client so you can manage their calendar.'
-              : 'Create a client to start scheduling posts.'
+            readOnly
+              ? 'Ask your agency to add you to a client so you can view their calendar.'
+              : isManager
+                ? 'Ask your admin to assign you to a client so you can manage their calendar.'
+                : 'Create a client to start scheduling posts.'
           }
         />
-        {!isManager && (
+        {!readOnly && !isManager && (
           <div className="flex justify-center">
             <Button asChild>
               <Link to="/app/clients">Go to Clients</Link>
@@ -48,21 +52,27 @@ export default function CalendarPage() {
         <div>
           <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Schedule</p>
           <h2 className="font-display text-2xl font-bold">Content Calendar</h2>
-          <p className="text-muted-foreground">Plan and schedule your social posts</p>
+          <p className="text-muted-foreground">
+            {readOnly ? 'View scheduled and published posts' : 'Plan and schedule your social posts'}
+          </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button asChild variant="outline">
-            <Link to="/app/posts/import">Import CSV</Link>
-          </Button>
-          <Button asChild>
-            <Link to="/app/posts/new">New Post</Link>
-          </Button>
+          {!readOnly && (
+            <>
+              <Button asChild variant="outline">
+                <Link to="/app/posts/import">Import CSV</Link>
+              </Button>
+              <Button asChild>
+                <Link to="/app/posts/new">New Post</Link>
+              </Button>
+            </>
+          )}
         </div>
       </div>
       {isLoading ? (
         <p className="text-muted-foreground">Loading calendar…</p>
       ) : (
-        <ContentCalendar posts={posts} />
+        <ContentCalendar posts={posts} readOnly={readOnly} />
       )}
     </div>
   );

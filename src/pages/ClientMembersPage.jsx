@@ -18,6 +18,8 @@ import {
   buildClientInviteLink,
   displayMember,
   sendInviteEmail,
+  updateClientMemberRole,
+  canChangeClientMemberRole,
 } from '@/lib/organization';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { Button } from '@/components/ui/button';
@@ -34,7 +36,7 @@ const memberQueryOptions = {
 export default function ClientMembersPage() {
   const { clientId } = useParams();
   const { user } = useAuth();
-  const { canAssignManagers } = useMembership();
+  const { canAssignManagers, orgRole } = useMembership();
   const queryClient = useQueryClient();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [email, setEmail] = useState('');
@@ -42,6 +44,8 @@ export default function ClientMembersPage() {
   const [inviting, setInviting] = useState(false);
   const [managerUserId, setManagerUserId] = useState('');
   const [assigning, setAssigning] = useState(false);
+  const [updatingRoleUserId, setUpdatingRoleUserId] = useState(null);
+  const canChangeRoles = canChangeClientMemberRole(orgRole);
 
   const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
@@ -184,6 +188,20 @@ export default function ClientMembersPage() {
       showToast({ title: 'Member removed', variant: 'success' });
     } catch (err) {
       showToast({ title: 'Could not remove member', description: err.message, variant: 'error' });
+    }
+  };
+
+  const handleRoleChange = async (member, nextRole) => {
+    if (nextRole === member.role) return;
+    setUpdatingRoleUserId(member.user_id);
+    try {
+      await updateClientMemberRole(clientId, member.user_id, nextRole);
+      invalidateMembers();
+      showToast({ title: 'Role updated', variant: 'success' });
+    } catch (err) {
+      showToast({ title: 'Could not update role', description: err.message, variant: 'error' });
+    } finally {
+      setUpdatingRoleUserId(null);
     }
   };
 
@@ -349,15 +367,30 @@ export default function ClientMembersPage() {
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground">{formatClientRole(m.role)}</span>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleRemoveMember(m)}
-                      >
-                        Remove
-                      </Button>
+                      {canChangeRoles ? (
+                        <select
+                          value={m.role}
+                          disabled={updatingRoleUserId === m.user_id}
+                          onChange={(e) => handleRoleChange(m, e.target.value)}
+                          className="h-8 rounded-hyve-sm border border-input bg-background px-2 text-sm"
+                        >
+                          {CLIENT_ROLE_OPTIONS.map(({ value, label }) => (
+                            <option key={value} value={value}>{label}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span className="text-muted-foreground">{formatClientRole(m.role)}</span>
+                      )}
+                      {canChangeRoles && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleRemoveMember(m)}
+                        >
+                          Remove
+                        </Button>
+                      )}
                     </div>
                   </li>
                 ))}

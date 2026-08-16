@@ -16,7 +16,7 @@ import {
   INVITE_TOAST_WINDOW_MS,
 } from '@/lib/inviteToastStorage';
 import { useNotificationsContext } from '@/lib/notifications/NotificationsProvider';
-import { formatClientRole } from '@/lib/clientRoles';
+import { formatClientRole, isCreativesQaRole, isGuestRole } from '@/lib/clientRoles';
 
 const POLL_MS = 20000;
 
@@ -52,11 +52,16 @@ export function PendingClientInviteNotifier() {
 
           const clientName = invite.clients?.name || 'a client';
           const hoursLeft = formatHoursRemaining(invite);
+          const accessHint = isCreativesQaRole(invite.role)
+            ? 'Accept to review and approve their posts.'
+            : isGuestRole(invite.role)
+              ? 'Accept to view their content calendar.'
+              : 'Accept to join their workspace.';
 
           showToast({
             toastId: `client-invite-${invite.id}`,
             title: `Invitation to ${clientName}`,
-            description: `You were invited as ${formatClientRole(invite.role)}. Accept to access their review queue. Available for ${hoursLeft} more hour${hoursLeft === 1 ? '' : 's'}.`,
+            description: `You were invited as ${formatClientRole(invite.role)}. ${accessHint} Available for ${hoursLeft} more hour${hoursLeft === 1 ? '' : 's'}.`,
             variant: 'info',
             duration: 0,
             onDismiss: () => {
@@ -76,7 +81,9 @@ export function PendingClientInviteNotifier() {
                     refresh();
                     showToast({
                       title: `Joined ${clientName}`,
-                      description: 'You can review posts from the sidebar.',
+                      description: isCreativesQaRole(invite.role)
+                        ? 'You can review posts from the sidebar.'
+                        : 'You can view their calendar from the sidebar.',
                       variant: 'success',
                     });
                     if (result?.redirectTo) {

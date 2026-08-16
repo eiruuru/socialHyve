@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { useClient } from '@/lib/clientContext';
+import { useMembership } from '@/lib/membershipContext';
+import { hasCreativesQaAccess } from '@/lib/clientRoles';
 import { listPosts, updateApprovalStatus, addPostComment } from '@/lib/posts';
 import { notifyWorkflowEvent, getPostAuthorUserIds } from '@/lib/profile';
 import { invokeFunction } from '@/lib/supabaseFunctions';
@@ -60,6 +62,8 @@ function QueueLegend() {
 export default function QueuePage() {
   const { user } = useAuth();
   const { activeClient } = useClient();
+  const membership = useMembership();
+  const allowManageActions = !hasCreativesQaAccess(membership);
   const queryClient = useQueryClient();
   const [tab, setTab] = useState('review');
   const [search, setSearch] = useState('');
@@ -226,7 +230,8 @@ export default function QueuePage() {
                     onSelectChange={() => toggleSelected(post.id)}
                     onApprove={handleApprove}
                     onRequestChanges={handleRequestChanges}
-                    onPublish={handlePublish}
+                    onPublish={allowManageActions ? handlePublish : undefined}
+                    allowManageActions={allowManageActions}
                   />
                 ))}
               </div>

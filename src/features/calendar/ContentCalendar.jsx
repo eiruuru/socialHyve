@@ -35,7 +35,7 @@ function mondayEndWeek(date) {
   return endOfWeek(date, { weekStartsOn: 1 });
 }
 
-export function ContentCalendar({ posts = [] }) {
+export function ContentCalendar({ posts = [], readOnly = false }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { activeClient } = useClient();
@@ -156,34 +156,38 @@ export function ContentCalendar({ posts = [] }) {
                     !isSameMonth(day, currentDate) && 'bg-neutral-50 text-muted-foreground',
                     isDropTarget && 'bg-honey-light/30 ring-2 ring-inset ring-honey',
                   )}
-                  onDragOver={(e) => {
+                  onDragOver={readOnly ? undefined : (e) => {
                     if (!draggingPostId) return;
                     e.preventDefault();
                     e.dataTransfer.dropEffect = 'move';
                     setDropTargetDay(day);
                   }}
-                  onDragLeave={(e) => {
+                  onDragLeave={readOnly ? undefined : (e) => {
                     if (!e.currentTarget.contains(e.relatedTarget)) {
                       setDropTargetDay((current) =>
                         current && isSameDay(current, day) ? null : current,
                       );
                     }
                   }}
-                  onDrop={(e) => handleDropOnDay(day, e)}
+                  onDrop={readOnly ? undefined : (e) => handleDropOnDay(day, e)}
                 >
-                  <button
-                    type="button"
-                    className="mb-1 text-sm font-medium hover:text-primary"
-                    onClick={() => navigate(`/app/posts/new?date=${day.toISOString()}`)}
-                  >
-                    {format(day, 'd')}
-                  </button>
+                  {readOnly ? (
+                    <span className="mb-1 block text-sm font-medium">{format(day, 'd')}</span>
+                  ) : (
+                    <button
+                      type="button"
+                      className="mb-1 text-sm font-medium hover:text-primary"
+                      onClick={() => navigate(`/app/posts/new?date=${day.toISOString()}`)}
+                    >
+                      {format(day, 'd')}
+                    </button>
+                  )}
                   {dayPosts.map((post) => (
                     <CalendarPostCard
                       key={post.id}
                       post={post}
                       navSearch={monthNavSearch}
-                      draggable={isPostDraggable(post)}
+                      draggable={!readOnly && isPostDraggable(post)}
                       isDragging={draggingPostId === post.id}
                       onDragStart={handleDragStart}
                       onDragEnd={handleDragEnd}

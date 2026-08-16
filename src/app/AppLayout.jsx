@@ -21,7 +21,7 @@ import { ClientSwitcher } from '@/components/ClientSwitcher';
 import { useNavigateOnClientSwitch } from '@/app/useNavigateOnClientSwitch';
 import { cn } from '@/lib/utils';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
-import { formatRoleLabel } from '@/lib/clientRoles';
+import { formatRoleLabel, hasCreativesQaAccess, hasGuestAccess, isCreativesQaRole } from '@/lib/clientRoles';
 import { NotificationsProvider } from '@/lib/notifications/NotificationsProvider';
 import { PendingClientInviteNotifier } from '@/lib/PendingClientInviteNotifier';
 
@@ -118,23 +118,43 @@ const orgNavGroups = [
 
 function buildNavGroups(membership, clientCtx) {
   if (membership.isClientOnly) {
-    const reviewItems = membership.clientMemberships.map((cm) => ({
-      to: `/app/client/${cm.clientId}/review`,
-      label: cm.name || 'Client',
-      icon: Eye,
-      show: () => true,
-    }));
+    const qaAccess = hasCreativesQaAccess(membership);
+    const guestAccess = hasGuestAccess(membership);
 
-    return [
-      { label: 'Creative QA', items: reviewItems },
-      {
-        label: 'Account',
-        items: [
-          accountNavItem,
-          { to: '/app/help', label: 'Help', icon: HelpCircle, show: () => true },
-        ],
-      },
-    ].filter((group) => group.items.length > 0);
+    const groups = [];
+
+    if (qaAccess) {
+      const reviewItems = membership.clientMemberships
+        .filter((cm) => isCreativesQaRole(cm.role))
+        .map((cm) => ({
+          to: `/app/client/${cm.clientId}/review`,
+          label: cm.name || 'Client',
+          icon: Eye,
+          show: () => true,
+        }));
+      groups.push({ label: 'Creative QA', items: reviewItems });
+    }
+
+    const contentItems = [];
+    if (qaAccess) {
+      contentItems.push({ to: '/app/queue', label: 'Queue', icon: ClipboardCheck, show: () => true });
+    }
+    if (qaAccess || guestAccess) {
+      contentItems.push({ to: '/app/calendar', label: 'Calendar', icon: Calendar, show: () => true });
+    }
+    if (contentItems.length) {
+      groups.push({ label: 'Content', items: contentItems });
+    }
+
+    groups.push({
+      label: 'Account',
+      items: [
+        accountNavItem,
+        { to: '/app/help', label: 'Help', icon: HelpCircle, show: () => true },
+      ],
+    });
+
+    return groups.filter((group) => group.items.length > 0);
   }
 
   return orgNavGroups
@@ -199,6 +219,8 @@ export function AppLayout() {
   const isWide = location.pathname.includes('/calendar');
 
   const navGroups = buildNavGroups(membership, clientCtx);
+  const showClientSwitcher = !membership.isClientOnly
+    || (membership.isClientOnly && clientCtx.clients.length > 1);
 
   const roleDisplay = membership.roleLabel
     ? formatRoleLabel(membership.roleLabel)
@@ -225,12 +247,12 @@ export function AppLayout() {
         <div className="flex flex-1 items-start">
         <aside className="sticky top-14 z-30 flex h-[calc(100dvh-3.5rem)] w-60 shrink-0 flex-col overflow-hidden bg-sidebar text-sidebar-foreground">
         <div className="border-b border-sidebar-border px-5 py-4">
-          {!membership.isClientOnly && (
+          {showClientSwitcher && (
             <div>
               <ClientSwitcher />
             </div>
           )}
-          <p className={cn('truncate text-xs text-neutral-400', !membership.isClientOnly && 'mt-3')}>
+          <p className={cn('truncate text-xs text-neutral-400', showClientSwitcher && 'mt-3')}>
             Signed in as {user?.email}
           </p>
           {roleDisplay && (

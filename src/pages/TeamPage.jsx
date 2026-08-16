@@ -14,6 +14,9 @@ import {
   revokeOrganizationInvite,
   removeOrganizationMember,
   buildOrganizationInviteLink,
+  updateOrganizationMemberRole,
+  getAssignableOrgRoleOptions,
+  canChangeOrganizationMemberRole,
 } from '@/lib/organization';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { showToast } from '@/lib/toast';
@@ -24,13 +27,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 export default function TeamPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { canManageTeam, loading: membershipLoading } = useMembership();
+  const { canManageTeam, orgRole, loading: membershipLoading } = useMembership();
   const queryClient = useQueryClient();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('editor');
   const [inviting, setInviting] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
+  const [updatingRoleUserId, setUpdatingRoleUserId] = useState(null);
+  const orgRoleOptions = getAssignableOrgRoleOptions(orgRole);
 
   const { data: org, refetch: refetchOrg } = useQuery({
     queryKey: ['organization'],
@@ -162,6 +167,20 @@ export default function TeamPage() {
     showToast({ title: 'Member removed', variant: 'success' });
   };
 
+  const handleRoleChange = async (member, nextRole) => {
+    if (nextRole === member.role) return;
+    setUpdatingRoleUserId(member.user_id);
+    try {
+      await updateOrganizationMemberRole(member.user_id, nextRole, { currentRole: member.role });
+      queryClient.invalidateQueries({ queryKey: ['org-members'] });
+      showToast({ title: 'Role updated', variant: 'success' });
+    } catch (err) {
+      showToast({ title: 'Could not update role', description: err.message, variant: 'error' });
+    } finally {
+      setUpdatingRoleUserId(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {confirmDialog}
@@ -247,7 +266,24 @@ export default function TeamPage() {
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="capitalize text-muted-foreground">{m.role}</span>
+                    {canChangeOrganizationMemberRole({
+                      actorOrgRole: orgRole,
+                      actorUserId: user?.id,
+                      targetMember: m,
+                    }) ? (
+                      <select
+                        value={m.role}
+                        disabled={updatingRoleUserId === m.user_id}
+                        onChange={(e) => handleRoleChange(m, e.target.value)}
+                        className="h-8 rounded-hyve-sm border border-input bg-background px-2 text-sm capitalize"
+                      >
+                        {orgRoleOptions.map(({ value, label }) => (
+                          <option key={value} value={value}>{label}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className="capitalize text-muted-foreground">{m.role}</span>
+                    )}
                     {m.user_id !== user?.id && m.role !== 'owner' && (
                       <Button size="sm" variant="outline" onClick={() => handleRemoveMember(m)}>
                         Remove

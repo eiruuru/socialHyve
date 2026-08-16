@@ -43,3 +43,23 @@ export function isClientRole(role) {
   const normalized = normalizeClientRole(role);
   return normalized === CLIENT_ROLE.APPROVER || normalized === CLIENT_ROLE.VIEWER;
 }
+
+export function isCreativesQaRole(role) {
+  return normalizeClientRole(role) === CLIENT_ROLE.APPROVER;
+}
+
+export function isGuestRole(role) {
+  return normalizeClientRole(role) === CLIENT_ROLE.VIEWER;
+}
+
+/** Client-only user with Creatives QA on at least one client. */
+export function hasCreativesQaAccess(membership) {
+  if (!membership?.isClientOnly) return false;
+  return (membership.clientMemberships || []).some((cm) => isCreativesQaRole(cm.role));
+}
+
+/** Client-only user with Guest on at least one client. */
+export function hasGuestAccess(membership) {
+  if (!membership?.isClientOnly) return false;
+  return (membership.clientMemberships || []).some((cm) => isGuestRole(cm.role));
+}

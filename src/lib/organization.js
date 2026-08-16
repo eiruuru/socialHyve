@@ -310,6 +310,28 @@ export async function removeClientMember(clientId, userId) {
   if (error) throw error;
 }
 
+export async function updateClientMemberRole(clientId, userId, role) {
+  if (!Object.values(CLIENT_ROLE).includes(role)) {
+    throw new Error('Invalid role');
+  }
+
+  const membership = await getMembershipForUser();
+  const actorOrgRole = membership?.orgRole;
+  if (actorOrgRole !== 'owner' && actorOrgRole !== 'admin') {
+    throw new Error('Only owners and admins can change roles');
+  }
+
+  const { data, error } = await supabase
+    .from('client_members')
+    .update({ role })
+    .eq('client_id', clientId)
+    .eq('user_id', userId)
+    .select('*, profiles(id, email, full_name)')
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 export async function revokeClientInvite(inviteId) {
   const { error } = await supabase
     .from('client_invites')
@@ -434,9 +456,42 @@ export async function removeOrganizationMember(userId) {
   if (error) throw error;
 }
 
-export async function updateOrganizationMemberRole(userId, role) {
+export async function updateOrganizationMemberRole(userId, role, { currentRole } = {}) {
   const org = await getOrganization();
   if (!org) throw new Error('No organization');
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const membership = await getMembershipForUser();
+  const actorOrgRole = membership?.orgRole;
+  if (actorOrgRole !== 'owner' && actorOrgRole !== 'admin') {
+    throw new Error('Only owners and admins can change roles');
+  }
+  if (userId === user.id) {
+    throw new Error('You cannot change your own role');
+  }
+
+  const allowedRoles = ['owner', 'admin', 'editor', 'manager'];
+  if (!allowedRoles.includes(role)) {
+    throw new Error('Invalid role');
+  }
+
+  let existingRole = currentRole;
+  if (!existingRole) {
+    const { data: existing } = await supabase
+      .from('organization_members')
+      .select('role')
+      .eq('organization_id', org.id)
+      .eq('user_id', userId)
+      .maybeSingle();
+    existingRole = existing?.role;
+  }
+
+  if ((role === 'owner' || existingRole === 'owner') && actorOrgRole !== 'owner') {
+    throw new Error('Only the organization owner can change the owner role');
+  }
+
   const { data, error } = await supabase
     .from('organization_members')
     .update({ role })
@@ -446,6 +501,28 @@ export async function updateOrganizationMemberRole(userId, role) {
     .single();
   if (error) throw error;
   return data;
+}
+
+export const ORG_ROLE_OPTIONS = [
+  { value: 'owner', label: 'Owner', ownerOnly: true },
+  { value: 'admin', label: 'Admin' },
+  { value: 'editor', label: 'Editor' },
+  { value: 'manager', label: 'Manager' },
+];
+
+export function getAssignableOrgRoleOptions(actorOrgRole) {
+  return ORG_ROLE_OPTIONS.filter((option) => !option.ownerOnly || actorOrgRole === 'owner');
+}
+
+export function canChangeOrganizationMemberRole({ actorOrgRole, actorUserId, targetMember }) {
+  if (actorOrgRole !== 'owner' && actorOrgRole !== 'admin') return false;
+  if (targetMember.user_id === actorUserId) return false;
+  if (targetMember.role === 'owner' && actorOrgRole !== 'owner') return false;
+  return true;
+}
+
+export function canChangeClientMemberRole(actorOrgRole) {
+  return actorOrgRole === 'owner' || actorOrgRole === 'admin';
 }
 
 export async function updateOrganizationSettings(updates) {

@@ -71,6 +71,7 @@ export function PostQueueCard({
   onRequestChanges,
   onPublish,
   showActions = true,
+  allowManageActions = true,
   variant = 'list',
   navSearch = '',
   selectable = false,
@@ -121,12 +122,14 @@ export function PostQueueCard({
           </button>
         </>
       )}
-      {approval === 'approved' && post.status === 'draft' && (
+      {approval === 'approved' && post.status === 'draft' && allowManageActions && (
         <Button size="sm" onClick={() => onPublish?.(post.id)}>Publish now</Button>
       )}
-      <Button size="sm" variant="outline" onClick={() => navigate(`/app/posts/${post.id}/edit${navSearch}`)}>
-        Edit
-      </Button>
+      {allowManageActions && (
+        <Button size="sm" variant="outline" onClick={() => navigate(`/app/posts/${post.id}/edit${navSearch}`)}>
+          Edit
+        </Button>
+      )}
     </div>
   );
 

@@ -8,7 +8,7 @@ import {
   listMyPendingOrganizationInvites,
 } from '@/lib/organization';
 import { listPosts } from '@/lib/posts';
-import { formatClientRole, formatRoleLabel } from '@/lib/clientRoles';
+import { formatClientRole, formatRoleLabel, hasCreativesQaAccess, isCreativesQaRole } from '@/lib/clientRoles';
 import {
   listPersistedNotifications,
   listDerivedReadKeys,
@@ -98,9 +98,10 @@ async function fetchDerivedNotifications(membership, profile) {
     if (item) items.push(item);
   }
 
-  if (membership.isClientOnly && membership.clientMemberships.length) {
+  if (hasCreativesQaAccess(membership) && membership.clientMemberships.length) {
+    const qaClients = membership.clientMemberships.filter((cm) => isCreativesQaRole(cm.role));
     const reviewPosts = await Promise.all(
-      membership.clientMemberships.map(async (cm) => {
+      qaClients.map(async (cm) => {
         const posts = await listPosts({ clientId: cm.clientId });
         return posts
           .filter((p) => ['pending', 'changes_requested'].includes(p.approval_status))

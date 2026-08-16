@@ -31,6 +31,8 @@ import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useFocusedPostPolling } from '@/lib/useLivePosts';
 import { showToast } from '@/lib/toast';
 import { notifyWorkflowEvent, getPostAuthorUserIds } from '@/lib/profile';
+import { useMembership } from '@/lib/membershipContext';
+import { hasCreativesQaAccess } from '@/lib/clientRoles';
 
 const APPROVAL_OPTIONS = [
   { value: 'draft', label: 'Draft' },
@@ -51,6 +53,9 @@ export default function PostDetailPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { confirm, dialog: confirmDialog } = useConfirm();
+  const membership = useMembership();
+  const readOnly = membership.isClientOnly;
+  const canApprove = hasCreativesQaAccess(membership);
 
   const { data: post, isLoading } = useQuery({
     queryKey: ['post', id],
@@ -59,7 +64,7 @@ export default function PostDetailPage() {
 
   const { data: activity = [] } = useQuery({
     queryKey: ['post-activity', id],
-    queryFn: () => listPostActivity(id),
+    queryFn: () => listPostActivity(id, { clientView: readOnly }),
     enabled: !!id,
   });
 
@@ -208,27 +213,29 @@ export default function PostDetailPage() {
             total={postNav.total}
           />
           <div className="flex items-center gap-1">
-          {approval === 'pending' && (
+          {canApprove && approval === 'pending' && (
             <IconTooltip title="Approve" description="Mark this post as approved">
               <Button size="icon" onClick={handleApprove} aria-label="Approve">
                 <Check className="h-4 w-4" />
               </Button>
             </IconTooltip>
           )}
-          {approval === 'changes_requested' && (
+          {!readOnly && approval === 'changes_requested' && (
             <IconTooltip title="Resubmit for review" description="Send back to the approval queue">
               <Button size="icon" variant="secondary" onClick={handleResubmit} aria-label="Resubmit for review">
                 <RotateCcw className="h-4 w-4" />
               </Button>
             </IconTooltip>
           )}
-          {post.status === 'failed' && (
+          {!readOnly && post.status === 'failed' && (
             <IconTooltip title="Try again" description="Retry publishing this post">
               <Button size="icon" variant="secondary" onClick={handleRetry} aria-label="Try again">
                 <RefreshCw className="h-4 w-4" />
               </Button>
             </IconTooltip>
           )}
+          {!readOnly && (
+            <>
           <IconTooltip title="Duplicate post" description="Create a copy as a new draft">
             <Button size="icon" variant="outline" onClick={handleDuplicate} aria-label="Duplicate post">
               <Copy className="h-4 w-4" />
@@ -253,6 +260,8 @@ export default function PostDetailPage() {
               <Trash2 className="h-4 w-4" />
             </Button>
           </IconTooltip>
+            </>
+          )}
           <IconTooltip title="Back to calendar" description="Return to the content calendar">
             <Button size="icon" variant="outline" asChild aria-label="Back to calendar">
               <Link to="/app/calendar">
@@ -282,9 +291,16 @@ export default function PostDetailPage() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Workflow</CardTitle>
+              <CardTitle>{readOnly ? 'Status' : 'Workflow'}</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
+              {readOnly ? (
+                <div className="sm:col-span-2 space-y-2 text-sm">
+                  <p><span className="font-medium">Approval:</span> {APPROVAL_OPTIONS.find((o) => o.value === approval)?.label || approval}</p>
+                  <p><span className="font-medium">Publish state:</span> {STATUS_OPTIONS.find((o) => o.value === post.status)?.label || post.status}</p>
+                </div>
+              ) : (
+                <>
               <div>
                 <label className="mb-1 block text-xs font-medium">Approval state</label>
                 <select
@@ -324,6 +340,8 @@ export default function PostDetailPage() {
                   ))}
                 </select>
               </div>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -415,7 +433,7 @@ export default function PostDetailPage() {
 
           <Card>
             <CardContent className="pt-6">
-              <CommentThread postId={id} />
+              <CommentThread postId={id} teamView={!readOnly} readOnly={readOnly} />
             </CardContent>
           </Card>
         </div>

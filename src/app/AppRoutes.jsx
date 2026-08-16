@@ -17,6 +17,7 @@ const EditPostPage = lazy(() => import('@/pages/EditPostPage'));
 const PostDetailPage = lazy(() => import('@/pages/PostDetailPage'));
 const ConnectedAccountsPage = lazy(() => import('@/pages/ConnectedAccountsPage'));
 const CanvaSettingsPage = lazy(() => import('@/pages/CanvaSettingsPage'));
+const AccountSettingsPage = lazy(() => import('@/pages/AccountSettingsPage'));
 const ClientsPage = lazy(() => import('@/pages/ClientsPage'));
 const TeamPage = lazy(() => import('@/pages/TeamPage'));
 const ClientMembersPage = lazy(() => import('@/pages/ClientMembersPage'));
@@ -58,6 +59,7 @@ export function AppRoutes() {
           <Route path="clients/:clientId/members" element={<Lazy><ClientMembersPage /></Lazy>} />
           <Route path="client/:clientId/review" element={<Lazy><ClientReviewPage /></Lazy>} />
           <Route path="team" element={<Lazy><TeamPage /></Lazy>} />
+          <Route path="settings/account" element={<Lazy><AccountSettingsPage /></Lazy>} />
           <Route path="settings/accounts" element={<Lazy><ConnectedAccountsPage /></Lazy>} />
           <Route path="settings/canva" element={<Lazy><CanvaSettingsPage /></Lazy>} />
         </Route>

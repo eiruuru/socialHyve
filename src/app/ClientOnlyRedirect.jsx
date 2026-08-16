@@ -3,6 +3,13 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useMembership } from '@/lib/membershipContext';
 import { useClient } from '@/lib/clientContext';
 
+function isClientAllowedPath(pathname) {
+  if (pathname.includes('/login')) return true;
+  if (pathname === '/app/settings/account') return true;
+  if (pathname === '/app/help') return true;
+  return pathname.startsWith('/app/client/') && pathname.endsWith('/review');
+}
+
 export function ClientOnlyRedirect() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -13,10 +20,8 @@ export function ClientOnlyRedirect() {
     if (loading || clientsLoading || !isClientOnly) return;
 
     const reviewPath = `/app/client/${clientMemberships[0]?.clientId}/review`;
-    const onReview = location.pathname.startsWith('/app/client/') && location.pathname.endsWith('/review');
-    const onLogin = location.pathname.includes('/login');
 
-    if (!onReview && !onLogin && clientMemberships[0]?.clientId) {
+    if (!isClientAllowedPath(location.pathname) && clientMemberships[0]?.clientId) {
       navigate(reviewPath, { replace: true });
     }
   }, [isClientOnly, clientMemberships, loading, clientsLoading, location.pathname, navigate]);

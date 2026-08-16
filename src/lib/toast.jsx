@@ -1,12 +1,22 @@
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const ToastContext = createContext(null);
 
 let globalToast = null;
 
-export function showToast({ title, description, variant = 'default', duration = 4000 }) {
-  globalToast?.({ title, description, variant, duration });
+export function showToast({
+  toastId,
+  title,
+  description,
+  variant = 'default',
+  duration = 4000,
+  actions = [],
+  onDismiss,
+}) {
+  globalToast?.({ toastId, title, description, variant, duration, actions, onDismiss });
 }
 
 const variantStyles = {
@@ -19,15 +29,40 @@ const variantStyles = {
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
 
-  const toast = useCallback(({ title, description, variant = 'default', duration = 4000 }) => {
-    const id = crypto.randomUUID();
-    setToasts((current) => [...current, { id, title, description, variant }]);
+  const dismiss = useCallback((id) => {
+    setToasts((current) => current.filter((item) => item.id !== id));
+  }, []);
+
+  const toast = useCallback(({
+    toastId,
+    title,
+    description,
+    variant = 'default',
+    duration = 4000,
+    actions = [],
+    onDismiss,
+  }) => {
+    const id = toastId || crypto.randomUUID();
+    setToasts((current) => {
+      const without = toastId
+        ? current.filter((item) => item.toastId !== toastId)
+        : current;
+      return [...without, {
+        id,
+        toastId: toastId || id,
+        title,
+        description,
+        variant,
+        actions,
+        onDismiss,
+      }];
+    });
     if (duration > 0) {
       setTimeout(() => {
-        setToasts((current) => current.filter((item) => item.id !== id));
+        dismiss(id);
       }, duration);
     }
-  }, []);
+  }, [dismiss]);
 
   globalToast = toast;
 
@@ -44,13 +79,43 @@ export function ToastProvider({ children }) {
           <div
             key={item.id}
             className={cn(
-              'pointer-events-auto rounded-hyve-md border px-4 py-3 shadow-hyve-md',
+              'pointer-events-auto relative rounded-hyve-md border px-4 py-3 pr-9 shadow-hyve-md',
               variantStyles[item.variant] || variantStyles.default,
             )}
           >
+            {item.onDismiss && (
+              <button
+                type="button"
+                aria-label="Dismiss"
+                className="absolute right-2 top-2 rounded-sm p-0.5 opacity-60 hover:opacity-100"
+                onClick={() => {
+                  item.onDismiss?.();
+                  dismiss(item.id);
+                }}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
             <p className="text-sm font-medium">{item.title}</p>
             {item.description && (
               <p className="mt-0.5 text-xs opacity-90">{item.description}</p>
+            )}
+            {item.actions?.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {item.actions.map((action) => (
+                  <Button
+                    key={action.label}
+                    size="sm"
+                    variant={action.variant || 'default'}
+                    onClick={async () => {
+                      await action.onClick?.();
+                      dismiss(item.id);
+                    }}
+                  >
+                    {action.label}
+                  </Button>
+                ))}
+              </div>
             )}
           </div>
         ))}

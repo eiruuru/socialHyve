@@ -12,19 +12,30 @@ import {
   listOrganizationManagers,
   assignManagerToClient,
   removeManagerFromClient,
+  removeClientMember,
+  revokeClientInvite,
+  resendClientInviteReminder,
+  buildClientInviteLink,
   displayMember,
   sendInviteEmail,
 } from '@/lib/organization';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { showToast } from '@/lib/toast';
+
+const memberQueryOptions = {
+  refetchOnWindowFocus: true,
+  refetchOnMount: 'always',
+};
 
 export default function ClientMembersPage() {
   const { clientId } = useParams();
   const { user } = useAuth();
   const { canAssignManagers } = useMembership();
   const queryClient = useQueryClient();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('approver');
   const [inviting, setInviting] = useState(false);
@@ -41,12 +52,14 @@ export default function ClientMembersPage() {
     queryKey: ['client-members', clientId],
     queryFn: () => listClientMembers(clientId),
     enabled: !!clientId,
+    ...memberQueryOptions,
   });
 
   const { data: invites = [] } = useQuery({
     queryKey: ['client-invites', clientId],
     queryFn: () => listClientInvites(clientId),
     enabled: !!clientId,
+    ...memberQueryOptions,
   });
 
   const { data: orgManagers = [] } = useQuery({
@@ -63,13 +76,18 @@ export default function ClientMembersPage() {
   const assignedManagerIds = new Set(clientManagers.map((m) => m.user_id));
   const availableManagers = orgManagers.filter((m) => !assignedManagerIds.has(m.user_id));
 
+  const invalidateMembers = () => {
+    queryClient.invalidateQueries({ queryKey: ['client-members', clientId] });
+    queryClient.invalidateQueries({ queryKey: ['client-invites', clientId] });
+  };
+
   const handleInvite = async (e) => {
     e.preventDefault();
     if (!email.trim()) return;
     setInviting(true);
     try {
       const invite = await inviteClientMember(clientId, email.trim(), role);
-      const link = `${window.location.origin}/app/login?clientInvite=${invite.token}`;
+      const link = buildClientInviteLink(invite.token);
       await navigator.clipboard.writeText(link);
       try {
         await sendInviteEmail({
@@ -84,16 +102,87 @@ export default function ClientMembersPage() {
         // email optional
       }
       showToast({
-        title: 'Invite link copied',
-        description: `Share the link with ${email}`,
+        title: 'Invite sent',
+        description: `Link copied for ${email}. If they're logged in, they'll see an in-app invite too.`,
         variant: 'success',
       });
       setEmail('');
-      queryClient.invalidateQueries({ queryKey: ['client-invites', clientId] });
+      invalidateMembers();
     } catch (err) {
       showToast({ title: 'Invite failed', description: err.message, variant: 'error' });
     } finally {
       setInviting(false);
+    }
+  };
+
+  const handleRevokeInvite = async (inviteId) => {
+    const ok = await confirm({
+      title: 'Revoke invite?',
+      description: 'The invite link will stop working.',
+      confirmLabel: 'Revoke',
+      variant: 'destructive',
+      onConfirm: async () => true,
+    });
+    if (!ok) return;
+    try {
+      await revokeClientInvite(inviteId);
+      invalidateMembers();
+      showToast({ title: 'Invite revoked', variant: 'success' });
+    } catch (err) {
+      showToast({ title: 'Could not revoke invite', description: err.message, variant: 'error' });
+    }
+  };
+
+  const handleCopyInviteLink = async (invite) => {
+    try {
+      await navigator.clipboard.writeText(buildClientInviteLink(invite.token));
+      showToast({ title: 'Invite link copied', variant: 'success' });
+    } catch (err) {
+      showToast({ title: 'Could not copy link', description: err.message, variant: 'error' });
+    }
+  };
+
+  const handleResendInvite = async (invite) => {
+    try {
+      await resendClientInviteReminder(invite.id);
+      try {
+        await sendInviteEmail({
+          type: 'client',
+          token: invite.token,
+          email: invite.email,
+          inviterName: user?.email,
+          targetName: client?.name,
+          role: invite.role,
+        });
+      } catch {
+        // email optional
+      }
+      invalidateMembers();
+      showToast({
+        title: 'Reminder sent',
+        description: `If ${invite.email} is logged in, they'll see the invite toast again.`,
+        variant: 'success',
+      });
+    } catch (err) {
+      showToast({ title: 'Could not resend invite', description: err.message, variant: 'error' });
+    }
+  };
+
+  const handleRemoveMember = async (member) => {
+    const ok = await confirm({
+      title: 'Remove member?',
+      description: `${displayMember(member)} will lose access to ${client?.name || 'this client'}.`,
+      confirmLabel: 'Remove',
+      variant: 'destructive',
+      onConfirm: async () => true,
+    });
+    if (!ok) return;
+    try {
+      await removeClientMember(clientId, member.user_id);
+      invalidateMembers();
+      showToast({ title: 'Member removed', variant: 'success' });
+    } catch (err) {
+      showToast({ title: 'Could not remove member', description: err.message, variant: 'error' });
     }
   };
 
@@ -106,7 +195,7 @@ export default function ClientMembersPage() {
       setManagerUserId('');
       queryClient.invalidateQueries({ queryKey: ['client-managers', clientId] });
     } catch (err) {
-      showToast({ title: 'Invite failed', description: err.message, variant: 'error' });
+      showToast({ title: 'Assign failed', description: err.message, variant: 'error' });
     } finally {
       setAssigning(false);
     }
@@ -117,12 +206,13 @@ export default function ClientMembersPage() {
       await removeManagerFromClient(clientId, userId);
       queryClient.invalidateQueries({ queryKey: ['client-managers', clientId] });
     } catch (err) {
-      showToast({ title: 'Invite failed', description: err.message, variant: 'error' });
+      showToast({ title: 'Could not remove manager', description: err.message, variant: 'error' });
     }
   };
 
   return (
     <div className="space-y-6">
+      {confirmDialog}
       <div>
         <Button variant="ghost" size="sm" asChild className="mb-2 -ml-2">
           <Link to="/app/clients">← Clients</Link>
@@ -136,7 +226,13 @@ export default function ClientMembersPage() {
         <CardHeader>
           <CardTitle>Invite approver</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Each client has its own approvers. To add someone to another client, open that client&apos;s
+            Members page and invite them again — you can choose a different role (e.g. approver here,
+            viewer elsewhere). If they&apos;re already logged in, they&apos;ll get an in-app invitation
+            to accept or decline; otherwise share the copied link.
+          </p>
           <form onSubmit={handleInvite} className="flex flex-wrap items-end gap-2">
             <div>
               <label className="mb-1 block text-xs font-medium">Email</label>
@@ -236,18 +332,31 @@ export default function ClientMembersPage() {
           </CardHeader>
           <CardContent>
             {members.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No client members yet.</p>
+              <p className="text-sm text-muted-foreground">
+                No client members yet. Accepted members appear here — switch back to this tab or refresh
+                if you just completed an invite.
+              </p>
             ) : (
               <ul className="space-y-2">
                 {members.map((m) => (
-                  <li key={m.id} className="flex items-center justify-between rounded-hyve-sm border px-3 py-2 text-sm">
+                  <li key={m.id} className="flex items-center justify-between gap-2 rounded-hyve-sm border px-3 py-2 text-sm">
                     <div>
                       <p className="font-medium">{displayMember(m)}</p>
-                      {m.profiles?.email && m.profiles.full_name && (
+                      {m.profiles?.email && (
                         <p className="text-xs text-muted-foreground">{m.profiles.email}</p>
                       )}
                     </div>
-                    <span className="capitalize text-muted-foreground">{m.role}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="capitalize text-muted-foreground">{m.role}</span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRemoveMember(m)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -265,9 +374,24 @@ export default function ClientMembersPage() {
             ) : (
               <ul className="space-y-2">
                 {invites.map((inv) => (
-                  <li key={inv.id} className="rounded-hyve-sm border px-3 py-2 text-sm">
-                    <p className="font-medium">{inv.email}</p>
-                    <p className="text-xs text-muted-foreground capitalize">{inv.role}</p>
+                  <li key={inv.id} className="flex flex-col gap-2 rounded-hyve-sm border px-3 py-2 text-sm sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="font-medium">{inv.email}</p>
+                      <p className="text-xs text-muted-foreground capitalize">
+                        {inv.role} · expires {new Date(inv.expires_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      <Button size="sm" variant="outline" onClick={() => handleCopyInviteLink(inv)}>
+                        Copy link
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => handleResendInvite(inv)}>
+                        Resend
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => handleRevokeInvite(inv.id)}>
+                        Revoke
+                      </Button>
+                    </div>
                   </li>
                 ))}
               </ul>

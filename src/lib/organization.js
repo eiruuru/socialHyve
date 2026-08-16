@@ -78,6 +78,8 @@ export function displayMember(member) {
   const profile = member?.profiles;
   if (profile?.full_name) return profile.full_name;
   if (profile?.email) return profile.email;
+  const userId = member?.user_id;
+  if (userId) return `Member …${userId.slice(-4)}`;
   return 'Unknown';
 }
 
@@ -221,11 +223,12 @@ export async function listClientMembers(clientId) {
 }
 
 export async function inviteClientMember(clientId, email, role = 'approver') {
+  const normalizedEmail = email.trim().toLowerCase();
   const token = crypto.randomUUID();
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
   const { data, error } = await supabase
     .from('client_invites')
-    .insert({ client_id: clientId, email, role, token, expires_at: expiresAt })
+    .insert({ client_id: clientId, email: normalizedEmail, role, token, expires_at: expiresAt })
     .select()
     .single();
   if (error) throw error;
@@ -297,7 +300,67 @@ export async function listClientInvites(clientId) {
     .from('client_invites')
     .select('*')
     .eq('client_id', clientId)
+    .gt('expires_at', new Date().toISOString())
     .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+export async function removeClientMember(clientId, userId) {
+  const { error } = await supabase
+    .from('client_members')
+    .delete()
+    .eq('client_id', clientId)
+    .eq('user_id', userId);
+  if (error) throw error;
+}
+
+export async function revokeClientInvite(inviteId) {
+  const { error } = await supabase
+    .from('client_invites')
+    .delete()
+    .eq('id', inviteId);
+  if (error) throw error;
+}
+
+export async function listMyPendingClientInvites() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user?.email) return [];
+
+  const email = user.email.trim().toLowerCase();
+  const { data, error } = await supabase
+    .from('client_invites')
+    .select('*, clients(id, name)')
+    .eq('email', email)
+    .gt('expires_at', new Date().toISOString())
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function declineClientInvite(inviteId) {
+  const { error } = await supabase
+    .from('client_invites')
+    .delete()
+    .eq('id', inviteId);
+  if (error) throw error;
+}
+
+export function buildClientInviteLink(token) {
+  return `${window.location.origin}/app/login?clientInvite=${token}`;
+}
+
+export function buildOrganizationInviteLink(token) {
+  return `${window.location.origin}/app/login?invite=${token}`;
+}
+
+export async function resendClientInviteReminder(inviteId) {
+  const { data, error } = await supabase
+    .from('client_invites')
+    .update({ reminded_at: new Date().toISOString() })
+    .eq('id', inviteId)
+    .select('*, clients(id, name)')
+    .single();
   if (error) throw error;
   return data;
 }

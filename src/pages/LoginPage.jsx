@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { acceptInvite, previewInvite } from '@/lib/organization';
-import { savePendingInvite } from '@/lib/membershipContext';
+import { savePendingInvite, clearPendingInvite } from '@/lib/membershipContext';
+import { useAuth } from '@/lib/AuthContext';
 import { Logo } from '@/components/brand/Logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { isAuthenticated, isLoadingAuth } = useAuth();
   const [searchParams] = useSearchParams();
   const orgToken = searchParams.get('invite');
   const clientToken = searchParams.get('clientInvite');
@@ -38,6 +40,27 @@ export default function LoginPage() {
       .finally(() => setInviteLoading(false));
   }, [inviteToken, inviteType]);
 
+  useEffect(() => {
+    if (isLoadingAuth || !isAuthenticated || !inviteToken || !inviteType) return;
+
+    let cancelled = false;
+    setLoading(true);
+
+    acceptInvite(inviteToken, inviteType)
+      .then((result) => {
+        if (cancelled) return;
+        clearPendingInvite();
+        navigate(result.redirectTo || '/app/calendar', { replace: true });
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err.message);
+        setLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [isAuthenticated, isLoadingAuth, inviteToken, inviteType, navigate]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -56,6 +79,7 @@ export default function LoginPage() {
       if (inviteToken && inviteType) {
         if (session) {
           const result = await acceptInvite(inviteToken, inviteType);
+          clearPendingInvite();
           navigate(result.redirectTo || '/app/calendar');
           return;
         }
@@ -118,8 +142,10 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {inviteLoading ? (
-            <p className="text-center text-sm text-muted-foreground">Loading invite…</p>
+          {inviteLoading || (isAuthenticated && inviteToken) ? (
+            <p className="text-center text-sm text-muted-foreground">
+              {isAuthenticated && inviteToken ? 'Accepting invite…' : 'Loading invite…'}
+            </p>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               {invitePreview && (

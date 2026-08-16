@@ -4,21 +4,45 @@ import { supabase } from './supabase';
 const MembershipContext = createContext(null);
 
 export const PENDING_INVITE_KEY = 'socialhyve_pending_invite';
+const PENDING_INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export function savePendingInvite(type, token) {
-  window.sessionStorage.setItem(PENDING_INVITE_KEY, JSON.stringify({ type, token }));
+  const payload = {
+    type,
+    token,
+    savedAt: Date.now(),
+  };
+  window.localStorage.setItem(PENDING_INVITE_KEY, JSON.stringify(payload));
+  window.sessionStorage.removeItem(PENDING_INVITE_KEY);
 }
 
 export function loadPendingInvite() {
   try {
-    const raw = window.sessionStorage.getItem(PENDING_INVITE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    const raw = window.localStorage.getItem(PENDING_INVITE_KEY)
+      || window.sessionStorage.getItem(PENDING_INVITE_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw);
+    if (!parsed?.token || !parsed?.type) return null;
+
+    const savedAt = parsed.savedAt || 0;
+    if (savedAt && Date.now() - savedAt > PENDING_INVITE_TTL_MS) {
+      clearPendingInvite();
+      return null;
+    }
+
+    if (!parsed.savedAt) {
+      savePendingInvite(parsed.type, parsed.token);
+    }
+
+    return parsed;
   } catch {
     return null;
   }
 }
 
 export function clearPendingInvite() {
+  window.localStorage.removeItem(PENDING_INVITE_KEY);
   window.sessionStorage.removeItem(PENDING_INVITE_KEY);
 }
 

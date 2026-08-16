@@ -13,6 +13,7 @@ import {
   updateOrganizationSettings,
   revokeOrganizationInvite,
   removeOrganizationMember,
+  buildOrganizationInviteLink,
 } from '@/lib/organization';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { showToast } from '@/lib/toast';
@@ -58,7 +59,7 @@ export default function TeamPage() {
     try {
       const invite = await inviteOrganizationMember(email.trim(), role);
       const org = await getOrganization();
-      const link = `${window.location.origin}/app/login?invite=${invite.token}`;
+      const link = buildOrganizationInviteLink(invite.token);
       await navigator.clipboard.writeText(link);
       try {
         await sendInviteEmail({
@@ -94,6 +95,41 @@ export default function TeamPage() {
     await revokeOrganizationInvite(inviteId);
     queryClient.invalidateQueries({ queryKey: ['org-invites'] });
     showToast({ title: 'Invite revoked', variant: 'success' });
+  };
+
+  const handleCopyInviteLink = async (invite) => {
+    try {
+      await navigator.clipboard.writeText(buildOrganizationInviteLink(invite.token));
+      showToast({ title: 'Invite link copied', variant: 'success' });
+    } catch (err) {
+      showToast({ title: 'Could not copy link', description: err.message, variant: 'error' });
+    }
+  };
+
+  const handleResendInviteEmail = async (invite) => {
+    try {
+      const orgData = org || (await getOrganization());
+      await sendInviteEmail({
+        type: 'organization',
+        token: invite.token,
+        email: invite.email,
+        inviterName: user?.email,
+        targetName: orgData?.name,
+        role: invite.role,
+      });
+      showToast({ title: 'Invite email sent again', variant: 'success' });
+    } catch {
+      try {
+        await navigator.clipboard.writeText(buildOrganizationInviteLink(invite.token));
+        showToast({
+          title: 'Email not configured — link copied',
+          description: 'Share the link manually with your teammate.',
+          variant: 'info',
+        });
+      } catch (err) {
+        showToast({ title: 'Could not resend invite', description: err.message, variant: 'error' });
+      }
+    }
   };
 
   const handleToggleApproval = async (checked) => {
@@ -234,14 +270,22 @@ export default function TeamPage() {
             ) : (
               <ul className="space-y-2">
                 {invites.map((inv) => (
-                  <li key={inv.id} className="flex items-start justify-between gap-2 rounded-hyve-sm border px-3 py-2 text-sm">
+                  <li key={inv.id} className="flex flex-col gap-2 rounded-hyve-sm border px-3 py-2 text-sm sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <p className="font-medium">{inv.email}</p>
                       <p className="text-xs text-muted-foreground capitalize">{inv.role} · expires {new Date(inv.expires_at).toLocaleDateString()}</p>
                     </div>
-                    <Button size="sm" variant="outline" onClick={() => handleRevokeInvite(inv.id)}>
-                      Revoke
-                    </Button>
+                    <div className="flex flex-wrap gap-1">
+                      <Button size="sm" variant="outline" onClick={() => handleCopyInviteLink(inv)}>
+                        Copy link
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => handleResendInviteEmail(inv)}>
+                        Resend email
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => handleRevokeInvite(inv.id)}>
+                        Revoke
+                      </Button>
+                    </div>
                   </li>
                 ))}
               </ul>

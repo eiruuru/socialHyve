@@ -2,8 +2,6 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { EmptyHiveState } from '@/components/EmptyHiveState';
 import { InviteAcceptanceGate } from './InviteAcceptanceGate';
-import { PendingClientInviteNotifier } from '@/lib/PendingClientInviteNotifier';
-import { NotificationsProvider } from '@/lib/notifications/NotificationsProvider';
 
 export function RequireAuth() {
   const { isAuthenticated, isLoadingAuth } = useAuth();
@@ -22,10 +20,7 @@ export function RequireAuth() {
 
   return (
     <InviteAcceptanceGate>
-      <NotificationsProvider>
-        <PendingClientInviteNotifier />
-        <Outlet />
-      </NotificationsProvider>
+      <Outlet />
     </InviteAcceptanceGate>
   );
 }

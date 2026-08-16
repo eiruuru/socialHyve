@@ -22,6 +22,8 @@ import { useNavigateOnClientSwitch } from '@/app/useNavigateOnClientSwitch';
 import { cn } from '@/lib/utils';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { formatRoleLabel } from '@/lib/clientRoles';
+import { NotificationsProvider } from '@/lib/notifications/NotificationsProvider';
+import { PendingClientInviteNotifier } from '@/lib/PendingClientInviteNotifier';
 
 const accountNavItem = {
   to: '/app/settings/account',
@@ -203,8 +205,10 @@ export function AppLayout() {
     : null;
 
   return (
-    <div className="flex min-h-screen bg-paper">
-      <aside className="flex w-60 shrink-0 flex-col bg-sidebar text-sidebar-foreground">
+    <NotificationsProvider>
+      <PendingClientInviteNotifier />
+      <div className="flex min-h-screen bg-paper">
+        <aside className="relative flex w-60 shrink-0 flex-col bg-sidebar text-sidebar-foreground">
         <div className="border-b border-sidebar-border px-5 py-6">
           <Logo variant="dark" />
           {!membership.isClientOnly && (
@@ -223,8 +227,13 @@ export function AppLayout() {
           {navGroups.map((group) => (
             <NavGroup key={group.label ?? 'primary'} label={group.label} items={group.items} />
           ))}
+          <div className="space-y-0.5">
+            <p className="px-3 pb-1.5 pt-5 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
+              Inbox
+            </p>
+            <NotificationBell panelPlacement="right" />
+          </div>
         </nav>
-        <NotificationBell />
         <div className="border-t border-sidebar-border p-4">
           <button
             type="button"
@@ -241,6 +250,7 @@ export function AppLayout() {
           <Outlet />
         </div>
       </main>
-    </div>
+      </div>
+    </NotificationsProvider>
   );
 }

@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { useClient } from '@/lib/clientContext';
 import { useMembership } from '@/lib/membershipContext';
-import { hasCreativesQaAccess } from '@/lib/clientRoles';
+import { hasCreativesQaAccess, isCreativesQaRole } from '@/lib/clientRoles';
 import { listPosts, updateApprovalStatus, addPostComment } from '@/lib/posts';
 import { notifyWorkflowEvent, getPostAuthorUserIds } from '@/lib/profile';
 import { invokeFunction } from '@/lib/supabaseFunctions';
@@ -64,6 +64,9 @@ export default function QueuePage() {
   const { activeClient } = useClient();
   const membership = useMembership();
   const allowManageActions = !hasCreativesQaAccess(membership);
+  const resolvedClientId = activeClient?.id
+    ?? membership.clientMemberships.find((cm) => isCreativesQaRole(cm.role))?.clientId
+    ?? membership.clientMemberships[0]?.clientId;
   const queryClient = useQueryClient();
   const [tab, setTab] = useState('review');
   const [search, setSearch] = useState('');
@@ -73,7 +76,7 @@ export default function QueuePage() {
     return saved === 'grid' ? 'grid' : 'list';
   });
 
-  useLivePosts(activeClient?.id, { enabled: !!activeClient, showStatusToasts: true });
+  useLivePosts(resolvedClientId, { enabled: !!resolvedClientId, showStatusToasts: true });
 
   useEffect(() => {
     localStorage.setItem(QUEUE_VIEW_KEY, viewMode);
@@ -81,12 +84,12 @@ export default function QueuePage() {
 
   useEffect(() => {
     setSelectedIds([]);
-  }, [tab, activeClient?.id]);
+  }, [tab, resolvedClientId]);
 
   const { data: posts = [], isLoading } = useQuery({
-    queryKey: ['posts', activeClient?.id],
-    queryFn: () => listPosts(),
-    enabled: !!activeClient,
+    queryKey: ['posts', resolvedClientId],
+    queryFn: () => listPosts({ clientId: resolvedClientId }),
+    enabled: !!resolvedClientId,
     refetchInterval: 30000,
   });
 

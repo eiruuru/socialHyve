@@ -13,16 +13,17 @@ export default function CalendarPage() {
   const membership = useMembership();
   const { isManager, isClientOnly } = membership;
   const readOnly = isClientOnly;
+  const resolvedClientId = activeClient?.id ?? membership.clientMemberships[0]?.clientId;
   const { data: posts = [], isLoading } = useQuery({
-    queryKey: ['posts', activeClient?.id],
-    queryFn: () => listPosts(),
-    enabled: !!activeClient,
+    queryKey: ['posts', resolvedClientId],
+    queryFn: () => listPosts({ clientId: resolvedClientId }),
+    enabled: !!resolvedClientId,
     refetchInterval: 30000,
   });
 
-  useLivePosts(activeClient?.id, { enabled: !!activeClient, showStatusToasts: true });
+  useLivePosts(resolvedClientId, { enabled: !!resolvedClientId, showStatusToasts: true });
 
-  if (!clientsLoading && clients.length === 0) {
+  if (!clientsLoading && clients.length === 0 && !resolvedClientId) {
     return (
       <div className="space-y-4">
         <EmptyHiveState

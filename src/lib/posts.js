@@ -18,14 +18,13 @@ function applyClientFilter(query, clientId) {
 }
 
 export async function listPosts(filters = {}) {
-  const clientId = getActiveClientId();
+  const clientId = filters.clientId ?? getActiveClientId();
   let query = supabase
     .from('posts')
     .select('*, post_media(*), post_targets(*)')
     .order('scheduled_at', { ascending: true, nullsFirst: false });
 
   query = applyClientFilter(query, clientId);
-  if (filters.clientId) query = query.eq('client_id', filters.clientId);
   if (filters.status) query = query.eq('status', filters.status);
   if (filters.publishInstagram) query = query.eq('publish_instagram', true);
   if (filters.from) query = query.gte('scheduled_at', filters.from);

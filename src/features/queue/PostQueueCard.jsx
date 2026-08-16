@@ -96,13 +96,12 @@ export function PostQueueCard({
   const badges = getPostDisplayBadges(post);
   const approval = post.approval_status || 'draft';
   const needsSchedule = isApprovedDraft(post);
-  const scheduleUrgency = isQueuedToPublish(post) ? null : getScheduleUrgency(post.scheduled_at);
+  const scheduleUrgency = getScheduleUrgency(post.scheduled_at);
+  const showUrgencyBadge = scheduleUrgency && !isQueuedToPublish(post);
   const scheduleTimezone = resolveScheduleTimezone({ postTimezone: post.schedule_timezone });
   const cardBorderClass = needsSchedule
     ? 'border-2 border-dashed border-honey-dark/40'
-    : isQueuedToPublish(post)
-      ? 'border border-neutral-200'
-      : scheduleUrgency?.borderClass ?? 'border border-neutral-200';
+    : scheduleUrgency?.borderClass ?? 'border-2 border-neutral-200';
 
   const handleReject = () => {
     if (!rejectNote.trim()) {
@@ -165,7 +164,7 @@ export function PostQueueCard({
 
   return (
     <div className={cn(
-      'relative flex h-full flex-col overflow-hidden rounded-hyve-md bg-white',
+      'relative flex h-full flex-col overflow-hidden rounded-hyve-md border bg-white shadow-sm',
       cardBorderClass,
       selected && 'ring-2 ring-honey',
     )}>
@@ -181,7 +180,7 @@ export function PostQueueCard({
           />
         </label>
       )}
-      <UrgencyBadge scheduleUrgency={scheduleUrgency} className="right-2 top-2" />
+      <UrgencyBadge scheduleUrgency={showUrgencyBadge ? scheduleUrgency : null} className="right-2 top-2" />
       <button
         type="button"
         onClick={() => navigate(`/app/posts/${post.id}${navSearch}`)}

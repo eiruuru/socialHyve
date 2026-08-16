@@ -4,7 +4,6 @@ import { readToken, writeToken } from '../_shared/accountTokens.ts';
 import { notifyPublishFailed, notifyPublishSuccess } from '../_shared/workflowNotify.ts';
 import { debugTokenInfo, isValidPageTokenFor, resolvePageAccessToken } from '../_shared/metaPages.ts';
 import { getServiceClient, META_GRAPH } from '../_shared/supabase.ts';
-import { resolvePostAccounts } from '../_shared/socialAccounts.ts';
 
 const META_APP_ID = Deno.env.get('META_APP_ID') || '';
 const META_APP_SECRET = Deno.env.get('META_APP_SECRET') || '';
@@ -174,6 +173,41 @@ async function publishWithPageToken<T>(
   }
 }
 
+function accountCandidates(
+  accounts: Record<string, unknown>[],
+  platform: string,
+  preferredId?: string | null,
+) {
+  const rows = accounts.filter((a) => a.platform === platform);
+  const ordered: Record<string, unknown>[] = [];
+  const add = (row: Record<string, unknown> | null | undefined) => {
+    if (!row || ordered.some((item) => item.id === row.id)) return;
+    ordered.push(row);
+  };
+
+  add(rows.find((a) => a.id === preferredId));
+  add(rows.find((a) => a.is_primary) || null);
+  for (const row of rows) add(row);
+  return ordered;
+}
+
+async function resolveWorkingAccount(
+  service: ReturnType<typeof getServiceClient>,
+  accounts: Record<string, unknown>[],
+  platform: string,
+  preferredId?: string | null,
+): Promise<Record<string, unknown> | null> {
+  for (const account of accountCandidates(accounts, platform, preferredId)) {
+    try {
+      await ensurePageAccessToken(service, account);
+      return account;
+    } catch {
+      // Try the next connected account for this client.
+    }
+  }
+  return null;
+}
+
 async function publishPost(service: ReturnType<typeof getServiceClient>, postId: string) {
   const { data: post, error: postErr } = await service
     .from('posts')
@@ -190,8 +224,14 @@ async function publishPost(service: ReturnType<typeof getServiceClient>, postId:
     : service.from('social_accounts').select('*').eq('workspace_id', post.workspace_id);
 
   const { data: accounts } = await accountQuery;
+  const accountRows = accounts || [];
 
-  const { facebook: fbAccount, instagram: igAccount } = resolvePostAccounts(post, accounts || []);
+  const fbAccount = post.publish_facebook
+    ? await resolveWorkingAccount(service, accountRows, 'facebook', post.facebook_account_id)
+    : null;
+  const igAccount = post.publish_instagram
+    ? await resolveWorkingAccount(service, accountRows, 'instagram', post.instagram_account_id)
+    : null;
   const media: MediaItem[] = (post.post_media || []).sort(
     (a: MediaItem, b: MediaItem) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
   );

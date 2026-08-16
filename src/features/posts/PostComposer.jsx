@@ -200,8 +200,9 @@ export function PostComposer({ editPostId = null }) {
 
   const resolveAccountIdForPayload = (enabled, accountId, accounts) => {
     if (!enabled) return null;
+    const primary = accounts.find((a) => a.is_primary) || accounts[0];
     if (accountId && accounts.some((a) => a.id === accountId)) return accountId;
-    return accounts[0]?.id || null;
+    return primary?.id || null;
   };
 
   const isPublished = existingPost?.status === 'published';

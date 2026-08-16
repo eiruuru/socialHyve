@@ -105,6 +105,8 @@ Deno.serve(async (req) => {
 
     let firstFbExternalId: string | null = null;
     let firstIgExternalId: string | null = null;
+    const importedFbIds = new Set<string>();
+    const importedIgIds = new Set<string>();
 
     for (const page of pages) {
       const pagePictureUrl = page.picture?.data?.url || null;
@@ -135,6 +137,7 @@ Deno.serve(async (req) => {
       }, { onConflict: 'client_id,platform,external_id' });
       if (fbErr) throw fbErr;
 
+      importedFbIds.add(page.id);
       if (!firstFbExternalId) firstFbExternalId = page.id;
 
       const igAccount = page.instagram_business_account;
@@ -165,10 +168,29 @@ Deno.serve(async (req) => {
         }, { onConflict: 'client_id,platform,external_id' });
         if (igErr) throw igErr;
 
+        importedIgIds.add(igData.id);
         if (!firstIgExternalId && page.id === firstFbExternalId) {
           firstIgExternalId = igData.id;
         }
       }
+    }
+
+    const { data: existingClientAccounts } = await service
+      .from('social_accounts')
+      .select('id, platform, external_id')
+      .eq('client_id', clientId);
+
+    const staleAccountIds = (existingClientAccounts || [])
+      .filter((row) =>
+        (row.platform === 'facebook' && !importedFbIds.has(String(row.external_id)))
+        || (row.platform === 'instagram' && !importedIgIds.has(String(row.external_id)))
+      )
+      .map((row) => row.id);
+
+    if (staleAccountIds.length) {
+      await service.from('social_accounts').delete().in('id', staleAccountIds);
+      await service.from('posts').update({ facebook_account_id: null }).in('facebook_account_id', staleAccountIds);
+      await service.from('posts').update({ instagram_account_id: null }).in('instagram_account_id', staleAccountIds);
     }
 
     const { data: clientAccounts } = await service

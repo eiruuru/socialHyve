@@ -40,6 +40,7 @@ const LABELS = {
   failed: 'Failed',
   publishing: 'Publishing…',
   approved_draft: 'Approved · needs schedule',
+  pending_publish: 'Pending publish',
 };
 
 export function StatusBadge({ variant = 'default', label, className, showDot = true }) {

@@ -46,14 +46,14 @@ const APPROVAL_OPTIONS = [
 ];
 
 const STATUS_OPTIONS = [
-  { value: 'draft', label: 'Draft' },
+  { value: 'draft', label: 'Pending publish' },
   { value: 'scheduled', label: 'Scheduled' },
   { value: 'published', label: 'Published' },
   { value: 'failed', label: 'Failed' },
 ];
 
 const PUBLISH_STATE_HINTS = {
-  draft: 'Not queued to publish. Set a planned date and click Schedule in the composer to go live.',
+  draft: 'Planned but not queued to publish. Click Schedule in the composer to go live.',
   scheduled: 'Queued to publish at the scheduled time.',
   published: 'Already live on connected platforms.',
   failed: 'Publish attempt failed — retry or edit.',

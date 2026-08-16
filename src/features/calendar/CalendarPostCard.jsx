@@ -2,9 +2,8 @@ import { useRef } from 'react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { PlatformChip } from '@/components/brand/PlatformChip';
-import { getPostDisplayBadges } from '@/features/queue/postStatus';
 import { getScheduleUrgency } from '@/features/queue/scheduleUrgency';
-import { StatusBadge } from '@/components/brand/StatusBadge';
+import { PostStatusIconRow } from '@/features/queue/postStatusIcons';
 import { isVideo } from '@/features/posts/previews/mediaUtils';
 import { cn } from '@/lib/utils';
 
@@ -47,7 +46,6 @@ export function CalendarPostCard({
 }) {
   const navigate = useNavigate();
   const didDragRef = useRef(false);
-  const badges = getPostDisplayBadges(post);
   const scheduleUrgency = getScheduleUrgency(post.scheduled_at);
   const cardBorderClass = scheduleUrgency?.borderClass ?? 'border-neutral-200';
   const media = (post.post_media || []).sort(
@@ -98,9 +96,7 @@ export function CalendarPostCard({
         <div className="min-w-0 flex-1 space-y-1 py-1 pr-3">
           <p className="truncate text-sm font-medium leading-tight">{title}</p>
           <div className="flex flex-wrap items-center gap-1">
-            {badges.map((b) => (
-              <StatusBadge key={b.key ?? b.variant} variant={b.variant} label={b.label} className="scale-90 origin-left" />
-            ))}
+            <PostStatusIconRow post={post} />
             {scheduleUrgency && (
               <span
                 className={cn(
@@ -155,9 +151,7 @@ export function CalendarPostCard({
           <p className="text-[10px] text-muted-foreground">{timeLabel}</p>
         )}
         <div className="flex items-center gap-1">
-          {badges.map((b) => (
-            <StatusBadge key={b.key ?? b.variant} variant={b.variant} label={b.label} className="scale-90 origin-left" />
-          ))}
+          <PostStatusIconRow post={post} />
         </div>
         <div className="flex gap-1 pt-0.5">
           {post.publish_facebook && <PlatformChip platform="facebook" iconOnly />}

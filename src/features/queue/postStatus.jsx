@@ -20,7 +20,7 @@ export function getPostDisplayBadges(post) {
   } else if (publishStatus === 'scheduled') {
     badges.push({ key: 'publish', variant: 'scheduled', label: STATUS_LABELS.scheduled });
   } else {
-    badges.push({ key: 'publish', variant: 'draft', label: STATUS_LABELS.draft });
+    badges.push({ key: 'publish', variant: 'draft', label: STATUS_LABELS.pending_publish });
   }
 
   const approval = post.approval_status || 'draft';

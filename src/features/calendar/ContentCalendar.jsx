@@ -21,6 +21,7 @@ import { reschedulePostToDay } from '@/lib/posts';
 import { isPastCalendarDay } from '@/lib/scheduleTime';
 import { showToast } from '@/lib/toast';
 import { CalendarPostCard, isPostDraggable } from './CalendarPostCard';
+import { PostStatusLegend } from '@/features/queue/postStatusIcons';
 import { Button } from '@/components/ui/button';
 import { IconTooltip } from '@/components/ui/IconTooltip';
 import { TabsRoot, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -153,6 +154,8 @@ export function ContentCalendar({ posts = [], readOnly = false }) {
           </TabsList>
         </TabsRoot>
       </div>
+
+      <PostStatusLegend />
 
       {view === 'month' ? (
         <div className="rounded-hyve-lg border border-neutral-200">

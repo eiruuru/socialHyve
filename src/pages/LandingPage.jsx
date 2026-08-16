@@ -82,7 +82,7 @@ const FEATURES = [
 ];
 
 const FAQ_TEASERS = [
-  { q: 'How do I connect Meta for a new client?', a: 'Account → Meta Accounts to connect Facebook, then Social Links to assign pages per client.' },
+  { q: 'How do I connect Meta for a new client?', a: 'Settings → Meta Accounts to connect Facebook, then Social Links to assign pages per client.' },
   { q: 'Can Creatives QA work without a full login?', a: 'Yes — send them a client review link.' },
   { q: 'Can I schedule FB and IG differently?', a: 'Use Fine tune in the composer for per-platform overrides.' },
 ];

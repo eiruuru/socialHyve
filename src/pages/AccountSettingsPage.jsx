@@ -14,6 +14,7 @@ import { TabsRoot, TabsList, TabsTrigger, TabsContent } from '@/components/ui/ta
 import { MetaConnectionPanel } from '@/features/settings/MetaConnectionPanel';
 import { ClientsPanel } from '@/features/settings/ClientsPanel';
 import { TeamPanel } from '@/features/settings/TeamPanel';
+import { WorkspacePanel } from '@/features/settings/WorkspacePanel';
 
 function Field({ label, htmlFor, children, hint }) {
   return (
@@ -44,12 +45,14 @@ export default function AccountSettingsPage() {
   const { isOwnerOrAdmin, isOrgTeam, isClientOnly, canManageTeam } = useMembership();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
+  const showWorkspaceTab = canManageTeam;
   const showClientsTab = isOrgTeam && !isClientOnly;
   const showTeamTab = canManageTeam;
   const showMetaTab = isOwnerOrAdmin;
 
   const activeTab = (() => {
     const tab = searchParams.get('tab');
+    if (tab === 'workspace' && showWorkspaceTab) return 'workspace';
     if (
       (tab === 'meta' || searchParams.get('connected') === 'meta' || searchParams.get('error'))
       && showMetaTab
@@ -238,24 +241,31 @@ export default function AccountSettingsPage() {
   };
 
   if (isLoading) {
-    return <p className="text-muted-foreground">Loading account…</p>;
+    return <p className="text-muted-foreground">Loading settings…</p>;
   }
 
   return (
     <div className="space-y-6">
       <div>
         <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Settings</p>
-        <h2 className="font-display text-2xl font-bold">Account</h2>
-        <p className="text-muted-foreground">Profile, clients, team, notifications, and Meta accounts</p>
+        <h2 className="font-display text-2xl font-bold">Workspace Settings</h2>
+        <p className="text-muted-foreground">Workspace, profile, clients, team, notifications, and Meta accounts</p>
       </div>
 
       <TabsRoot value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
+          {showWorkspaceTab && <TabsTrigger value="workspace">Workspace</TabsTrigger>}
           <TabsTrigger value="profile">Profile</TabsTrigger>
           {showClientsTab && <TabsTrigger value="clients">Clients</TabsTrigger>}
           {showTeamTab && <TabsTrigger value="team">Team</TabsTrigger>}
           {showMetaTab && <TabsTrigger value="meta">Meta Accounts</TabsTrigger>}
         </TabsList>
+
+        {showWorkspaceTab && (
+          <TabsContent value="workspace">
+            <WorkspacePanel />
+          </TabsContent>
+        )}
 
         <TabsContent value="profile" className="space-y-6">
       <Card>

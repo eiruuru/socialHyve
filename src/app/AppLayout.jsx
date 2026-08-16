@@ -7,13 +7,14 @@ import {
   LogOut,
   Palette,
   Eye,
-  User,
+  Settings,
   Upload,
   HelpCircle,
 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useMembership } from '@/lib/membershipContext';
 import { useClient } from '@/lib/clientContext';
+import { useWorkspace } from '@/lib/WorkspaceContext';
 import { Logo } from '@/components/brand/Logo';
 import { ClientSwitcher } from '@/components/ClientSwitcher';
 import { useNavigateOnClientSwitch } from '@/app/useNavigateOnClientSwitch';
@@ -23,10 +24,10 @@ import { formatRoleLabel, hasCreativesQaAccess, hasGuestAccess, isCreativesQaRol
 import { NotificationsProvider } from '@/lib/notifications/NotificationsProvider';
 import { PendingClientInviteNotifier } from '@/lib/PendingClientInviteNotifier';
 
-const accountNavItem = {
+const settingsNavItem = {
   to: '/app/settings/account',
-  label: 'Account',
-  icon: User,
+  label: 'Settings',
+  icon: Settings,
   show: () => true,
 };
 
@@ -84,9 +85,9 @@ const orgNavGroups = [
     ],
   },
   {
-    label: 'Account',
+    label: 'Settings',
     items: [
-      accountNavItem,
+      settingsNavItem,
       {
         to: '/app/help',
         label: 'Help',
@@ -128,9 +129,9 @@ function buildNavGroups(membership, clientCtx) {
     }
 
     groups.push({
-      label: 'Account',
+      label: 'Settings',
       items: [
-        accountNavItem,
+        settingsNavItem,
         { to: '/app/help', label: 'Help', icon: HelpCircle, show: () => true },
       ],
     });
@@ -195,6 +196,7 @@ export function AppLayout() {
   const { logout, user } = useAuth();
   const membership = useMembership();
   const clientCtx = useClient();
+  const { workspace } = useWorkspace();
   const location = useLocation();
   useNavigateOnClientSwitch();
   const isWide = location.pathname.includes('/calendar');
@@ -216,14 +218,24 @@ export function AppLayout() {
             <Logo variant="dark" />
             <NotificationBell variant="icon" />
           </div>
-          <button
-            type="button"
-            onClick={logout}
-            className="flex items-center gap-2 rounded-hyve-sm px-3 py-2 text-sm text-neutral-200 transition-colors hover:bg-sidebar-accent hover:text-white"
-          >
-            <LogOut className="h-4 w-4" />
-            <span className="hidden sm:inline">Sign out</span>
-          </button>
+          <div className="flex min-w-0 items-center gap-3">
+            {workspace?.name && !membership.isClientOnly && (
+              <span
+                className="max-w-[140px] truncate text-sm font-medium text-neutral-200 sm:max-w-[220px]"
+                title={workspace.name}
+              >
+                {workspace.name}
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={logout}
+              className="flex shrink-0 items-center gap-2 rounded-hyve-sm px-3 py-2 text-sm text-neutral-200 transition-colors hover:bg-sidebar-accent hover:text-white"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline">Sign out</span>
+            </button>
+          </div>
         </header>
         <div className="flex flex-1 items-start">
         <aside className="sticky top-14 z-30 flex h-[calc(100dvh-3.5rem)] w-60 shrink-0 flex-col overflow-hidden bg-sidebar text-sidebar-foreground">

@@ -62,11 +62,11 @@ const FAQ_SECTIONS = [
     content: (
       <>
         <p>
-          Start by creating a client under <strong>Account → Clients</strong> — each client is a brand or account you manage.
+          Start by creating a client under <strong>Settings → Clients</strong> — each client is a brand or account you manage.
           Switch clients from the sidebar dropdown; posts, integrations, and approvals are scoped to the active client.
         </p>
         <p>
-          Connect Facebook under <strong>Account → Meta Accounts</strong>, then assign pages to each client under{' '}
+          Connect Facebook under <strong>Settings → Meta Accounts</strong>, then assign pages to each client under{' '}
           <strong>Social Links</strong>.
         </p>
         <p>
@@ -230,7 +230,7 @@ const FAQ_SECTIONS = [
       <>
         <p>
           <strong>Org team</strong> members (owners, editors) manage clients, compose posts, and connect integrations.
-          Invite them from <strong>Account → Team</strong>.
+          Invite them from <strong>Settings → Team</strong>.
         </p>
         <p>
           <strong>Creatives QA</strong> and <strong>Guests</strong> are scoped to a single client — they review and comment without full app
@@ -253,7 +253,7 @@ const FAQ_SECTIONS = [
     content: (
       <>
         <p>
-          Connect Facebook accounts under <strong>Account → Meta Accounts</strong>, then assign pages to each client
+          Connect Facebook accounts under <strong>Settings → Meta Accounts</strong>, then assign pages to each client
           under <strong>Social Links</strong>. Re-authorize if tokens expire or Pages change.
         </p>
         <p>
@@ -268,12 +268,13 @@ const FAQ_SECTIONS = [
     ),
   },
   {
-    title: 'Account',
-    summary: 'Update name, email, password, and email notification preferences.',
+    title: 'Profile & workspace',
+    summary: 'Workspace name, personal profile, and notification preferences.',
     content: (
       <>
         <p>
-          Under <strong>Settings → Account</strong>, update your display name, change email (confirmation sent to the new
+          Under <strong>Settings → Workspace</strong>, set your organization name (shown in the top bar). Under{' '}
+          <strong>Profile</strong>, update your display name, change email (confirmation sent to the new
           address), or set a new password.
         </p>
         <p>

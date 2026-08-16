@@ -96,14 +96,14 @@ export function NotificationBell({ className, variant = 'icon' }) {
         <div className="rounded-hyve-md border border-neutral-200 bg-white p-4 shadow-hyve-lg">
           <p className="text-sm font-medium text-neutral-900">In-app alerts are off</p>
           <p className="mt-1 text-sm text-neutral-600">
-            Turn them on in Account settings to see invites and review updates here.
+            Turn them on in Settings to see invites and review updates here.
           </p>
           <Link
             to="/app/settings/account"
             onClick={() => setOpen(false)}
             className="mt-3 inline-block text-sm font-medium text-honey-dark hover:underline"
           >
-            Open Account settings
+            Open Settings
           </Link>
         </div>
       ) : (

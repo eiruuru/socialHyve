@@ -70,7 +70,7 @@ export function AssignAccountsModal({
           <p className="text-sm text-muted-foreground">Loading available pages...</p>
         ) : pages.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No unassigned pages available. Connect more pages under Account → Meta Accounts first.
+            No unassigned pages available. Connect more pages under Settings → Meta Accounts first.
           </p>
         ) : (
           <div className="max-h-80 space-y-2 overflow-y-auto">

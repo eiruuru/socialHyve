@@ -132,7 +132,7 @@ export default function ConnectedAccountsPage() {
         <p className="text-muted-foreground">
           Assign Facebook Pages and Instagram accounts to {activeClient?.name || 'this client'}.
           Connect new pages in{' '}
-          <Link to="/app/settings/account?tab=meta" className="underline">Account → Meta Accounts</Link>.
+          <Link to="/app/settings/account?tab=meta" className="underline">Settings → Meta Accounts</Link>.
         </p>
       </div>
 
@@ -175,7 +175,7 @@ export default function ConnectedAccountsPage() {
               {!accounts.length && (
                 <p className="text-sm text-muted-foreground">
                   No pages assigned yet. Assign pages from your organization pool or connect new ones under{' '}
-                  <Link to="/app/settings/account?tab=meta" className="underline">Account → Meta Accounts</Link>.
+                  <Link to="/app/settings/account?tab=meta" className="underline">Settings → Meta Accounts</Link>.
                 </p>
               )}
             </div>

@@ -316,7 +316,7 @@ export default function ClientMembersPage() {
             </form>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Invite managers from <strong>Account → Team</strong>, then assign them to this client.
+              Invite managers from <strong>Settings → Team</strong>, then assign them to this client.
             </p>
           )}
           {clientManagers.length > 0 ? (

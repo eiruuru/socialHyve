@@ -539,6 +539,29 @@ export async function updateOrganizationSettings(updates) {
   return data;
 }
 
+export async function updateWorkspaceName(name) {
+  const trimmed = name?.trim();
+  if (!trimmed) throw new Error('Workspace name is required');
+
+  const org = await getOrganization();
+  if (!org) throw new Error('No organization');
+
+  const { data, error } = await supabase
+    .from('organizations')
+    .update({ name: trimmed, updated_at: new Date().toISOString() })
+    .eq('id', org.id)
+    .select()
+    .single();
+  if (error) throw error;
+
+  await supabase
+    .from('workspaces')
+    .update({ name: trimmed, updated_at: new Date().toISOString() })
+    .eq('id', org.id);
+
+  return data;
+}
+
 export async function listWorkflowApproverUserIds() {
   const org = await getOrganization();
   if (!org) return [];

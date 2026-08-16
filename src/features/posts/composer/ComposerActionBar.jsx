@@ -11,6 +11,8 @@ export function ComposerActionBar({
   scheduleTimezone,
   approvalStatus = 'draft',
   canBypassApproval = false,
+  canPublishNow = true,
+  canSubmitForReview = true,
   onSaveDraft,
   onSaveChanges,
   onSubmitForReview,
@@ -34,7 +36,7 @@ export function ComposerActionBar({
           {approvalHint ? (
             <span>{approvalHint}</span>
           ) : isEditMode ? (
-            <span>Save your edits, or reschedule and publish from here.</span>
+            <span>{canPublishNow ? 'Save your edits, or reschedule and publish from here.' : 'Save your edits or pick a schedule time and click Schedule.'}</span>
           ) : scheduledAt ? (
             <span>
               Scheduled for{' '}
@@ -61,7 +63,7 @@ export function ComposerActionBar({
               Save draft
             </Button>
           )}
-          {!isApproved && (
+          {!isApproved && canSubmitForReview && (
             <Button variant="secondary" onClick={onSubmitForReview} disabled={saving}>
               <ClipboardCheck className="mr-2 h-4 w-4" />
               Submit for review
@@ -76,6 +78,7 @@ export function ComposerActionBar({
             <Calendar className="mr-2 h-4 w-4" />
             {isEditMode ? 'Reschedule' : 'Schedule'}
           </Button>
+          {canPublishNow && (
           <Button
             variant={isEditMode ? 'secondary' : 'default'}
             onClick={onPublishNow}
@@ -85,6 +88,7 @@ export function ComposerActionBar({
             <Send className="mr-2 h-4 w-4" />
             {publishing ? 'Publishing…' : 'Publish now'}
           </Button>
+          )}
         </div>
       </CardContent>
     </Card>

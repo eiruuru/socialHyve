@@ -66,7 +66,9 @@ export default function QueuePage() {
   const { user } = useAuth();
   const { activeClient } = useClient();
   const membership = useMembership();
-  const allowManageActions = !hasCreativesQaAccess(membership);
+  const canSchedule = hasCreativesQaAccess(membership);
+  const allowManageActions = !membership.isClientOnly;
+  const allowScheduleActions = canSchedule;
   const clientMemberships = membership.clientMemberships ?? [];
   const resolvedClientId = activeClient?.id
     ?? clientMemberships.find((cm) => isCreativesQaRole(cm.role))?.clientId
@@ -239,6 +241,7 @@ export default function QueuePage() {
                     onRequestChanges={handleRequestChanges}
                     onPublish={allowManageActions ? handlePublish : undefined}
                     allowManageActions={allowManageActions}
+                    allowScheduleActions={allowScheduleActions}
                   />
                 ))}
               </div>

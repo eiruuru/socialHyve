@@ -17,6 +17,7 @@ import {
 import { invokeFunction } from '@/lib/supabaseFunctions';
 import { useClient } from '@/lib/clientContext';
 import { useMembership } from '@/lib/membershipContext';
+import { hasCreativesQaAccess } from '@/lib/clientRoles';
 import { getOrganization, listWorkflowApproverUserIds } from '@/lib/organization';
 import { notifyWorkflowEvent } from '@/lib/profile';
 import { showToast } from '@/lib/toast';
@@ -66,7 +67,9 @@ export function PostComposer({ editPostId = null }) {
   const [searchParams] = useSearchParams();
   const presetDate = searchParams.get('date');
   const { activeClient } = useClient();
-  const { canManageTeam } = useMembership();
+  const membership = useMembership();
+  const { canManageTeam } = membership;
+  const clientScheduleOnly = hasCreativesQaAccess(membership);
   const isEditMode = !!editPostId;
   const hydratedRef = useRef(false);
   const accountsInitializedRef = useRef(false);
@@ -401,6 +404,7 @@ export function PostComposer({ editPostId = null }) {
     });
 
   const handlePublishNow = async () => {
+    if (clientScheduleOnly) return;
     if (isPublished) {
       showToast({ title: 'Published posts cannot be edited', variant: 'error' });
       return;
@@ -580,6 +584,8 @@ export function PostComposer({ editPostId = null }) {
         scheduleTimezone={scheduleTimezone}
         approvalStatus={approvalStatus}
         canBypassApproval={canBypassApproval}
+        canPublishNow={!clientScheduleOnly}
+        canSubmitForReview={!clientScheduleOnly}
         onSaveDraft={handleSaveDraft}
         onSaveChanges={handleSaveChanges}
         onSubmitForReview={handleSubmitForReview}

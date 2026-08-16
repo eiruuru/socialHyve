@@ -5,6 +5,7 @@ import { PAGE_DESCRIPTIONS } from '@/lib/pageMeta';
 import { listPosts } from '@/lib/posts';
 import { useClient } from '@/lib/clientContext';
 import { useMembership } from '@/lib/membershipContext';
+import { canSchedulePosts } from '@/lib/clientRoles';
 import { useLivePosts } from '@/lib/useLivePosts';
 import { ContentCalendar } from '@/features/calendar/ContentCalendar';
 import { EmptyHiveState } from '@/components/EmptyHiveState';
@@ -15,7 +16,8 @@ export default function CalendarPage() {
   const { activeClient, clients, loading: clientsLoading } = useClient();
   const membership = useMembership();
   const { isManager, isClientOnly } = membership;
-  const readOnly = isClientOnly;
+  const canSchedule = canSchedulePosts(membership);
+  const readOnly = !canSchedule;
   const clientMemberships = membership.clientMemberships ?? [];
   const resolvedClientId = activeClient?.id ?? clientMemberships[0]?.clientId;
   const { data: posts = [], isLoading } = useQuery({
@@ -58,7 +60,11 @@ export default function CalendarPage() {
           <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Schedule</p>
           <h2 className="font-display text-2xl font-bold">Content Calendar</h2>
           <p className="text-muted-foreground">
-            {readOnly ? 'View scheduled and published posts' : 'Plan and schedule your social posts'}
+            {readOnly
+              ? 'View scheduled and published posts'
+              : isClientOnly
+                ? 'Review the schedule and queue approved posts'
+                : 'Plan and schedule your social posts'}
           </p>
         </div>
         <div className="flex items-center gap-2">

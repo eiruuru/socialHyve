@@ -67,6 +67,7 @@ export default function PostDetailPage() {
   const membership = useMembership();
   const readOnly = membership.isClientOnly;
   const canApprove = hasCreativesQaAccess(membership);
+  const canSchedule = canApprove;
 
   const { data: post, isLoading } = useQuery({
     queryKey: ['post', id],
@@ -267,31 +268,36 @@ export default function PostDetailPage() {
           )}
           {!readOnly && (
             <>
-          <IconTooltip title="Duplicate post" description="Create a copy as a new draft">
-            <Button size="icon" variant="outline" onClick={handleDuplicate} aria-label="Duplicate post">
-              <Copy className="h-4 w-4" />
-            </Button>
-          </IconTooltip>
-          <IconTooltip title="Copy review link" description="Share a link for external approval">
-            <Button size="icon" variant="outline" onClick={handleCopyReviewLink} aria-label="Copy review link">
-              <Link2 className="h-4 w-4" />
-            </Button>
-          </IconTooltip>
-          {post.status !== 'published' && (
-            <IconTooltip title="Edit post" description="Open in the composer to edit">
-              <Button size="icon" variant="outline" asChild aria-label="Edit post">
+              <IconTooltip title="Duplicate post" description="Create a copy as a new draft">
+                <Button size="icon" variant="outline" onClick={handleDuplicate} aria-label="Duplicate post">
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </IconTooltip>
+              <IconTooltip title="Copy review link" description="Share a link for external approval">
+                <Button size="icon" variant="outline" onClick={handleCopyReviewLink} aria-label="Copy review link">
+                  <Link2 className="h-4 w-4" />
+                </Button>
+              </IconTooltip>
+            </>
+          )}
+          {post.status !== 'published' && (!readOnly || canSchedule) && (
+            <IconTooltip
+              title={canSchedule && readOnly ? 'Schedule post' : 'Edit post'}
+              description={canSchedule && readOnly ? 'Pick a schedule time and queue for publishing' : 'Open in the composer to edit'}
+            >
+              <Button size="icon" variant="outline" asChild aria-label={canSchedule && readOnly ? 'Schedule post' : 'Edit post'}>
                 <Link to={`/app/posts/${id}/edit${postNav.navSearch}`}>
                   <Pencil className="h-4 w-4" />
                 </Link>
               </Button>
             </IconTooltip>
           )}
-          <IconTooltip title="Delete" description="Permanently remove this post">
-            <Button size="icon" variant="destructive" onClick={handleDelete} aria-label="Delete">
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </IconTooltip>
-            </>
+          {!readOnly && (
+            <IconTooltip title="Delete" description="Permanently remove this post">
+              <Button size="icon" variant="destructive" onClick={handleDelete} aria-label="Delete">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </IconTooltip>
           )}
           <IconTooltip title="Back to calendar" description="Return to the content calendar">
             <Button size="icon" variant="outline" asChild aria-label="Back to calendar">

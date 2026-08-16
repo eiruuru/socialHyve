@@ -63,3 +63,10 @@ export function hasGuestAccess(membership) {
   if (!membership?.isClientOnly) return false;
   return (membership.clientMemberships || []).some((cm) => isGuestRole(cm.role));
 }
+
+/** Org team or Creatives QA — can schedule/reschedule posts (Guests remain view-only). */
+export function canSchedulePosts(membership) {
+  if (!membership) return false;
+  if (!membership.isClientOnly) return true;
+  return hasCreativesQaAccess(membership);
+}

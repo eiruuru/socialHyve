@@ -308,7 +308,7 @@ const FAQ_SECTIONS = [
             <li><strong>Approve</strong> (green check) — moves approval status to Approved.</li>
             <li><strong>Request changes</strong> (red X) — requires feedback text; sets Changes requested and notifies the author.</li>
             <li><strong>Publish now</strong> — on Approved tab for draft posts (org team only, not Creatives QA).</li>
-            <li><strong>Edit</strong> — opens the composer (org team).</li>
+            <li><strong>Edit / Schedule</strong> — opens the composer. Org team can edit anytime; Creatives QA can open approved posts to set a schedule time and queue them for publishing.</li>
             <li><strong>Click card</strong> — opens post detail.</li>
           </HelpList>
           <p>On Needs review + list view, select multiple posts and use <strong>Approve selected</strong> for bulk approval.</p>
@@ -367,7 +367,7 @@ const FAQ_SECTIONS = [
             <li><strong>Import CSV</strong> — bulk-create draft posts (see CSV Import section).</li>
             <li><strong>New Post</strong> — open the composer.</li>
           </HelpList>
-          <p>Guest client members see a read-only calendar (no drag, no new post buttons).</p>
+          <p>Guest client members see a read-only calendar (no drag, no new post buttons). Creatives QA can drag to reschedule and open approved posts to schedule, but cannot create new posts or import CSV.</p>
         </HelpSubsection>
 
         <ChromeFrame url="app.socialhyve.com/calendar">
@@ -504,7 +504,7 @@ const FAQ_SECTIONS = [
             <li>Assign org <strong>Managers</strong> to this client (owners/admins only).</li>
           </HelpSteps>
           <HelpList>
-            <li><strong>Creatives QA</strong> — Queue, Review portal, Calendar, post detail; can Approve or Require edits.</li>
+            <li><strong>Creatives QA</strong> — Queue, Review portal, Calendar, post detail; can Approve or Require edits, and schedule approved posts (not Publish now).</li>
             <li><strong>Guest</strong> — read-only Calendar and post detail; no Queue access.</li>
           </HelpList>
           <p>Client-only users see a reduced sidebar: Creative QA review links, Queue (Creatives QA), Calendar, Settings, Help.</p>

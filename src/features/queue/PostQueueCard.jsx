@@ -85,6 +85,7 @@ export function PostQueueCard({
   onPublish,
   showActions = true,
   allowManageActions = true,
+  allowScheduleActions = false,
   variant = 'list',
   navSearch = '',
   selectable = false,
@@ -143,9 +144,9 @@ export function PostQueueCard({
       {approval === 'approved' && post.status === 'draft' && allowManageActions && (
         <Button size="sm" onClick={() => onPublish?.(post.id)}>Publish now</Button>
       )}
-      {allowManageActions && (
+      {(allowManageActions || allowScheduleActions) && (
         <Button size="sm" variant="outline" onClick={() => navigate(`/app/posts/${post.id}/edit${navSearch}`)}>
-          Edit
+          {allowScheduleActions && !allowManageActions ? 'Schedule' : 'Edit'}
         </Button>
       )}
     </div>

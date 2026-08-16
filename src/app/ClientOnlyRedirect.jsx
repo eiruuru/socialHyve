@@ -19,6 +19,7 @@ function isClientAllowedPath(pathname, membership) {
 
   if (pathname === '/app/queue') return qaAccess;
   if (pathname === '/app/calendar') return qaAccess || guestAccess;
+  if (/^\/app\/posts\/[^/]+\/edit$/.test(pathname)) return qaAccess;
   if (/^\/app\/posts\/[^/]+$/.test(pathname)) return qaAccess || guestAccess;
 
   return false;

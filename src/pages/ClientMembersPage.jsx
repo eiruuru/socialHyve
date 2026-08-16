@@ -22,9 +22,11 @@ import {
   canChangeClientMemberRole,
 } from '@/lib/organization';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
+import { Copy, Mail, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { IconTooltip } from '@/components/ui/IconTooltip';
 import { showToast } from '@/lib/toast';
 import { CLIENT_ROLE, CLIENT_ROLE_OPTIONS, formatClientRole } from '@/lib/clientRoles';
 
@@ -409,23 +411,29 @@ export default function ClientMembersPage() {
             ) : (
               <ul className="space-y-2">
                 {invites.map((inv) => (
-                  <li key={inv.id} className="flex flex-col gap-2 rounded-hyve-sm border px-3 py-2 text-sm sm:flex-row sm:items-start sm:justify-between">
-                    <div>
+                  <li key={inv.id} className="flex items-center justify-between gap-3 rounded-hyve-sm border px-3 py-2 text-sm">
+                    <div className="min-w-0 flex-1">
                       <p className="font-medium">{inv.email}</p>
                       <p className="text-xs text-muted-foreground">
                         {formatClientRole(inv.role)} · expires {new Date(inv.expires_at).toLocaleDateString()}
                       </p>
                     </div>
-                    <div className="flex flex-wrap gap-1">
-                      <Button size="sm" variant="outline" onClick={() => handleCopyInviteLink(inv)}>
-                        Copy link
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleResendInvite(inv)}>
-                        Resend
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleRevokeInvite(inv.id)}>
-                        Revoke
-                      </Button>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <IconTooltip title="Copy link" description="Copy the invite link to share manually">
+                        <Button size="icon" variant="outline" onClick={() => handleCopyInviteLink(inv)} aria-label="Copy link">
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </IconTooltip>
+                      <IconTooltip title="Resend invite" description="Show the in-app invite again if they are logged in">
+                        <Button size="icon" variant="outline" onClick={() => handleResendInvite(inv)} aria-label="Resend invite">
+                          <Mail className="h-4 w-4" />
+                        </Button>
+                      </IconTooltip>
+                      <IconTooltip title="Revoke invite" description="Stop this invite from working">
+                        <Button size="icon" variant="outline" onClick={() => handleRevokeInvite(inv.id)} aria-label="Revoke invite">
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </IconTooltip>
                     </div>
                   </li>
                 ))}

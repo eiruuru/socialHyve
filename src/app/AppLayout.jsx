@@ -89,14 +89,8 @@ const orgNavGroups = [
     label: 'Integrations',
     items: [
       {
-        to: '/app/settings/meta',
-        label: 'Meta Connection',
-        icon: Link2,
-        show: (m) => m.isOwnerOrAdmin && !m.isClientOnly,
-      },
-      {
         to: '/app/settings/accounts',
-        label: 'Accounts',
+        label: 'Social Links',
         icon: Link2,
         show: (m, c) => m.isOrgTeam && !m.isClientOnly && c.clients.length > 0,
       },

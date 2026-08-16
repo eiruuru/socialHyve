@@ -66,8 +66,8 @@ const FAQ_SECTIONS = [
           Switch clients from the sidebar dropdown; posts, integrations, and approvals are scoped to the active client.
         </p>
         <p>
-          Connect Facebook and Instagram under <strong>Settings → Accounts</strong> for that client. You&apos;ll authorize
-          Meta once per client so Page and IG Business accounts stay separate.
+          Connect Facebook under <strong>Account → Meta Accounts</strong>, then assign pages to each client under{' '}
+          <strong>Social Links</strong>.
         </p>
         <p>
           Create your first post from <strong>New Post</strong>: write a caption, attach media, pick FB/IG targets, and
@@ -249,12 +249,12 @@ const FAQ_SECTIONS = [
   },
   {
     title: 'Integrations',
-    summary: 'Meta connections per client and Canva design imports.',
+    summary: 'Meta connections at the org level and Canva design imports.',
     content: (
       <>
         <p>
-          Meta (Facebook + Instagram) is connected <strong>per client</strong> under Settings → Accounts. Re-authorize if
-          tokens expire or Pages change.
+          Connect Facebook accounts under <strong>Account → Meta Accounts</strong>, then assign pages to each client
+          under <strong>Social Links</strong>. Re-authorize if tokens expire or Pages change.
         </p>
         <p>
           Canva connects separately per client under Settings → Canva. Once linked, browse designs in the composer and

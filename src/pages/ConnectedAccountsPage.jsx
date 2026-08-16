@@ -125,11 +125,11 @@ export default function ConnectedAccountsPage() {
     <div className="space-y-6">
       <div>
         <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Settings</p>
-        <h2 className="font-display text-2xl font-bold">Connected Accounts</h2>
+        <h2 className="font-display text-2xl font-bold">Social Links</h2>
         <p className="text-muted-foreground">
           Assign Facebook Pages and Instagram accounts to {activeClient?.name || 'this client'}.
           Connect new pages in{' '}
-          <Link to="/app/settings/meta" className="underline">Meta Connection</Link>.
+          <Link to="/app/settings/account?tab=meta" className="underline">Account → Meta Accounts</Link>.
         </p>
       </div>
 
@@ -171,7 +171,8 @@ export default function ConnectedAccountsPage() {
               {igAccounts.map((acc) => renderAccountRow(acc, 'instagram'))}
               {!accounts.length && (
                 <p className="text-sm text-muted-foreground">
-                  No pages assigned yet. Assign pages from your organization pool or connect new ones in Meta Connection.
+                  No pages assigned yet. Assign pages from your organization pool or connect new ones under{' '}
+                  <Link to="/app/settings/account?tab=meta" className="underline">Account → Meta Accounts</Link>.
                 </p>
               )}
             </div>

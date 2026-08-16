@@ -143,12 +143,12 @@ async function ensurePageAccessToken(
   const metaSessionId = String(account.meta_session_id || '');
 
   if (!pageId) {
-    throw new Error('Missing Page credentials. Reconnect Meta in Settings → Meta Connection.');
+    throw new Error('Missing Page credentials. Reconnect Meta in Account → Meta Accounts.');
   }
 
   const stored = await readToken((account.page_access_token || account.access_token) as string);
   if (!stored) {
-    throw new Error('Missing Page credentials. Reconnect Meta in Settings → Meta Connection.');
+    throw new Error('Missing Page credentials. Reconnect Meta in Account → Meta Accounts.');
   }
 
   const storedInfo = await debugTokenInfo(stored, APP_ACCESS_TOKEN);
@@ -156,7 +156,7 @@ async function ensurePageAccessToken(
   if (storedInfo.type === 'PAGE' && storedInfo.profileId && storedInfo.profileId !== pageId) {
     throw new Error(
       `Stored token belongs to a different Facebook Page (${storedInfo.profileId}). ` +
-      'Reconnect Meta in Settings → Meta Connection.',
+      'Reconnect Meta in Account → Meta Accounts.',
     );
   }
 
@@ -166,20 +166,20 @@ async function ensurePageAccessToken(
 
   if (storedInfo.type === 'USER') {
     throw new Error(
-      'Page token is missing or outdated. Reconnect Meta in Settings → Meta Connection.',
+      'Page token is missing or outdated. Reconnect Meta in Account → Meta Accounts.',
     );
   }
 
   if (!metaSessionId) {
     throw new Error(
-      'Facebook Page token expired. Reconnect Meta in Settings → Meta Connection.',
+      'Facebook Page token expired. Reconnect Meta in Account → Meta Accounts.',
     );
   }
 
   const userToken = await getMetaSessionUserToken(service, metaSessionId);
   if (!userToken) {
     throw new Error(
-      'Facebook Page token expired. Reconnect Meta in Settings → Meta Connection.',
+      'Facebook Page token expired. Reconnect Meta in Account → Meta Accounts.',
     );
   }
 
@@ -187,7 +187,7 @@ async function ensurePageAccessToken(
   if (!pageGranted) {
     throw new Error(
       `Facebook Page ${pageId} is not authorized for this Meta login. ` +
-      'Reconnect that Facebook account in Settings → Meta Connection.',
+      'Reconnect that Facebook account in Account → Meta Accounts.',
     );
   }
 
@@ -195,7 +195,7 @@ async function ensurePageAccessToken(
   const resolvedInfo = await debugTokenInfo(pageToken, APP_ACCESS_TOKEN);
   if (!isValidPageTokenFor(resolvedInfo, pageId)) {
     throw new Error(
-      'Facebook returned an invalid Page token. Reconnect Meta in Settings → Meta Connection.',
+      'Facebook returned an invalid Page token. Reconnect Meta in Account → Meta Accounts.',
     );
   }
 

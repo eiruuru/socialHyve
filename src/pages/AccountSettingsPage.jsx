@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
+import { useMembership } from '@/lib/membershipContext';
 import { getProfile, updateEmail, updateInAppNotificationPreferences, updateNotificationPreferences, updatePassword, updateProfile } from '@/lib/profile';
 import { DEFAULT_IN_APP_PREFS, IN_APP_PREF_LABELS } from '@/lib/notifications/notificationTypes';
 import { isPushSupported, requestPushPermission, unsubscribeFromPush } from '@/lib/pushNotifications';
@@ -8,6 +10,8 @@ import { showToast } from '@/lib/toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { TabsRoot, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { MetaConnectionPanel } from '@/features/settings/MetaConnectionPanel';
 
 function Field({ label, htmlFor, children, hint }) {
   return (
@@ -35,7 +39,23 @@ function StatusBanner({ message, tone = 'success' }) {
 
 export default function AccountSettingsPage() {
   const { user } = useAuth();
+  const { isOwnerOrAdmin } = useMembership();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = (
+    searchParams.get('tab') === 'meta'
+    || searchParams.get('connected') === 'meta'
+    || searchParams.get('error')
+  ) && isOwnerOrAdmin ? 'meta' : 'profile';
+
+  const setActiveTab = (tab) => {
+    if (tab === 'meta') {
+      const next = new URLSearchParams({ tab: 'meta' });
+      setSearchParams(next, { replace: true });
+      return;
+    }
+    setSearchParams({}, { replace: true });
+  };
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ['profile', user?.id],
@@ -214,9 +234,16 @@ export default function AccountSettingsPage() {
       <div>
         <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Settings</p>
         <h2 className="font-display text-2xl font-bold">Account</h2>
-        <p className="text-muted-foreground">Update your name, email, and password</p>
+        <p className="text-muted-foreground">Profile, notifications, and organization Meta accounts</p>
       </div>
 
+      <TabsRoot value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="profile">Profile</TabsTrigger>
+          {isOwnerOrAdmin && <TabsTrigger value="meta">Meta Accounts</TabsTrigger>}
+        </TabsList>
+
+        <TabsContent value="profile" className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Profile</CardTitle>
@@ -417,6 +444,14 @@ export default function AccountSettingsPage() {
           </form>
         </CardContent>
       </Card>
+        </TabsContent>
+
+        {isOwnerOrAdmin && (
+          <TabsContent value="meta">
+            <MetaConnectionPanel />
+          </TabsContent>
+        )}
+      </TabsRoot>
     </div>
   );
 }

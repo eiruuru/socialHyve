@@ -15,8 +15,8 @@ const META_REDIRECT_URI = Deno.env.get('META_REDIRECT_URI') || '';
 const APP_URL = Deno.env.get('APP_URL') || 'http://localhost:5173';
 
 function metaRedirect(params: Record<string, string>) {
-  const search = new URLSearchParams(params);
-  return redirectResponse(`${APP_URL}/app/settings/meta?${search}`);
+  const search = new URLSearchParams({ tab: 'meta', ...params });
+  return redirectResponse(`${APP_URL}/app/settings/account?${search}`);
 }
 
 async function exchangeCode(code: string): Promise<string> {

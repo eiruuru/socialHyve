@@ -46,6 +46,10 @@ FUNCTIONS=(
   canva-get-design-pages
   canva-export-design
   meta-list-ig-media
+  meta-sync-interactions
+  meta-reply-interaction
+  meta-interaction-action
+  meta-interactions-webhook
   publish-post
   cleanup-post-media
   refresh-tokens

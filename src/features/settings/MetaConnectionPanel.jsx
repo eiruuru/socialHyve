@@ -15,6 +15,7 @@ import { PlatformChip } from '@/components/brand/PlatformChip';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { showToast } from '@/lib/toast';
+import { sessionsNeedInteractionsReconnect } from '@/lib/metaScopes';
 
 export function MetaConnectionPanel() {
   const { isOwnerOrAdmin } = useMembership();
@@ -83,6 +84,7 @@ export function MetaConnectionPanel() {
     session,
     pages: pages.filter((page) => page.meta_session_id === session.id),
   }));
+  const needsInteractionsReconnect = sessionsNeedInteractionsReconnect(sessions);
 
   return (
     <div className="space-y-6">
@@ -90,6 +92,21 @@ export function MetaConnectionPanel() {
         Connect Facebook accounts at the organization level, then assign pages to each client under{' '}
         <Link to="/app/settings/accounts" className="underline">Social Links</Link>.
       </p>
+
+      {needsInteractionsReconnect && (
+        <div className="rounded-hyve-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <p className="font-medium">Reconnect Meta for Interactions</p>
+          <p className="mt-1">
+            Comments and DMs require updated Facebook permissions. Reconnect each account below so
+            socialHyve can sync your inbox.
+          </p>
+          <div className="mt-3">
+            <Button size="sm" onClick={() => startMetaOAuth({ rerequest: true })} disabled={busy}>
+              Reconnect with new permissions
+            </Button>
+          </div>
+        </div>
+      )}
 
       {connected === 'meta' && (
         <div className="rounded-hyve-md bg-[#DFF3E6] p-4 text-sm text-status-published">

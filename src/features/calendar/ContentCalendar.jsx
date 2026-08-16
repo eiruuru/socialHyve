@@ -5,34 +5,32 @@ import {
   startOfWeek,
   endOfWeek,
   eachDayOfInterval,
-  isSameMonth,
   isSameDay,
   addMonths,
   subMonths,
+  addWeeks,
+  subWeeks,
   compareAsc,
-  startOfDay,
 } from 'date-fns';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useClient } from '@/lib/clientContext';
 import { reschedulePostToDay } from '@/lib/posts';
 import { isPastCalendarDay } from '@/lib/scheduleTime';
 import { showToast } from '@/lib/toast';
 import { CalendarPostCard, isPostDraggable } from './CalendarPostCard';
+import { CalendarDayCell } from './CalendarDayCell';
 import { PostStatusLegend } from '@/features/queue/postStatusIcons';
 import { Button } from '@/components/ui/button';
 import { IconTooltip } from '@/components/ui/IconTooltip';
 import { TabsRoot, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { cn } from '@/lib/utils';
 import { buildPostNavSearch } from '@/features/posts/postNavUtils';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 function mondayStartWeek(date) {
-  const d = startOfWeek(date, { weekStartsOn: 1 });
-  return d;
+  return startOfWeek(date, { weekStartsOn: 1 });
 }
 
 function mondayEndWeek(date) {
@@ -40,7 +38,6 @@ function mondayEndWeek(date) {
 }
 
 export function ContentCalendar({ posts = [], readOnly = false }) {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { activeClient } = useClient();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -51,9 +48,13 @@ export function ContentCalendar({ posts = [], readOnly = false }) {
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
-  const calendarStart = mondayStartWeek(monthStart);
-  const calendarEnd = mondayEndWeek(monthEnd);
-  const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+  const monthGridStart = mondayStartWeek(monthStart);
+  const monthGridEnd = mondayEndWeek(monthEnd);
+  const monthDays = eachDayOfInterval({ start: monthGridStart, end: monthGridEnd });
+
+  const weekStart = mondayStartWeek(currentDate);
+  const weekEnd = mondayEndWeek(currentDate);
+  const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
   const getPostsForDay = (day) =>
     posts.filter((p) => {
@@ -103,8 +104,8 @@ export function ContentCalendar({ posts = [], readOnly = false }) {
       return;
     }
 
-    const currentDate = post.scheduled_at || post.created_at;
-    if (currentDate && isSameDay(new Date(currentDate), day)) {
+    const postDate = post.scheduled_at || post.created_at;
+    if (postDate && isSameDay(new Date(postDate), day)) {
       setDraggingPostId(null);
       return;
     }
@@ -125,6 +126,66 @@ export function ContentCalendar({ posts = [], readOnly = false }) {
     }
   };
 
+  const makeDayHandlers = (day) => ({
+    onDragOver: (e) => {
+      if (!draggingPostId) return;
+      e.preventDefault();
+      if (isPastCalendarDay(day)) {
+        e.dataTransfer.dropEffect = 'none';
+        setDropTargetDay(null);
+        return;
+      }
+      e.dataTransfer.dropEffect = 'move';
+      setDropTargetDay(day);
+    },
+    onDragLeave: (e) => {
+      if (!e.currentTarget.contains(e.relatedTarget)) {
+        setDropTargetDay((current) =>
+          current && isSameDay(current, day) ? null : current,
+        );
+      }
+    },
+    onDrop: (e) => handleDropOnDay(day, e),
+  });
+
+  const goPrev = () => {
+    if (view === 'week') setCurrentDate(subWeeks(currentDate, 1));
+    else setCurrentDate(subMonths(currentDate, 1));
+  };
+
+  const goNext = () => {
+    if (view === 'week') setCurrentDate(addWeeks(currentDate, 1));
+    else setCurrentDate(addMonths(currentDate, 1));
+  };
+
+  const periodLabel = view === 'week'
+    ? `${format(weekStart, 'MMM d')} – ${format(weekEnd, 'MMM d, yyyy')}`
+    : format(currentDate, 'MMMM yyyy');
+
+  const prevLabel = view === 'week' ? 'Previous week' : 'Previous month';
+  const nextLabel = view === 'week' ? 'Next week' : 'Next month';
+
+  const renderDayGrid = (days, { tall = false } = {}) => (
+    <div className="grid grid-cols-7">
+      {days.map((day) => (
+        <CalendarDayCell
+          key={day.toISOString()}
+          day={day}
+          dayPosts={getPostsForDay(day)}
+          currentDate={currentDate}
+          readOnly={readOnly}
+          navSearch={monthNavSearch}
+          draggingPostId={draggingPostId}
+          dropTargetDay={dropTargetDay}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          tall={tall}
+          {...makeDayHandlers(day)}
+        />
+      ))}
+    </div>
+  );
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -132,24 +193,27 @@ export function ContentCalendar({ posts = [], readOnly = false }) {
           <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Calendar</p>
           <h2 className="font-display text-xl font-bold">{activeClient?.name || 'All posts'}</h2>
         </div>
-        <div className="flex items-center gap-2">
-          <IconTooltip title="Previous month" description="Go to the previous month">
-            <Button variant="outline" size="icon" onClick={() => setCurrentDate(subMonths(currentDate, 1))} aria-label="Previous month">
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-          </IconTooltip>
-          <h3 className="min-w-[180px] text-center text-lg font-semibold">
-            {format(currentDate, 'MMMM yyyy')}
-          </h3>
-          <IconTooltip title="Next month" description="Go to the next month">
-            <Button variant="outline" size="icon" onClick={() => setCurrentDate(addMonths(currentDate, 1))} aria-label="Next month">
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </IconTooltip>
-        </div>
+        {view !== 'list' && (
+          <div className="flex items-center gap-2">
+            <IconTooltip title={prevLabel} description={`Go to the ${prevLabel.toLowerCase()}`}>
+              <Button variant="outline" size="icon" onClick={goPrev} aria-label={prevLabel}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+            </IconTooltip>
+            <h3 className="min-w-[180px] text-center text-lg font-semibold">
+              {periodLabel}
+            </h3>
+            <IconTooltip title={nextLabel} description={`Go to the ${nextLabel.toLowerCase()}`}>
+              <Button variant="outline" size="icon" onClick={goNext} aria-label={nextLabel}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </IconTooltip>
+          </div>
+        )}
         <TabsRoot value={view} onValueChange={setView}>
           <TabsList>
             <TabsTrigger value="month">Month</TabsTrigger>
+            <TabsTrigger value="week">Week</TabsTrigger>
             <TabsTrigger value="list">List</TabsTrigger>
           </TabsList>
         </TabsRoot>
@@ -157,91 +221,31 @@ export function ContentCalendar({ posts = [], readOnly = false }) {
 
       <PostStatusLegend />
 
-      {view === 'month' ? (
+      {view === 'month' && (
         <div className="rounded-hyve-lg border border-neutral-200">
           <div className="grid grid-cols-7 border-b border-neutral-200 bg-paper-alt">
             {WEEKDAYS.map((d) => (
               <div key={d} className="p-2 text-center text-xs font-medium text-muted-foreground">{d}</div>
             ))}
           </div>
-          <div className="grid grid-cols-7">
-            {days.map((day) => {
-              const dayPosts = getPostsForDay(day);
-              const isPastDay = isPastCalendarDay(day);
-              const isDropTarget = dropTargetDay && isSameDay(dropTargetDay, day);
-              const isToday = isSameDay(startOfDay(day), startOfDay(new Date()));
-              return (
-                <div
-                  key={day.toISOString()}
-                  className={cn(
-                    'min-h-[180px] border-b border-r border-neutral-200 p-2 transition-colors',
-                    !isSameMonth(day, currentDate) && 'bg-neutral-50 text-muted-foreground',
-                    isPastDay && 'bg-neutral-100/80',
-                    isDropTarget && !isPastDay && 'bg-honey-light/30 ring-2 ring-inset ring-honey',
-                  )}
-                  onDragOver={readOnly ? undefined : (e) => {
-                    if (!draggingPostId) return;
-                    e.preventDefault();
-                    if (isPastDay) {
-                      e.dataTransfer.dropEffect = 'none';
-                      setDropTargetDay(null);
-                      return;
-                    }
-                    e.dataTransfer.dropEffect = 'move';
-                    setDropTargetDay(day);
-                  }}
-                  onDragLeave={readOnly ? undefined : (e) => {
-                    if (!e.currentTarget.contains(e.relatedTarget)) {
-                      setDropTargetDay((current) =>
-                        current && isSameDay(current, day) ? null : current,
-                      );
-                    }
-                  }}
-                  onDrop={readOnly ? undefined : (e) => handleDropOnDay(day, e)}
-                >
-                  <div className="mb-2.5 flex items-center justify-between gap-1">
-                    <span
-                      className={cn(
-                        'text-sm font-medium',
-                        isToday && 'font-bold text-primary',
-                        isPastDay && 'text-muted-foreground/60',
-                      )}
-                    >
-                      {format(day, 'd')}
-                    </span>
-                    {!readOnly && !isPastDay && (
-                      <IconTooltip
-                        title="New post"
-                        description={`Create a post for ${format(day, 'MMM d')}`}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => navigate(`/app/posts/new?date=${day.toISOString()}`)}
-                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-hyve-sm text-muted-foreground transition-colors hover:bg-honey-light hover:text-honey-dark"
-                          aria-label={`New post on ${format(day, 'MMM d')}`}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </button>
-                      </IconTooltip>
-                    )}
-                  </div>
-                  {dayPosts.map((post) => (
-                    <CalendarPostCard
-                      key={post.id}
-                      post={post}
-                      navSearch={monthNavSearch}
-                      draggable={!readOnly && isPostDraggable(post)}
-                      isDragging={draggingPostId === post.id}
-                      onDragStart={handleDragStart}
-                      onDragEnd={handleDragEnd}
-                    />
-                  ))}
-                </div>
-              );
-            })}
-          </div>
+          {renderDayGrid(monthDays)}
         </div>
-      ) : (
+      )}
+
+      {view === 'week' && (
+        <div className="rounded-hyve-lg border border-neutral-200">
+          <div className="grid grid-cols-7 border-b border-neutral-200 bg-paper-alt">
+            {weekDays.map((day) => (
+              <div key={day.toISOString()} className="p-2 text-center text-xs font-medium text-muted-foreground">
+                {format(day, 'EEE d')}
+              </div>
+            ))}
+          </div>
+          {renderDayGrid(weekDays, { tall: true })}
+        </div>
+      )}
+
+      {view === 'list' && (
         <div className="space-y-2">
           {sortedPosts.length === 0 ? (
             <p className="text-sm text-muted-foreground">No posts scheduled.</p>

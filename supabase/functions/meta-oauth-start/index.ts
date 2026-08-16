@@ -5,13 +5,18 @@ const META_APP_ID = Deno.env.get('META_APP_ID') || '';
 const META_REDIRECT_URI = Deno.env.get('META_REDIRECT_URI') || '';
 const META_CONFIG_ID = Deno.env.get('META_CONFIG_ID') || '';
 
+// pages_messaging is not available via scope= — add Messenger product + include it in Login for Business (META_CONFIG_ID).
 const SCOPES = [
   'business_management',
   'pages_show_list',
   'pages_read_engagement',
+  'pages_manage_engagement',
+  'pages_manage_metadata',
   'pages_manage_posts',
   'instagram_basic',
   'instagram_content_publish',
+  'instagram_manage_comments',
+  'instagram_manage_messages',
 ].join(',');
 
 Deno.serve(async (req) => {

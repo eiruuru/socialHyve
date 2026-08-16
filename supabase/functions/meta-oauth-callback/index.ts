@@ -6,6 +6,7 @@ import {
   debugTokenType,
   fetchGrantedPages,
   getGrantedScopes,
+  getGrantedScopesArray,
   resolvePageAccessToken,
 } from '../_shared/metaPages.ts';
 
@@ -108,6 +109,7 @@ Deno.serve(async (req) => {
 
     const metaUserName = await fetchMetaUserName(longToken);
     const encryptedUserToken = await encryptAccountTokenFields({ user_access_token: longToken });
+    const scopeList = await getGrantedScopesArray(longToken, appAccessToken);
 
     const { data: sessionRow, error: sessionErr } = await service
       .from('workspace_meta_sessions')
@@ -117,6 +119,7 @@ Deno.serve(async (req) => {
         meta_user_name: metaUserName,
         user_access_token: encryptedUserToken.user_access_token,
         token_expires_at: tokenExpiresAt,
+        granted_scopes: scopeList,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'workspace_id,meta_user_id' })
       .select('id')

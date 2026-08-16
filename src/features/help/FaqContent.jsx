@@ -69,7 +69,7 @@ const FAQ_SECTIONS = [
           <HelpList>
             <li><strong>Top bar</strong> — logo, notification bell, Sign out.</li>
             <li><strong>Sidebar top</strong> — honey workspace name badge, client switcher, your email and role.</li>
-            <li><strong>Sidebar nav</strong> — New Post, Content (Queue, Calendar, Import CSV), Integrations (Social Links, Canva), Support (Settings, Help).</li>
+            <li><strong>Sidebar nav</strong> — New Post, Content (Queue, Calendar, Interactions, Import CSV), Integrations (Social Links, Canva), Support (Settings, Help).</li>
           </HelpList>
         </HelpSubsection>
 
@@ -327,7 +327,7 @@ const FAQ_SECTIONS = [
   },
   {
     title: 'Calendar',
-    summary: 'Month and list views, drag reschedule, urgency, and planning.',
+    summary: 'Month, week, and list views, drag reschedule, urgency, and planning.',
     content: (
       <>
         <p>
@@ -337,7 +337,11 @@ const FAQ_SECTIONS = [
 
         <HelpSubsection title="Month view">
           <p>Traditional Mon–Sun grid. Each day shows post cards with thumbnail, time, status badge, and urgency badge. Use arrows to change months.</p>
-          <p>Click a <strong>day number</strong> (today or future) to start a new post with that date prefilled in the schedule field.</p>
+          <p>Use the <strong>+</strong> button on a day (today or future) to start a new post with that date prefilled.</p>
+        </HelpSubsection>
+
+        <HelpSubsection title="Week view">
+          <p>Seven columns (Mon–Sun) for the current week with taller day cells so more posts fit. Use prev/next arrows to move by week. Same drag-and-drop, + button, and post cards as month view.</p>
         </HelpSubsection>
 
         <HelpSubsection title="List view">
@@ -346,7 +350,7 @@ const FAQ_SECTIONS = [
 
         <HelpSubsection title="Drag to reschedule">
           <HelpSteps>
-            <li>In month view, drag a post card onto another day.</li>
+            <li>In month or week view, drag a post card onto another day.</li>
             <li>The post keeps its time-of-day but moves to the new date (in the post&apos;s timezone).</li>
             <li>Published and publishing posts cannot be dragged.</li>
             <li>Past dates are blocked — you cannot drop onto yesterday or earlier.</li>
@@ -526,6 +530,60 @@ const FAQ_SECTIONS = [
     ),
   },
   {
+    title: 'Interactions',
+    summary: 'Facebook and Instagram comments and DMs in one inbox.',
+    content: (
+      <>
+        <p>
+          <strong>Content → Interactions</strong> syncs post comments and direct messages from assigned Meta accounts.
+          Reply, assign teammates, archive threads, and jump to the related socialHyve post when a comment matches a published target.
+        </p>
+
+        <HelpSubsection title="Setup and permissions">
+          <HelpSteps>
+            <li>Assign Facebook Pages and Instagram accounts under <strong>Integrations → Social Links</strong>.</li>
+            <li>Open <strong>Settings → Meta Accounts</strong> and reconnect if prompted — Interactions needs comment and messaging permissions.</li>
+            <li>Visit <strong>Interactions</strong> — the inbox syncs the last 30 days on load. Use <strong>Sync now</strong> to refresh.</li>
+          </HelpSteps>
+          <p>
+            In Meta App Review, messaging scopes may require approval before non-admin users can use DMs in production.
+            Dev mode works for app admins and test users first.
+          </p>
+          <p>
+            <strong>Facebook Messenger</strong> uses the <code className="text-xs">pages_messaging</code> permission, which
+            is not requestable via OAuth <code className="text-xs">scope=</code>. Add the <strong>Messenger</strong> product
+            in your Meta app, include <code className="text-xs">pages_messaging</code> in your Login for Business
+            configuration (<code className="text-xs">META_CONFIG_ID</code>), then reconnect.
+          </p>
+        </HelpSubsection>
+
+        <HelpSubsection title="Inbox layout">
+          <HelpList>
+            <li><strong>Left pane</strong> — search, platform/type/status filters, thread list with unread dot.</li>
+            <li><strong>Right pane</strong> — message history, assignee, Mark read/unread, Like (Facebook comments only), Archive.</li>
+            <li><strong>Composer</strong> — text reply with quick emoji insert; ⌘/Ctrl+Enter to send.</li>
+          </HelpList>
+        </HelpSubsection>
+
+        <HelpSubsection title="Comments vs DMs">
+          <p>
+            <strong>Comments</strong> appear on published Facebook posts and Instagram media. When the external post ID matches a
+            socialHyve publish target, the thread header links to that post.
+          </p>
+          <p>
+            <strong>DMs</strong> include Facebook Messenger and Instagram direct messages for assigned pages.
+            Composer emojis are sent as message text — native tapback reactions are not supported via API.
+          </p>
+        </HelpSubsection>
+
+        <Example>
+          A café post goes live on Instagram; a customer comment appears in Interactions within minutes after sync.
+          Your community manager replies from socialHyve and assigns the thread to a teammate for follow-up.
+        </Example>
+      </>
+    ),
+  },
+  {
     title: 'Integrations',
     summary: 'Meta pool, Social Links, and Canva — setup and daily use.',
     content: (
@@ -541,7 +599,7 @@ const FAQ_SECTIONS = [
             <li>Connect additional Facebook logins if needed (each login is a separate session).</li>
             <li>Imported pages list shows platform chip, name/handle, and Assigned vs Unassigned badge.</li>
           </HelpSteps>
-          <p>Reconnect one login if tokens expire. Disconnect removes that login&apos;s pages and unassigns them everywhere.</p>
+          <p>Reconnect one login if tokens expire or if the Interactions banner asks for updated permissions (comments + messaging). Disconnect removes that login&apos;s pages and unassigns them everywhere.</p>
         </HelpSubsection>
 
         <HelpSubsection title="Social Links — per-client assignment">

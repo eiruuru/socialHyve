@@ -1,0 +1,21 @@
+/** Scopes required for Interactions inbox (comments + IG DMs + page conversations). */
+export const META_INTERACTIONS_SCOPES = [
+  'pages_manage_engagement',
+  'pages_manage_metadata',
+  'instagram_manage_comments',
+  'instagram_manage_messages',
+];
+
+/** Facebook Messenger also needs pages_messaging — configure via Login for Business, not scope=. */
+export const META_MESSENGER_SCOPE = 'pages_messaging';
+
+export function sessionHasInteractionsScopes(session) {
+  const granted = session?.granted_scopes;
+  if (!Array.isArray(granted) || granted.length === 0) return false;
+  return META_INTERACTIONS_SCOPES.every((scope) => granted.includes(scope));
+}
+
+export function sessionsNeedInteractionsReconnect(sessions = []) {
+  if (!sessions.length) return false;
+  return sessions.some((session) => !sessionHasInteractionsScopes(session));
+}

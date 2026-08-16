@@ -169,9 +169,17 @@ export async function resolvePageAccessToken(
 }
 
 export async function getGrantedScopes(userToken: string, appAccessToken: string): Promise<string> {
+  const scopes = await getGrantedScopesArray(userToken, appAccessToken);
+  return scopes.join(', ') || 'none';
+}
+
+export async function getGrantedScopesArray(
+  userToken: string,
+  appAccessToken: string,
+): Promise<string[]> {
   const res = await fetch(
     `${META_GRAPH}/debug_token?input_token=${encodeURIComponent(userToken)}&access_token=${encodeURIComponent(appAccessToken)}`,
   );
   const data = await res.json();
-  return (data.data?.scopes || []).join(', ') || 'none';
+  return (data.data?.scopes as string[] | undefined) || [];
 }

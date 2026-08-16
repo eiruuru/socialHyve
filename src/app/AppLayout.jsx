@@ -10,6 +10,7 @@ import {
   Settings,
   Upload,
   HelpCircle,
+  MessageCircle,
 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useMembership } from '@/lib/membershipContext';
@@ -57,6 +58,12 @@ const orgNavGroups = [
         to: '/app/calendar',
         label: 'Calendar',
         icon: Calendar,
+        show: (m) => m.isOrgTeam && !m.isClientOnly,
+      },
+      {
+        to: '/app/interactions',
+        label: 'Interactions',
+        icon: MessageCircle,
         show: (m) => m.isOrgTeam && !m.isClientOnly,
       },
       {
@@ -199,7 +206,8 @@ export function AppLayout() {
   const { workspace } = useWorkspace();
   const location = useLocation();
   useNavigateOnClientSwitch();
-  const isWide = location.pathname.includes('/calendar');
+  const isWide = location.pathname.includes('/calendar')
+    || location.pathname.includes('/interactions');
 
   const navGroups = buildNavGroups(membership, clientCtx);
   const showClientSwitcher = !membership.isClientOnly

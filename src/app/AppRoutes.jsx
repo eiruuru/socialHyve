@@ -16,6 +16,7 @@ const PostComposerPage = lazyWithRetry(() => import('@/pages/PostComposerPage'))
 const PostImportPage = lazyWithRetry(() => import('@/pages/PostImportPage'));
 const EditPostPage = lazyWithRetry(() => import('@/pages/EditPostPage'));
 const PostDetailPage = lazyWithRetry(() => import('@/pages/PostDetailPage'));
+const InteractionsPage = lazyWithRetry(() => import('@/pages/InteractionsPage'));
 const MetaConnectionPage = lazyWithRetry(() => import('@/pages/MetaConnectionPage'));
 const ConnectedAccountsPage = lazyWithRetry(() => import('@/pages/ConnectedAccountsPage'));
 const CanvaSettingsPage = lazyWithRetry(() => import('@/pages/CanvaSettingsPage'));
@@ -54,6 +55,7 @@ export function AppRoutes() {
           <Route index element={<Navigate to="calendar" replace />} />
           <Route path="queue" element={<Lazy><QueuePage /></Lazy>} />
           <Route path="calendar" element={<Lazy><CalendarPage /></Lazy>} />
+          <Route path="interactions" element={<Lazy><InteractionsPage /></Lazy>} />
           <Route path="posts/new" element={<Lazy><PostComposerPage /></Lazy>} />
           <Route path="posts/import" element={<Lazy><PostImportPage /></Lazy>} />
           <Route path="posts/:id/edit" element={<Lazy><EditPostPage /></Lazy>} />

@@ -44,7 +44,13 @@ export function MetaConnectionPanel() {
   const startMetaOAuth = async () => {
     setBusy(true);
     try {
-      const { url } = await invokeFunction('metaOAuthStart', {});
+      const { url, configIdSuffix } = await invokeFunction('metaOAuthStart', {});
+      if (configIdSuffix) {
+        showToast({
+          title: 'Opening Meta login',
+          description: `Using Login for Business config …${configIdSuffix}`,
+        });
+      }
       window.location.href = url;
     } catch (err) {
       showToast({ title: 'Connection failed', description: err.message, variant: 'error' });
@@ -116,11 +122,11 @@ export function MetaConnectionPanel() {
           invalid after adding permissions like <code className="text-xs">pages_messaging</code>.
         </p>
         <ol className="mt-2 list-decimal space-y-1 pl-5">
-          <li>Create a <strong>new</strong> configuration in Meta → Facebook Login for Business (User access token).</li>
-          <li>Add the redirect URI: <code className="text-xs">https://hfbxonnowvfkxmmkgftz.supabase.co/functions/v1/meta-oauth-callback</code></li>
-          <li>Copy the new Config ID to <code className="text-xs">META_CONFIG_ID</code> in <code className="text-xs">.env</code></li>
-          <li>Run <code className="text-xs">bash scripts/set-secrets.sh</code> to push it to Supabase</li>
-          <li>Click <strong>Connect Facebook account</strong> again (scope-only OAuth is not supported for Business apps)</li>
+          <li>Config type must be <strong>User access token</strong> (not System User).</li>
+          <li>Include at least: <code className="text-xs">business_management</code>, <code className="text-xs">pages_show_list</code>, <code className="text-xs">pages_manage_posts</code>, <code className="text-xs">instagram_basic</code>.</li>
+          <li>Add interaction permissions after base connect works: <code className="text-xs">pages_manage_engagement</code>, <code className="text-xs">pages_manage_metadata</code>, <code className="text-xs">instagram_manage_comments</code>, <code className="text-xs">instagram_manage_messages</code>, <code className="text-xs">pages_messaging</code>.</li>
+          <li>Redirect URI (Facebook Login for Business → Settings): <code className="text-xs">https://hfbxonnowvfkxmmkgftz.supabase.co/functions/v1/meta-oauth-callback</code></li>
+          <li>Update <code className="text-xs">META_CONFIG_ID</code>, run <code className="text-xs">bash scripts/set-secrets.sh</code>, reconnect — toast should show config ending in <strong>1332</strong>.</li>
         </ol>
       </div>
 

@@ -1,5 +1,5 @@
 import { handleOptions, jsonResponse } from '../_shared/cors.ts';
-import { getServiceClient, getWorkspaceForUser, randomString, requireUser } from '../_shared/supabase.ts';
+import { getOrganizationForUser, getServiceClient, randomString, requireUser } from '../_shared/supabase.ts';
 
 const META_APP_ID = Deno.env.get('META_APP_ID') || '';
 const META_REDIRECT_URI = Deno.env.get('META_REDIRECT_URI') || '';
@@ -25,12 +25,12 @@ Deno.serve(async (req) => {
     }
 
     const { supabase, user } = await requireUser(req);
-    const workspace = await getWorkspaceForUser(supabase, user.id);
+    const org = await getOrganizationForUser(supabase, user.id);
     const state = randomString(32);
 
     const service = getServiceClient();
     await service.from('oauth_states').insert({
-      workspace_id: workspace.id,
+      workspace_id: org.id,
       client_id: null,
       provider: 'meta',
       state,
@@ -41,10 +41,14 @@ Deno.serve(async (req) => {
     authUrl.searchParams.set('redirect_uri', META_REDIRECT_URI);
     authUrl.searchParams.set('state', state);
     authUrl.searchParams.set('response_type', 'code');
+    authUrl.searchParams.set('override_default_response_type', 'true');
     // Login for Business: config_id replaces scope — do not send scope or auth_type.
     authUrl.searchParams.set('config_id', META_CONFIG_ID);
 
-    return jsonResponse({ url: authUrl.toString() });
+    return jsonResponse({
+      url: authUrl.toString(),
+      configIdSuffix: META_CONFIG_ID.slice(-4),
+    });
   } catch (err) {
     return jsonResponse({ error: (err as Error).message }, 400);
   }

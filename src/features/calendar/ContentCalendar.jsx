@@ -12,7 +12,7 @@ import {
   compareAsc,
   startOfDay,
 } from 'date-fns';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
@@ -199,29 +199,32 @@ export function ContentCalendar({ posts = [], readOnly = false }) {
                   }}
                   onDrop={readOnly ? undefined : (e) => handleDropOnDay(day, e)}
                 >
-                  {readOnly ? (
-                    <span className={cn('mb-1 block text-sm font-medium', isToday && 'font-bold text-primary')}>
-                      {format(day, 'd')}
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      disabled={isPastDay}
+                  <div className="mb-2.5 flex items-center justify-between gap-1">
+                    <span
                       className={cn(
-                        'mb-1 text-sm font-medium',
+                        'text-sm font-medium',
                         isToday && 'font-bold text-primary',
-                        isPastDay
-                          ? 'cursor-not-allowed text-muted-foreground/60'
-                          : 'hover:text-primary',
+                        isPastDay && 'text-muted-foreground/60',
                       )}
-                      onClick={() => {
-                        if (isPastDay) return;
-                        navigate(`/app/posts/new?date=${day.toISOString()}`);
-                      }}
                     >
                       {format(day, 'd')}
-                    </button>
-                  )}
+                    </span>
+                    {!readOnly && !isPastDay && (
+                      <IconTooltip
+                        title="New post"
+                        description={`Create a post for ${format(day, 'MMM d')}`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/app/posts/new?date=${day.toISOString()}`)}
+                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-hyve-sm text-muted-foreground transition-colors hover:bg-honey-light hover:text-honey-dark"
+                          aria-label={`New post on ${format(day, 'MMM d')}`}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
+                      </IconTooltip>
+                    )}
+                  </div>
                   {dayPosts.map((post) => (
                     <CalendarPostCard
                       key={post.id}

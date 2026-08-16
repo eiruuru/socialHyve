@@ -43,12 +43,13 @@ Deno.serve(async (req) => {
     authUrl.searchParams.set('state', state);
     authUrl.searchParams.set('response_type', 'code');
     if (META_CONFIG_ID) {
+      // Login for Business: config_id replaces scope — do not send scope or auth_type (causes generic FB error).
       authUrl.searchParams.set('config_id', META_CONFIG_ID);
     } else {
       authUrl.searchParams.set('scope', SCOPES);
-    }
-    if (body.rerequest) {
-      authUrl.searchParams.set('auth_type', 'rerequest');
+      if (body.rerequest) {
+        authUrl.searchParams.set('auth_type', 'rerequest');
+      }
     }
 
     return jsonResponse({ url: authUrl.toString() });

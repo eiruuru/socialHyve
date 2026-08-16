@@ -96,12 +96,15 @@ export function PostQueueCard({
   const badges = getPostDisplayBadges(post);
   const approval = post.approval_status || 'draft';
   const needsSchedule = isApprovedDraft(post);
+  const isQueued = isQueuedToPublish(post);
   const scheduleUrgency = getScheduleUrgency(post.scheduled_at);
-  const showUrgencyBadge = scheduleUrgency && !isQueuedToPublish(post);
+  const showUrgencyBadge = scheduleUrgency && needsSchedule;
   const scheduleTimezone = resolveScheduleTimezone({ postTimezone: post.schedule_timezone });
   const cardBorderClass = needsSchedule
-    ? 'border-2 border-dashed border-honey-dark/40'
-    : scheduleUrgency?.borderClass ?? 'border-2 border-neutral-200';
+    ? (scheduleUrgency?.borderClass ?? 'border-2 border-dashed border-honey-dark/40')
+    : isQueued
+      ? 'border-2 border-neutral-200'
+      : scheduleUrgency?.borderClass ?? 'border-2 border-neutral-200';
 
   const handleReject = () => {
     if (!rejectNote.trim()) {

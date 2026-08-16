@@ -30,6 +30,7 @@ export default [
         localStorage: 'readonly',
         navigator: 'readonly',
         crypto: 'readonly',
+        Notification: 'readonly',
       },
     },
     settings: { react: { version: 'detect' } },
@@ -41,6 +42,15 @@ export default [
     },
   },
   { ignores: ['dist/**', 'node_modules/**'] },
+  {
+    files: ['public/sw.js'],
+    languageOptions: {
+      globals: {
+        self: 'readonly',
+        clients: 'readonly',
+      },
+    },
+  },
   {
     files: ['scripts/**/*.mjs'],
     languageOptions: {

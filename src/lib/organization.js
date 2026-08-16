@@ -332,6 +332,21 @@ export async function listMyPendingClientInvites() {
   return data || [];
 }
 
+export async function listMyPendingOrganizationInvites() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user?.email) return [];
+
+  const email = user.email.trim().toLowerCase();
+  const { data, error } = await supabase
+    .from('organization_invites')
+    .select('*, organizations(id, name)')
+    .eq('email', email)
+    .gt('expires_at', new Date().toISOString())
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
 export async function declineClientInvite(inviteId) {
   const { error } = await supabase
     .from('client_invites')

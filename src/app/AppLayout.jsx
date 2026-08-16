@@ -20,6 +20,7 @@ import { Logo } from '@/components/brand/Logo';
 import { ClientSwitcher } from '@/components/ClientSwitcher';
 import { useNavigateOnClientSwitch } from '@/app/useNavigateOnClientSwitch';
 import { cn } from '@/lib/utils';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 const accountNavItem = {
   to: '/app/settings/account',
@@ -222,6 +223,7 @@ export function AppLayout() {
             <NavGroup key={group.label ?? 'primary'} label={group.label} items={group.items} />
           ))}
         </nav>
+        <NotificationBell />
         <div className="border-t border-sidebar-border p-4">
           <button
             type="button"

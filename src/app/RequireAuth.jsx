@@ -3,6 +3,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { EmptyHiveState } from '@/components/EmptyHiveState';
 import { InviteAcceptanceGate } from './InviteAcceptanceGate';
 import { PendingClientInviteNotifier } from '@/lib/PendingClientInviteNotifier';
+import { NotificationsProvider } from '@/lib/notifications/NotificationsProvider';
 
 export function RequireAuth() {
   const { isAuthenticated, isLoadingAuth } = useAuth();
@@ -21,8 +22,10 @@ export function RequireAuth() {
 
   return (
     <InviteAcceptanceGate>
-      <PendingClientInviteNotifier />
-      <Outlet />
+      <NotificationsProvider>
+        <PendingClientInviteNotifier />
+        <Outlet />
+      </NotificationsProvider>
     </InviteAcceptanceGate>
   );
 }

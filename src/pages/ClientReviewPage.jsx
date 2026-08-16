@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { listPosts, updateApprovalStatus, addPostComment } from '@/lib/posts';
+import { notifyWorkflowEvent, getPostAuthorUserIds } from '@/lib/profile';
 import { PlatformPreviewTabs } from '@/features/posts/previews/PlatformPreviewTabs';
 import { normalizeMediaList } from '@/features/posts/previews/mediaUtils';
-import { PostStatusBadges } from '@/features/queue/postStatus';
+import { ReviewPostSelector } from '@/features/review/ReviewPostSelector';
 import { CommentThread } from '@/features/queue/CommentThread';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -41,6 +42,7 @@ export default function ClientReviewPage() {
       return;
     }
     setSubmitting(true);
+    const currentIndex = posts.findIndex((p) => p.id === selected.id);
     try {
       if (comment.trim()) {
         await addPostComment(selected.id, comment.trim(), 'client');
@@ -49,8 +51,22 @@ export default function ClientReviewPage() {
         selected.id,
         action === 'approve' ? 'approved' : 'changes_requested'
       );
+      notifyWorkflowEvent({
+        event: action === 'approve' ? 'approved' : 'changes_requested',
+        postId: selected.id,
+        recipientUserIds: getPostAuthorUserIds(selected),
+        postTitle: selected.internal_name || selected.caption?.slice(0, 80),
+        href: `/app/posts/${selected.id}`,
+      }).catch(() => {});
       setComment('');
-      queryClient.invalidateQueries({ queryKey: ['client-review', clientId] });
+      await queryClient.invalidateQueries({ queryKey: ['client-review', clientId] });
+      const remaining = posts.filter((p) => p.id !== selected.id);
+      if (remaining.length > 0) {
+        const next = remaining[Math.min(currentIndex, remaining.length - 1)];
+        setSelectedId(next.id);
+      } else {
+        setSelectedId(null);
+      }
     } catch (err) {
       showToast({ title: 'Action failed', description: err.message, variant: 'error' });
     } finally {
@@ -75,24 +91,12 @@ export default function ClientReviewPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-          <div className="space-y-2">
-            {posts.map((post) => (
-              <button
-                key={post.id}
-                type="button"
-                onClick={() => setSelectedId(post.id)}
-                className={`w-full rounded-hyve-md border p-3 text-left text-sm transition-colors ${
-                  selected?.id === post.id ? 'border-honey bg-honey-light/30' : 'hover:bg-neutral-50'
-                }`}
-              >
-                <PostStatusBadges post={post} />
-                <p className="mt-1 truncate font-medium">
-                  {post.internal_name || post.caption?.slice(0, 40) || 'Untitled'}
-                </p>
-              </button>
-            ))}
-          </div>
+        <>
+          <ReviewPostSelector
+            posts={posts}
+            selectedId={selected?.id}
+            onSelect={setSelectedId}
+          />
 
           {selected && (
             <div className="grid gap-6 lg:grid-cols-2">
@@ -141,7 +145,7 @@ export default function ClientReviewPage() {
               </div>
             </div>
           )}
-        </div>
+        </>
       )}
     </div>
   );

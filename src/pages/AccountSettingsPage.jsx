@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
-import { getProfile, updateEmail, updateNotificationPreferences, updatePassword, updateProfile } from '@/lib/profile';
+import { getProfile, updateEmail, updateInAppNotificationPreferences, updateNotificationPreferences, updatePassword, updateProfile } from '@/lib/profile';
+import { DEFAULT_IN_APP_PREFS, IN_APP_PREF_LABELS } from '@/lib/notifications/notificationTypes';
+import { isPushSupported, requestPushPermission, unsubscribeFromPush } from '@/lib/pushNotifications';
 import { showToast } from '@/lib/toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -62,6 +64,10 @@ export default function AccountSettingsPage() {
     publish_failed: true,
   });
   const [savingNotifications, setSavingNotifications] = useState(false);
+  const [inAppNotificationsEnabled, setInAppNotificationsEnabled] = useState(true);
+  const [inAppPrefs, setInAppPrefs] = useState({ ...DEFAULT_IN_APP_PREFS });
+  const [savingInAppNotifications, setSavingInAppNotifications] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
 
   useEffect(() => {
     if (profile?.full_name) setFullName(profile.full_name);
@@ -77,7 +83,17 @@ export default function AccountSettingsPage() {
     if (profile.notification_preferences) {
       setNotificationPrefs((current) => ({ ...current, ...profile.notification_preferences }));
     }
+    setInAppNotificationsEnabled(profile.in_app_notifications_enabled !== false);
+    if (profile.in_app_notification_preferences) {
+      setInAppPrefs((current) => ({ ...current, ...profile.in_app_notification_preferences }));
+    }
   }, [profile]);
+
+  useEffect(() => {
+    if (typeof Notification !== 'undefined') {
+      setPushEnabled(Notification.permission === 'granted');
+    }
+  }, []);
 
   const handleSaveName = async (e) => {
     e.preventDefault();
@@ -147,11 +163,45 @@ export default function AccountSettingsPage() {
         notificationPreferences: notificationPrefs,
       });
       await queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
-      showToast({ title: 'Notification preferences saved', variant: 'success' });
+      showToast({ title: 'Email notification preferences saved', variant: 'success' });
     } catch (err) {
       showToast({ title: 'Could not save preferences', description: err.message, variant: 'error' });
     } finally {
       setSavingNotifications(false);
+    }
+  };
+
+  const handleSaveInAppNotifications = async (e) => {
+    e.preventDefault();
+    setSavingInAppNotifications(true);
+    try {
+      await updateInAppNotificationPreferences({
+        inAppNotificationsEnabled,
+        inAppNotificationPreferences: inAppPrefs,
+      });
+      await queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
+      await queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      showToast({ title: 'In-app notification preferences saved', variant: 'success' });
+    } catch (err) {
+      showToast({ title: 'Could not save preferences', description: err.message, variant: 'error' });
+    } finally {
+      setSavingInAppNotifications(false);
+    }
+  };
+
+  const handleTogglePush = async () => {
+    if (pushEnabled) {
+      await unsubscribeFromPush();
+      setPushEnabled(false);
+      showToast({ title: 'Push notifications disabled', variant: 'info' });
+      return;
+    }
+    const granted = await requestPushPermission();
+    setPushEnabled(granted);
+    if (granted) {
+      showToast({ title: 'Push notifications enabled', variant: 'success' });
+    } else {
+      showToast({ title: 'Push permission denied', variant: 'error' });
     }
   };
 
@@ -271,9 +321,62 @@ export default function AccountSettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Notifications</CardTitle>
+          <CardTitle>In-app notifications</CardTitle>
           <CardDescription>
-            In-app toasts always appear. Email is optional and off by default.
+            Control what appears in the notification bell and optional browser push alerts.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSaveInAppNotifications} className="space-y-4">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={inAppNotificationsEnabled}
+                onChange={(e) => setInAppNotificationsEnabled(e.target.checked)}
+              />
+              In-app alerts (notification bell)
+            </label>
+            {inAppNotificationsEnabled && (
+              <div className="space-y-2 pl-6 text-sm">
+                {Object.entries(IN_APP_PREF_LABELS).map(([key, label]) => (
+                  <label key={key} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={inAppPrefs[key] !== false}
+                      onChange={(e) => setInAppPrefs((current) => ({
+                        ...current,
+                        [key]: e.target.checked,
+                      }))}
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            )}
+            {isPushSupported() && (
+              <div className="border-t border-neutral-100 pt-4">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={pushEnabled}
+                    onChange={handleTogglePush}
+                  />
+                  Browser push notifications (when tab is in background)
+                </label>
+              </div>
+            )}
+            <Button type="submit" disabled={savingInAppNotifications}>
+              {savingInAppNotifications ? 'Saving…' : 'Save in-app preferences'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Email notifications</CardTitle>
+          <CardDescription>
+            Optional email alerts — separate from in-app notifications.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -309,7 +412,7 @@ export default function AccountSettingsPage() {
               </div>
             )}
             <Button type="submit" disabled={savingNotifications}>
-              {savingNotifications ? 'Saving…' : 'Save notification preferences'}
+              {savingNotifications ? 'Saving…' : 'Save email preferences'}
             </Button>
           </form>
         </CardContent>

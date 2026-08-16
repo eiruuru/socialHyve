@@ -15,6 +15,7 @@ import {
   snoozeInviteToast,
   INVITE_TOAST_WINDOW_MS,
 } from '@/lib/inviteToastStorage';
+import { useNotificationsContext } from '@/lib/notifications/NotificationsProvider';
 
 const POLL_MS = 20000;
 
@@ -29,6 +30,7 @@ export function PendingClientInviteNotifier() {
   const { user } = useAuth();
   const { refreshMembership } = useMembership();
   const queryClient = useQueryClient();
+  const { isInviteRead, markRead, refresh } = useNotificationsContext();
 
   useEffect(() => {
     if (!user?.email) return undefined;
@@ -41,6 +43,8 @@ export function PendingClientInviteNotifier() {
         if (cancelled) return;
 
         for (const invite of invites) {
+          const inviteKey = `client-invite-${invite.id}`;
+          if (isInviteRead(inviteKey)) continue;
           if (!shouldShowInviteToast(invite)) continue;
 
           markInviteToastShown(invite);
@@ -54,7 +58,10 @@ export function PendingClientInviteNotifier() {
             description: `You were invited as ${invite.role}. Accept to access their review queue. Available for ${hoursLeft} more hour${hoursLeft === 1 ? '' : 's'}.`,
             variant: 'info',
             duration: 0,
-            onDismiss: () => snoozeInviteToast(invite.id),
+            onDismiss: () => {
+              snoozeInviteToast(invite.id);
+              markRead({ key: inviteKey, derived: true }).catch(() => {});
+            },
             actions: [
               {
                 label: 'Accept',
@@ -62,8 +69,10 @@ export function PendingClientInviteNotifier() {
                   try {
                     const result = await acceptInvite(invite.token, 'client');
                     clearInviteToastState(invite.id);
+                    await markRead({ key: inviteKey, derived: true });
                     await refreshMembership();
                     queryClient.invalidateQueries({ queryKey: ['client-members'] });
+                    refresh();
                     showToast({
                       title: `Joined ${clientName}`,
                       description: 'You can review posts from the sidebar.',
@@ -88,6 +97,8 @@ export function PendingClientInviteNotifier() {
                   try {
                     await declineClientInvite(invite.id);
                     clearInviteToastState(invite.id);
+                    await markRead({ key: inviteKey, derived: true });
+                    refresh();
                     showToast({ title: 'Invitation declined', variant: 'info' });
                   } catch (err) {
                     showToast({
@@ -103,6 +114,7 @@ export function PendingClientInviteNotifier() {
                 variant: 'outline',
                 onClick: async () => {
                   snoozeInviteToast(invite.id);
+                  await markRead({ key: inviteKey, derived: true });
                 },
               },
             ],
@@ -119,7 +131,7 @@ export function PendingClientInviteNotifier() {
       cancelled = true;
       clearInterval(id);
     };
-  }, [user?.email, refreshMembership, queryClient]);
+  }, [user?.email, refreshMembership, queryClient, isInviteRead, markRead, refresh]);
 
   return null;
 }

@@ -1,7 +1,7 @@
 import { handleOptions, jsonResponse } from '../_shared/cors.ts';
 import { verifyCronSecret } from '../_shared/cronAuth.ts';
 import { readToken, writeToken } from '../_shared/accountTokens.ts';
-import { notifyPublishFailed } from '../_shared/workflowNotify.ts';
+import { notifyPublishFailed, notifyPublishSuccess } from '../_shared/workflowNotify.ts';
 import { debugTokenInfo, isValidPageTokenFor, resolvePageAccessToken } from '../_shared/metaPages.ts';
 import { getServiceClient, META_GRAPH } from '../_shared/supabase.ts';
 import { resolvePostAccounts } from '../_shared/socialAccounts.ts';
@@ -326,6 +326,7 @@ async function publishPost(service: ReturnType<typeof getServiceClient>, postId:
     }
   } else {
     await service.from('publish_jobs').delete().eq('post_id', postId);
+    await notifyPublishSuccess(service, post);
   }
 
   return { postId, status: finalStatus, errors };

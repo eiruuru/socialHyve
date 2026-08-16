@@ -17,6 +17,8 @@ const FUNCTION_MAP = {
   acceptInvite: 'accept-invite',
   sendInviteEmail: 'send-invite-email',
   sendWorkflowEmail: 'send-workflow-email',
+  createNotifications: 'create-notifications',
+  sendPushNotification: 'send-push-notification',
 };
 
 async function functionErrorMessage(error) {

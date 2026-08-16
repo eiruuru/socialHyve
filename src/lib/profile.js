@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { DEFAULT_IN_APP_PREFS } from './notifications/notificationTypes';
 
 export async function getProfile() {
   const { data: { user }, error: userErr } = await supabase.auth.getUser();
@@ -104,11 +105,49 @@ export async function updateNotificationPreferences({
   return data;
 }
 
-export async function notifyWorkflowEvent({ event, postId, recipientUserIds = [] }) {
+export async function notifyWorkflowEvent({ event, postId, recipientUserIds = [], postTitle, href }) {
   const unique = [...new Set(recipientUserIds.filter(Boolean))];
   if (!unique.length) return null;
   const { invokeFunction } = await import('./supabaseFunctions');
-  return invokeFunction('sendWorkflowEmail', { event, postId, recipientUserIds: unique });
+  const { notifyWorkflowInApp } = await import('./notifications/notificationWriters');
+
+  invokeFunction('sendWorkflowEmail', { event, postId, recipientUserIds: unique }).catch(() => {});
+  return notifyWorkflowInApp({
+    event,
+    postId,
+    recipientUserIds: unique,
+    postTitle,
+    href,
+  });
+}
+
+export async function updateInAppNotificationPreferences({
+  inAppNotificationsEnabled,
+  inAppNotificationPreferences,
+}) {
+  const { data: { user }, error: userErr } = await supabase.auth.getUser();
+  if (userErr) throw userErr;
+  if (!user) throw new Error('Not signed in');
+
+  const payload = { updated_at: new Date().toISOString() };
+  if (inAppNotificationsEnabled != null) {
+    payload.in_app_notifications_enabled = inAppNotificationsEnabled;
+  }
+  if (inAppNotificationPreferences != null) {
+    payload.in_app_notification_preferences = {
+      ...DEFAULT_IN_APP_PREFS,
+      ...inAppNotificationPreferences,
+    };
+  }
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(payload)
+    .eq('id', user.id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
 }
 
 export function getPostAuthorUserIds(post) {

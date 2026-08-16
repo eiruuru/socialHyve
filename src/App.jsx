@@ -1,10 +1,11 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/lib/AuthContext';
 import { ToastProvider } from '@/lib/toast';
 import { AppRoutes } from '@/app/AppRoutes';
 import { EmptyHiveState } from '@/components/EmptyHiveState';
+import { registerServiceWorker } from '@/lib/pushNotifications';
 
 const LandingPage = lazy(() => import('@/pages/LandingPage'));
 const FaqPage = lazy(() => import('@/pages/FaqPage'));
@@ -25,6 +26,10 @@ function PageLoader() {
 }
 
 export default function App() {
+  useEffect(() => {
+    registerServiceWorker().catch(() => {});
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>

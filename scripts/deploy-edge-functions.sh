@@ -53,6 +53,8 @@ FUNCTIONS=(
   accept-invite
   send-invite-email
   send-workflow-email
+  create-notifications
+  send-push-notification
 )
 
 for fn in "${FUNCTIONS[@]}"; do

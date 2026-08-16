@@ -13,7 +13,8 @@ export default function CalendarPage() {
   const membership = useMembership();
   const { isManager, isClientOnly } = membership;
   const readOnly = isClientOnly;
-  const resolvedClientId = activeClient?.id ?? membership.clientMemberships[0]?.clientId;
+  const clientMemberships = membership.clientMemberships ?? [];
+  const resolvedClientId = activeClient?.id ?? clientMemberships[0]?.clientId;
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ['posts', resolvedClientId],
     queryFn: () => listPosts({ clientId: resolvedClientId }),

@@ -124,7 +124,7 @@ function buildNavGroups(membership, clientCtx) {
     const groups = [];
 
     if (qaAccess) {
-      const reviewItems = membership.clientMemberships
+      const reviewItems = (membership.clientMemberships ?? [])
         .filter((cm) => isCreativesQaRole(cm.role))
         .map((cm) => ({
           to: `/app/client/${cm.clientId}/review`,

@@ -64,9 +64,10 @@ export default function QueuePage() {
   const { activeClient } = useClient();
   const membership = useMembership();
   const allowManageActions = !hasCreativesQaAccess(membership);
+  const clientMemberships = membership.clientMemberships ?? [];
   const resolvedClientId = activeClient?.id
-    ?? membership.clientMemberships.find((cm) => isCreativesQaRole(cm.role))?.clientId
-    ?? membership.clientMemberships[0]?.clientId;
+    ?? clientMemberships.find((cm) => isCreativesQaRole(cm.role))?.clientId
+    ?? clientMemberships[0]?.clientId;
   const queryClient = useQueryClient();
   const [tab, setTab] = useState('review');
   const [search, setSearch] = useState('');

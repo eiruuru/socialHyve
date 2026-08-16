@@ -98,8 +98,8 @@ async function fetchDerivedNotifications(membership, profile) {
     if (item) items.push(item);
   }
 
-  if (hasCreativesQaAccess(membership) && membership.clientMemberships.length) {
-    const qaClients = membership.clientMemberships.filter((cm) => isCreativesQaRole(cm.role));
+  if (hasCreativesQaAccess(membership) && (membership.clientMemberships?.length ?? 0) > 0) {
+    const qaClients = (membership.clientMemberships ?? []).filter((cm) => isCreativesQaRole(cm.role));
     const reviewPosts = await Promise.all(
       qaClients.map(async (cm) => {
         const posts = await listPosts({ clientId: cm.clientId });

@@ -68,7 +68,7 @@ function deriveCapabilities(orgRole, clientMemberships) {
 }
 
 export function MembershipProvider({ children }) {
-  const [membership, setMembership] = useState(null);
+  const [membership, setMembership] = useState(() => deriveCapabilities(null, []));
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {

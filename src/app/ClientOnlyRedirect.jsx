@@ -26,7 +26,7 @@ function isClientAllowedPath(pathname, membership) {
 
 function getClientDefaultPath(membership) {
   if (hasCreativesQaAccess(membership)) {
-    const clientId = membership.clientMemberships[0]?.clientId;
+    const clientId = membership.clientMemberships?.[0]?.clientId;
     return clientId ? `/app/client/${clientId}/review` : '/app/calendar';
   }
   return '/app/calendar';

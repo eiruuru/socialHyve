@@ -36,7 +36,10 @@ import { useFocusedPostPolling } from '@/lib/useLivePosts';
 import { showToast } from '@/lib/toast';
 import { notifyWorkflowEvent, getPostAuthorUserIds } from '@/lib/profile';
 import { useMembership } from '@/lib/membershipContext';
+import { useClient } from '@/lib/clientContext';
 import { hasCreativesQaAccess } from '@/lib/clientRoles';
+import { getEffectivePublishStatus } from '@/lib/publishStatus';
+import { PostSchedulePanel } from '@/features/review/PostSchedulePanel';
 
 const APPROVAL_OPTIONS = [
   { value: 'draft', label: 'Draft' },
@@ -52,6 +55,11 @@ const STATUS_OPTIONS = [
   { value: 'failed', label: 'Failed' },
 ];
 
+const QA_PUBLISH_OPTIONS = [
+  { value: 'draft', label: 'Pending publish' },
+  { value: 'scheduled', label: 'Scheduled' },
+];
+
 const PUBLISH_STATE_HINTS = {
   draft: 'Planned but not queued to publish. Click Schedule in the composer to go live.',
   scheduled: 'Queued to publish at the scheduled time.',
@@ -65,6 +73,7 @@ export default function PostDetailPage() {
   const queryClient = useQueryClient();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const membership = useMembership();
+  const { activeClient } = useClient();
   const readOnly = membership.isClientOnly;
   const canApprove = hasCreativesQaAccess(membership);
   const canSchedule = canApprove;
@@ -212,6 +221,17 @@ export default function PostDetailPage() {
     showToast({ title: 'Review link copied', variant: 'success' });
   };
 
+  const invalidatePost = () => {
+    queryClient.invalidateQueries({ queryKey: ['post', id] });
+    queryClient.invalidateQueries({ queryKey: ['posts'] });
+    queryClient.invalidateQueries({ queryKey: ['post-activity', id] });
+  };
+
+  const publishStatus = getEffectivePublishStatus(post);
+  const qaCanManagePublish = canSchedule
+    && approval === 'approved'
+    && !['published', 'publishing'].includes(post.status);
+
   const scheduleSummary = [];
   if (post.publish_facebook) {
     const at = overrides.facebook?.scheduled_at || post.scheduled_at;
@@ -328,14 +348,48 @@ export default function PostDetailPage() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>{readOnly ? 'Status' : 'Workflow'}</CardTitle>
+              <CardTitle>{readOnly && !canSchedule ? 'Status' : readOnly ? 'Status & scheduling' : 'Workflow'}</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
-              {readOnly ? (
+              {readOnly && !canSchedule ? (
                 <div className="sm:col-span-2 space-y-2 text-sm">
                   <p><span className="font-medium">Approval:</span> {APPROVAL_OPTIONS.find((o) => o.value === approval)?.label || approval}</p>
-                  <p><span className="font-medium">Publish state:</span> {STATUS_OPTIONS.find((o) => o.value === post.status)?.label || post.status}</p>
+                  <p><span className="font-medium">Publish state:</span> {STATUS_OPTIONS.find((o) => o.value === publishStatus)?.label || publishStatus}</p>
                 </div>
+              ) : readOnly && canSchedule ? (
+                <>
+                  <div className="sm:col-span-2 space-y-2 text-sm">
+                    <p><span className="font-medium">Approval:</span> {APPROVAL_OPTIONS.find((o) => o.value === approval)?.label || approval}</p>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="mb-1 block text-xs font-medium">Publish state</label>
+                    <select
+                      value={publishStatus}
+                      onChange={(e) => handleStatusChange(e.target.value)}
+                      disabled={!qaCanManagePublish}
+                      className="h-10 w-full rounded-hyve-sm border border-input bg-background px-3 text-sm disabled:opacity-60"
+                    >
+                      {QA_PUBLISH_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {PUBLISH_STATE_HINTS[publishStatus] || PUBLISH_STATE_HINTS.draft}
+                    </p>
+                  </div>
+                  {qaCanManagePublish && (
+                    <div className="sm:col-span-2 border-t border-neutral-200 pt-4">
+                      <p className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        Scheduling for publishing
+                      </p>
+                      <PostSchedulePanel
+                        post={post}
+                        clientTimezone={activeClient?.default_timezone}
+                        onUpdated={invalidatePost}
+                      />
+                    </div>
+                  )}
+                </>
               ) : (
                 <>
               <div>

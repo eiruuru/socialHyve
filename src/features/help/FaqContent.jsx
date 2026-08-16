@@ -511,7 +511,12 @@ const FAQ_SECTIONS = [
         </HelpSubsection>
 
         <HelpSubsection title="Client Review portal (logged-in Creatives QA)">
-          <p><strong>Creative QA → [Client name]</strong> in the sidebar opens a focused review UI: post selector, previews, activity, comments, Approve / Require edits buttons.</p>
+          <p><strong>Creative QA → [Client name]</strong> in the sidebar opens a focused review UI with two tabs:</p>
+          <HelpList>
+            <li><strong>Approval for content</strong> — preview posts, add feedback, Approve content or Require edits.</li>
+            <li><strong>Scheduling for publishing</strong> — pick a date/time and queue approved posts for publishing without opening the full composer.</li>
+          </HelpList>
+          <p>On post detail, Creatives QA can also change publish state and schedule from the Status &amp; scheduling card.</p>
         </HelpSubsection>
 
         <HelpSubsection title="Shareable review link (external, no account)">

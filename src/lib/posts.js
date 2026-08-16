@@ -4,6 +4,7 @@ import { stampWorkspaceId, getCurrentWorkspaceId } from './workspace';
 import { getActiveClientId } from './clientContext';
 import { format } from 'date-fns';
 import {
+  formatScheduledLabel,
   isPastCalendarDay,
   isScheduleInPast,
   rescheduleUtcToDay,
@@ -178,7 +179,8 @@ export async function removePostMedia(id) {
 
 export async function schedulePost(postId, scheduledAt) {
   const post = await updatePost(postId, { status: 'scheduled', scheduled_at: scheduledAt });
-  await logPostActivity(postId, 'scheduled', `Scheduled for ${scheduledAt}`);
+  const scheduleLabel = formatScheduledLabel(scheduledAt, post.schedule_timezone);
+  await logPostActivity(postId, 'scheduled', `Scheduled for ${scheduleLabel}`);
   await supabase.from('publish_jobs').upsert({
     post_id: postId,
     attempts: 0,

@@ -141,15 +141,15 @@ const FAQ_SECTIONS = [
           views — list is great for captions; grid highlights visuals.
         </p>
         <p>
-          Scheduled posts get urgency borders and badges (e.g. &quot;Today&quot;, &quot;Soon&quot;) so approvers know what
+          Scheduled posts get urgency borders and badges (e.g. &quot;Today&quot;, &quot;Soon&quot;) so Creatives QA know what
           needs attention first.
         </p>
         <p>
-          Approvers can <strong>Approve</strong> to move a post toward publishing, or <strong>Request changes</strong>{' '}
+          Creatives QA can <strong>Approve</strong> to move a post toward publishing, or <strong>Request changes</strong>{' '}
           with comments that loop back to the author.
         </p>
         <Example>
-          A post scheduled for 4 PM today shows an amber urgency border — the client approves from the review link before
+          A post scheduled for 4 PM today shows an amber urgency border — the client Creatives QA approves from the review link before
           the cutoff.
         </Example>
       </>
@@ -225,7 +225,7 @@ const FAQ_SECTIONS = [
   },
   {
     title: 'Team & roles',
-    summary: 'Org teammates vs client approvers, plus shareable review links.',
+    summary: 'Org teammates vs client Creatives QA and Guests, plus shareable review links.',
     content: (
       <>
         <p>
@@ -233,15 +233,15 @@ const FAQ_SECTIONS = [
           Invite them from <strong>Team</strong>.
         </p>
         <p>
-          <strong>Client approvers</strong> are scoped to a single client — they review and comment without full app
+          <strong>Creatives QA</strong> and <strong>Guests</strong> are scoped to a single client — they review and comment without full app
           access. Manage them under each client&apos;s Members page.
         </p>
         <p>
-          Generate a <strong>review link</strong> so external approvers can sign in and work through pending posts from a
+          Generate a <strong>review link</strong> so external Creatives QA can sign in and work through pending posts from a
           focused portal.
         </p>
         <Example>
-          Your agency editor drafts posts; the restaurant owner is a client approver who gets a review link and approves
+          Your agency editor drafts posts; the restaurant owner is Creatives QA who gets a review link and approves
           from their phone.
         </Example>
       </>

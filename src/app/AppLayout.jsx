@@ -21,6 +21,7 @@ import { ClientSwitcher } from '@/components/ClientSwitcher';
 import { useNavigateOnClientSwitch } from '@/app/useNavigateOnClientSwitch';
 import { cn } from '@/lib/utils';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { formatRoleLabel } from '@/lib/clientRoles';
 
 const accountNavItem = {
   to: '/app/settings/account',
@@ -198,7 +199,7 @@ export function AppLayout() {
   const navGroups = buildNavGroups(membership, clientCtx);
 
   const roleDisplay = membership.roleLabel
-    ? membership.roleLabel.charAt(0).toUpperCase() + membership.roleLabel.slice(1)
+    ? formatRoleLabel(membership.roleLabel)
     : null;
 
   return (

@@ -72,7 +72,7 @@ const FEATURES = [
   {
     icon: Users,
     title: 'Client review portal',
-    desc: 'Share a review link so client approvers can approve or request changes without full app access.',
+    desc: 'Share a review link so Creatives QA can approve or request changes without full app access.',
   },
   {
     icon: User,
@@ -83,7 +83,7 @@ const FEATURES = [
 
 const FAQ_TEASERS = [
   { q: 'How do I connect Meta for a new client?', a: 'Clients → select client → Settings → Accounts.' },
-  { q: 'Can approvers work without a full login?', a: 'Yes — send them a client review link.' },
+  { q: 'Can Creatives QA work without a full login?', a: 'Yes — send them a client review link.' },
   { q: 'Can I schedule FB and IG differently?', a: 'Use Fine tune in the composer for per-platform overrides.' },
 ];
 

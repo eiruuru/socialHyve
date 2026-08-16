@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { showToast } from '@/lib/toast';
+import { CLIENT_ROLE, CLIENT_ROLE_OPTIONS, formatClientRole } from '@/lib/clientRoles';
 
 const memberQueryOptions = {
   refetchOnWindowFocus: true,
@@ -37,7 +38,7 @@ export default function ClientMembersPage() {
   const queryClient = useQueryClient();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState('approver');
+  const [role, setRole] = useState(CLIENT_ROLE.APPROVER);
   const [inviting, setInviting] = useState(false);
   const [managerUserId, setManagerUserId] = useState('');
   const [assigning, setAssigning] = useState(false);
@@ -96,7 +97,7 @@ export default function ClientMembersPage() {
           email: email.trim(),
           inviterName: user?.email,
           targetName: client?.name,
-          role,
+          role: formatClientRole(role),
         });
       } catch {
         // email optional
@@ -152,7 +153,7 @@ export default function ClientMembersPage() {
           email: invite.email,
           inviterName: user?.email,
           targetName: client?.name,
-          role: invite.role,
+          role: formatClientRole(invite.role),
         });
       } catch {
         // email optional
@@ -218,19 +219,19 @@ export default function ClientMembersPage() {
           <Link to="/app/clients">← Clients</Link>
         </Button>
         <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Client access</p>
-        <h2 className="font-display text-2xl font-bold">{client?.name || 'Client'} approvers</h2>
-        <p className="text-muted-foreground">Invite client stakeholders to review and approve posts</p>
+        <h2 className="font-display text-2xl font-bold">{client?.name || 'Client'} members</h2>
+        <p className="text-muted-foreground">Invite Creatives QA or Guests to review and approve posts</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Invite approver</CardTitle>
+          <CardTitle>Invite member</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Each client has its own approvers. To add someone to another client, open that client&apos;s
-            Members page and invite them again — you can choose a different role (e.g. approver here,
-            viewer elsewhere). If they&apos;re already logged in, they&apos;ll get an in-app invitation
+            Each client has its own members. To add someone to another client, open that client&apos;s
+            Members page and invite them again — you can choose a different role (e.g. Creatives QA here,
+            Guest elsewhere). If they&apos;re already logged in, they&apos;ll get an in-app invitation
             to accept or decline; otherwise share the copied link.
           </p>
           <form onSubmit={handleInvite} className="flex flex-wrap items-end gap-2">
@@ -251,8 +252,9 @@ export default function ClientMembersPage() {
                 onChange={(e) => setRole(e.target.value)}
                 className="h-10 rounded-hyve-sm border border-input bg-background px-3 text-sm"
               >
-                <option value="approver">Approver</option>
-                <option value="viewer">Viewer</option>
+                {CLIENT_ROLE_OPTIONS.map(({ value, label }) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
               </select>
             </div>
             <Button type="submit" disabled={inviting || !email.trim()}>
@@ -347,7 +349,7 @@ export default function ClientMembersPage() {
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="capitalize text-muted-foreground">{m.role}</span>
+                      <span className="text-muted-foreground">{formatClientRole(m.role)}</span>
                       <Button
                         type="button"
                         variant="outline"
@@ -377,8 +379,8 @@ export default function ClientMembersPage() {
                   <li key={inv.id} className="flex flex-col gap-2 rounded-hyve-sm border px-3 py-2 text-sm sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <p className="font-medium">{inv.email}</p>
-                      <p className="text-xs text-muted-foreground capitalize">
-                        {inv.role} · expires {new Date(inv.expires_at).toLocaleDateString()}
+                      <p className="text-xs text-muted-foreground">
+                        {formatClientRole(inv.role)} · expires {new Date(inv.expires_at).toLocaleDateString()}
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-1">

@@ -9,6 +9,12 @@ function inviteLink(type: string, token: string) {
   return `${APP_URL}/app/login?${param}=${token}`;
 }
 
+function formatClientRole(role: string): string {
+  if (role === 'approver') return 'Creatives QA';
+  if (role === 'viewer') return 'Guest';
+  return role;
+}
+
 function buildHtml({
   inviterName,
   targetName,
@@ -56,7 +62,7 @@ Deno.serve(async (req) => {
     const html = buildHtml({
       inviterName: inviterName || 'Someone',
       targetName: targetName || 'socialHyve',
-      role: role || 'member',
+      role: type === 'client' ? formatClientRole(role || 'approver') : (role || 'member'),
       link,
       type,
     });

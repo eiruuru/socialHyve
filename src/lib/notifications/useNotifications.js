@@ -8,6 +8,7 @@ import {
   listMyPendingOrganizationInvites,
 } from '@/lib/organization';
 import { listPosts } from '@/lib/posts';
+import { formatClientRole, formatRoleLabel } from '@/lib/clientRoles';
 import {
   listPersistedNotifications,
   listDerivedReadKeys,
@@ -32,7 +33,7 @@ function buildClientInviteItem(invite, readKeys, profile) {
     type: 'invite',
     event: 'client_invite',
     title: `Invitation to ${clientName}`,
-    body: `You were invited as ${invite.role}.`,
+    body: `You were invited as ${formatClientRole(invite.role)}.`,
     href: null,
     createdAt: invite.created_at,
     read: readKeys.has(key),
@@ -51,7 +52,7 @@ function buildOrgInviteItem(invite, readKeys, profile) {
     type: 'invite',
     event: 'org_invite',
     title: `Invitation to ${orgName}`,
-    body: `You were invited as ${invite.role}.`,
+    body: `You were invited as ${formatRoleLabel(invite.role)}.`,
     href: null,
     createdAt: invite.created_at,
     read: readKeys.has(key),

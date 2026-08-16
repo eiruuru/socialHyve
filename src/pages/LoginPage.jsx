@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { acceptInvite, previewInvite } from '@/lib/organization';
+import { formatClientRole, formatRoleLabel, isClientRole } from '@/lib/clientRoles';
 import { savePendingInvite, clearPendingInvite } from '@/lib/membershipContext';
 import { useAuth } from '@/lib/AuthContext';
 import { Logo } from '@/components/brand/Logo';
@@ -116,6 +117,12 @@ export default function LoginPage() {
     }
   };
 
+  const inviteRoleLabel = invitePreview
+    ? (invitePreview.type === 'client' && isClientRole(invitePreview.role)
+      ? formatClientRole(invitePreview.role)
+      : formatRoleLabel(invitePreview.role))
+    : null;
+
   return (
     <div
       className="flex min-h-screen items-center justify-center p-4"
@@ -137,7 +144,7 @@ export default function LoginPage() {
           </CardTitle>
           <CardDescription>
             {invitePreview
-              ? `Join ${invitePreview.label} as ${invitePreview.role}`
+              ? `Join ${invitePreview.label} as ${inviteRoleLabel}`
               : 'Schedule posts to Facebook and Instagram'}
           </CardDescription>
         </CardHeader>
@@ -151,7 +158,7 @@ export default function LoginPage() {
               {invitePreview && (
                 <div className="rounded-hyve-sm border border-honey/30 bg-honey-light/30 px-3 py-2 text-sm">
                   You&apos;ve been invited to <strong>{invitePreview.label}</strong> as{' '}
-                  <span className="capitalize">{invitePreview.role}</span>.
+                  <span>{inviteRoleLabel}</span>.
                 </div>
               )}
               <Input

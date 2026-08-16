@@ -41,10 +41,10 @@ export function MetaConnectionPanel() {
 
   const clearParams = () => navigate('/app/settings/account?tab=meta', { replace: true });
 
-  const startMetaOAuth = async ({ rerequest = false, useScopes = false } = {}) => {
+  const startMetaOAuth = async () => {
     setBusy(true);
     try {
-      const { url } = await invokeFunction('metaOAuthStart', { rerequest, useScopes });
+      const { url } = await invokeFunction('metaOAuthStart', {});
       window.location.href = url;
     } catch (err) {
       showToast({ title: 'Connection failed', description: err.message, variant: 'error' });
@@ -100,12 +100,9 @@ export function MetaConnectionPanel() {
             Comments and DMs require updated Facebook permissions. Reconnect each account below so
             socialHyve can sync your inbox.
           </p>
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-3">
             <Button size="sm" onClick={() => startMetaOAuth()} disabled={busy}>
               Reconnect with new permissions
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => startMetaOAuth({ useScopes: true })} disabled={busy}>
-              Fallback: connect without Business config
             </Button>
           </div>
         </div>
@@ -114,17 +111,17 @@ export function MetaConnectionPanel() {
       <div className="rounded-hyve-md border border-neutral-200 bg-paper-alt p-4 text-sm text-neutral-700">
         <p className="font-medium">Facebook login shows an error?</p>
         <p className="mt-1">
-          A 500 or &quot;Something went wrong&quot; usually means your Login for Business configuration
-          (<code className="text-xs">META_CONFIG_ID</code>) is invalid after adding permissions like{' '}
-          <code className="text-xs">pages_messaging</code>. In Meta Developer Console, create a{' '}
-          <strong>new</strong> Login for Business configuration (User access token), add the redirect URI, copy the new Config ID into{' '}
-          <code className="text-xs">.env</code>, run <code className="text-xs">bash scripts/set-secrets.sh</code>, then reconnect.
+          Business-type Meta apps require a valid Login for Business configuration (
+          <code className="text-xs">config_id</code>). A 500 error usually means the current config is
+          invalid after adding permissions like <code className="text-xs">pages_messaging</code>.
         </p>
-        <div className="mt-3">
-          <Button size="sm" variant="outline" onClick={() => startMetaOAuth({ useScopes: true })} disabled={busy}>
-            Connect without Business config (no Messenger)
-          </Button>
-        </div>
+        <ol className="mt-2 list-decimal space-y-1 pl-5">
+          <li>Create a <strong>new</strong> configuration in Meta → Facebook Login for Business (User access token).</li>
+          <li>Add the redirect URI: <code className="text-xs">https://hfbxonnowvfkxmmkgftz.supabase.co/functions/v1/meta-oauth-callback</code></li>
+          <li>Copy the new Config ID to <code className="text-xs">META_CONFIG_ID</code> in <code className="text-xs">.env</code></li>
+          <li>Run <code className="text-xs">bash scripts/set-secrets.sh</code> to push it to Supabase</li>
+          <li>Click <strong>Connect Facebook account</strong> again (scope-only OAuth is not supported for Business apps)</li>
+        </ol>
       </div>
 
       {connected === 'meta' && (
@@ -138,12 +135,9 @@ export function MetaConnectionPanel() {
       {error && (
         <div className="rounded-md bg-red-50 p-4 text-sm text-red-700">
           Connection error: {decodeURIComponent(error)}
-          <div className="mt-2 flex flex-wrap gap-2">
+          <div className="mt-2">
             <Button size="sm" variant="outline" onClick={() => startMetaOAuth()} disabled={busy}>
               Try again
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => startMetaOAuth({ useScopes: true })} disabled={busy}>
-              Try without Business config
             </Button>
           </div>
         </div>
@@ -162,7 +156,7 @@ export function MetaConnectionPanel() {
               Connect Facebook account
             </Button>
             {sessions.length > 0 && (
-              <Button variant="outline" onClick={() => startMetaOAuth({ rerequest: true })} disabled={busy}>
+              <Button variant="outline" onClick={() => startMetaOAuth()} disabled={busy}>
                 Reconnect latest account
               </Button>
             )}
@@ -183,7 +177,7 @@ export function MetaConnectionPanel() {
                     </p>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => startMetaOAuth({ rerequest: true })} disabled={busy}>
+                    <Button variant="outline" size="sm" onClick={() => startMetaOAuth()} disabled={busy}>
                       Reconnect
                     </Button>
                     <Button

@@ -5,32 +5,28 @@ const META_APP_ID = Deno.env.get('META_APP_ID') || '';
 const META_REDIRECT_URI = Deno.env.get('META_REDIRECT_URI') || '';
 const META_CONFIG_ID = Deno.env.get('META_CONFIG_ID') || '';
 
-// pages_messaging is not available via scope= — add Messenger product + include it in Login for Business (META_CONFIG_ID).
-const SCOPES = [
-  'business_management',
-  'pages_show_list',
-  'pages_read_engagement',
-  'pages_manage_engagement',
-  'pages_manage_metadata',
-  'pages_manage_posts',
-  'instagram_basic',
-  'instagram_content_publish',
-  'instagram_manage_comments',
-  'instagram_manage_messages',
-].join(',');
-
 Deno.serve(async (req) => {
   const opt = handleOptions(req);
   if (opt) return opt;
 
   try {
     const body = await req.json().catch(() => ({}));
+
+    if (!META_CONFIG_ID) {
+      return jsonResponse({
+        error: 'META_CONFIG_ID is not configured. Set it in .env and run bash scripts/set-secrets.sh.',
+      }, 500);
+    }
+
+    if (body.useScopes === true || Deno.env.get('META_OAUTH_USE_SCOPES') === '1') {
+      return jsonResponse({
+        error: 'This Meta app requires Login for Business (config_id). Recreate your configuration in Meta Developer Console and update META_CONFIG_ID.',
+      }, 400);
+    }
+
     const { supabase, user } = await requireUser(req);
     const workspace = await getWorkspaceForUser(supabase, user.id);
     const state = randomString(32);
-
-    const forceScopes = Deno.env.get('META_OAUTH_USE_SCOPES') === '1' || body.useScopes === true;
-    const useConfigId = Boolean(META_CONFIG_ID) && !forceScopes;
 
     const service = getServiceClient();
     await service.from('oauth_states').insert({
@@ -45,17 +41,10 @@ Deno.serve(async (req) => {
     authUrl.searchParams.set('redirect_uri', META_REDIRECT_URI);
     authUrl.searchParams.set('state', state);
     authUrl.searchParams.set('response_type', 'code');
-    if (useConfigId) {
-      // Login for Business: config_id replaces scope — do not send scope or auth_type (causes generic FB error).
-      authUrl.searchParams.set('config_id', META_CONFIG_ID);
-    } else {
-      authUrl.searchParams.set('scope', SCOPES);
-      if (body.rerequest) {
-        authUrl.searchParams.set('auth_type', 'rerequest');
-      }
-    }
+    // Login for Business: config_id replaces scope — do not send scope or auth_type.
+    authUrl.searchParams.set('config_id', META_CONFIG_ID);
 
-    return jsonResponse({ url: authUrl.toString(), mode: useConfigId ? 'config' : 'scopes' });
+    return jsonResponse({ url: authUrl.toString() });
   } catch (err) {
     return jsonResponse({ error: (err as Error).message }, 400);
   }

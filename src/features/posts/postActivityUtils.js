@@ -3,18 +3,28 @@ import { formatScheduledLabel } from '@/lib/scheduleTime';
 const HIDDEN_CLIENT_ACTIONS = new Set(['assignee', 'review_link']);
 const ISO_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T[\d:.+-]+Z?$/;
 
-/** Visual tone for activity rows — success, review, fail, or neutral. */
+/** Visual tone for activity rows. */
 export const ACTIVITY_TONE = {
-  SUCCESS: 'success',
+  APPROVED: 'approved',
+  SCHEDULED: 'scheduled',
+  RESCHEDULED: 'rescheduled',
   REVIEW: 'review',
   FAIL: 'fail',
   NEUTRAL: 'neutral',
 };
 
 export const ACTIVITY_TONE_META = {
-  [ACTIVITY_TONE.SUCCESS]: {
+  [ACTIVITY_TONE.APPROVED]: {
+    dotClass: 'bg-blue-500',
+    label: 'Approved',
+  },
+  [ACTIVITY_TONE.SCHEDULED]: {
     dotClass: 'bg-emerald-500',
-    label: 'Completed',
+    label: 'Scheduled',
+  },
+  [ACTIVITY_TONE.RESCHEDULED]: {
+    dotClass: 'bg-violet-500',
+    label: 'Rescheduled',
   },
   [ACTIVITY_TONE.REVIEW]: {
     dotClass: 'bg-amber-500',
@@ -48,10 +58,12 @@ export function formatActivityDetail(entry) {
 /**
  * Maps an activity entry to a tone for the status dot.
  *
- * - fail (red): blocked or regressed — changes requested, publish failed, unqueued
- * - review (amber): waiting on someone — submitted for review, comments, resubmissions
- * - success (green): forward progress — approved, scheduled, rescheduled, published
- * - neutral (gray): routine edits with no workflow signal — created, content updated
+ * - approved (blue): content approved
+ * - scheduled (green): queued or published
+ * - rescheduled (purple): date/time moved on the calendar
+ * - fail (red): blocked or regressed
+ * - review (amber): waiting on someone
+ * - neutral (gray): routine edits
  */
 export function getActivityTone(entry) {
   const action = entry.action || '';
@@ -66,16 +78,24 @@ export function getActivityTone(entry) {
     return ACTIVITY_TONE.FAIL;
   }
 
+  if (action === 'rescheduled') {
+    return ACTIVITY_TONE.RESCHEDULED;
+  }
+
   if (
     action === 'scheduled'
-    || action === 'rescheduled'
-    || (detail.includes('approved') && !detail.includes('changes'))
+    || detail.includes('publish state changed to scheduled')
     || detail.includes('publish state changed to published')
     || detail.includes('status changed to published')
-    || detail.includes('publish state changed to scheduled')
+  ) {
+    return ACTIVITY_TONE.SCHEDULED;
+  }
+
+  if (
+    (detail.includes('approved') && !detail.includes('changes'))
     || (action === 'review_link' && detail.includes('approve'))
   ) {
-    return ACTIVITY_TONE.SUCCESS;
+    return ACTIVITY_TONE.APPROVED;
   }
 
   if (

@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { CLIENT_ROLE } from './clientRoles';
 import { invokeFunction } from './supabaseFunctions';
 import { getBrowserTimezone } from './scheduleTime';
 
@@ -216,7 +217,7 @@ export async function listClientMembers(clientId) {
   return data;
 }
 
-export async function inviteClientMember(clientId, email, role = 'approver') {
+export async function inviteClientMember(clientId, email, role = CLIENT_ROLE.APPROVER) {
   const normalizedEmail = email.trim().toLowerCase();
   const token = crypto.randomUUID();
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -229,7 +230,7 @@ export async function inviteClientMember(clientId, email, role = 'approver') {
   return data;
 }
 
-export async function addClientMember(clientId, userId, role = 'approver') {
+export async function addClientMember(clientId, userId, role = CLIENT_ROLE.APPROVER) {
   const { data, error } = await supabase
     .from('client_members')
     .upsert({ client_id: clientId, user_id: userId, role }, { onConflict: 'client_id,user_id' })

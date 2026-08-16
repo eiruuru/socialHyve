@@ -1,7 +1,13 @@
-/** Internal client member role values stored in the database. */
+/** Client member role values stored in the database. */
 export const CLIENT_ROLE = {
-  APPROVER: 'approver',
-  VIEWER: 'viewer',
+  APPROVER: 'creatives_qa',
+  VIEWER: 'guest',
+};
+
+/** @deprecated Legacy values — kept for reads of stale data only. */
+const LEGACY_CLIENT_ROLES = {
+  approver: CLIENT_ROLE.APPROVER,
+  viewer: CLIENT_ROLE.VIEWER,
 };
 
 export const CLIENT_ROLE_OPTIONS = [
@@ -14,19 +20,26 @@ const CLIENT_ROLE_LABELS = {
   [CLIENT_ROLE.VIEWER]: 'Guest',
 };
 
+export function normalizeClientRole(role) {
+  if (!role) return role;
+  return LEGACY_CLIENT_ROLES[role] || role;
+}
+
 export function formatClientRole(role) {
   if (!role) return '';
-  return CLIENT_ROLE_LABELS[role] || role;
+  const normalized = normalizeClientRole(role);
+  return CLIENT_ROLE_LABELS[normalized] || role;
 }
 
 /** Format sidebar / account role labels (client + org roles). */
 export function formatRoleLabel(role) {
   if (!role) return '';
-  const clientLabel = formatClientRole(role);
-  if (clientLabel !== role) return clientLabel;
+  const normalized = normalizeClientRole(role);
+  if (CLIENT_ROLE_LABELS[normalized]) return CLIENT_ROLE_LABELS[normalized];
   return role.charAt(0).toUpperCase() + role.slice(1);
 }
 
 export function isClientRole(role) {
-  return role === CLIENT_ROLE.APPROVER || role === CLIENT_ROLE.VIEWER;
+  const normalized = normalizeClientRole(role);
+  return normalized === CLIENT_ROLE.APPROVER || normalized === CLIENT_ROLE.VIEWER;
 }

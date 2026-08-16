@@ -10,8 +10,8 @@ function inviteLink(type: string, token: string) {
 }
 
 function formatClientRole(role: string): string {
-  if (role === 'approver') return 'Creatives QA';
-  if (role === 'viewer') return 'Guest';
+  if (role === 'creatives_qa' || role === 'approver') return 'Creatives QA';
+  if (role === 'guest' || role === 'viewer') return 'Guest';
   return role;
 }
 
@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
     const html = buildHtml({
       inviterName: inviterName || 'Someone',
       targetName: targetName || 'socialHyve',
-      role: type === 'client' ? formatClientRole(role || 'approver') : (role || 'member'),
+      role: type === 'client' ? formatClientRole(role || 'creatives_qa') : (role || 'member'),
       link,
       type,
     });

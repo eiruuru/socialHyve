@@ -9,21 +9,37 @@ import {
 } from '../_shared/supabase.ts';
 
 type FormatType = 'png' | 'jpg' | 'pdf' | 'gif' | 'mp4';
+type ExportQuality = 'pro' | 'regular';
 
-function buildFormatPayload(formatType: FormatType, pages?: number[]) {
+function buildFormatPayload(
+  formatType: FormatType,
+  pages?: number[],
+  exportQuality: ExportQuality = 'pro',
+) {
   const pageList = pages?.length ? pages : undefined;
+  const qualityFields = { export_quality: exportQuality };
 
   switch (formatType) {
     case 'jpg':
-      return { type: 'jpg', quality: 90, ...(pageList ? { pages: pageList } : {}) };
+      return {
+        type: 'jpg',
+        quality: 95,
+        ...qualityFields,
+        ...(pageList ? { pages: pageList } : {}),
+      };
     case 'pdf':
-      return { type: 'pdf', ...(pageList ? { pages: pageList } : {}) };
+      return { type: 'pdf', ...qualityFields, ...(pageList ? { pages: pageList } : {}) };
     case 'gif':
-      return { type: 'gif', ...(pageList ? { pages: pageList } : {}) };
+      return { type: 'gif', ...qualityFields, ...(pageList ? { pages: pageList } : {}) };
     case 'mp4':
-      return { type: 'mp4' };
+      return { type: 'mp4', ...qualityFields };
     default:
-      return { type: 'png', ...(pageList ? { pages: pageList } : {}) };
+      return {
+        type: 'png',
+        lossless: true,
+        ...qualityFields,
+        ...(pageList ? { pages: pageList } : {}),
+      };
   }
 }
 
@@ -48,9 +64,13 @@ function normalizeDownloadUrls(urls: unknown[]): string[] {
     .filter((u): u is string => typeof u === 'string' && u.length > 0);
 }
 
-function exportErrorMessage(statusData: Record<string, unknown>) {
+function exportJobError(statusData: Record<string, unknown>) {
   const job = statusData.job as Record<string, unknown> | undefined;
-  const err = job?.error as { code?: string; message?: string } | undefined;
+  return job?.error as { code?: string; message?: string } | undefined;
+}
+
+function exportErrorMessage(statusData: Record<string, unknown>) {
+  const err = exportJobError(statusData);
   if (err?.message) return err.message;
   if (err?.code === 'license_required') {
     return 'Canva Pro or a license is required to export this design.';
@@ -59,6 +79,56 @@ function exportErrorMessage(statusData: Record<string, unknown>) {
     return 'This design requires approval in Canva before it can be exported.';
   }
   return 'Canva export failed';
+}
+
+function isProQualityExportError(statusData: Record<string, unknown>): boolean {
+  const err = exportJobError(statusData);
+  if (err?.code === 'license_required') return true;
+  const message = String(err?.message || '').toLowerCase();
+  return message.includes('pro quality') || message.includes('required license');
+}
+
+async function runExportJob(
+  designId: string,
+  formatPayload: Record<string, unknown>,
+  accessToken: string,
+): Promise<string[]> {
+  const exportRes = await fetch(`${CANVA_API}/exports`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      design_id: designId,
+      format: formatPayload,
+    }),
+  });
+  const exportData = await exportRes.json();
+  if (!exportRes.ok) {
+    throw new Error(exportData.message || exportData.error || 'Export job creation failed');
+  }
+
+  const jobId = exportData.job?.id;
+  if (!jobId) throw new Error('No export job ID returned');
+
+  for (let i = 0; i < 30; i++) {
+    await new Promise((r) => setTimeout(r, 2000));
+    const statusRes = await fetch(`${CANVA_API}/exports/${jobId}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const statusData = await statusRes.json();
+    if (statusData.job?.status === 'success') {
+      return normalizeDownloadUrls(statusData.job?.urls || []);
+    }
+    if (statusData.job?.status === 'failed') {
+      const err = new Error(exportErrorMessage(statusData)) as Error & { statusData?: Record<string, unknown> };
+      err.statusData = statusData;
+      throw err;
+    }
+  }
+
+  throw new Error('Export timed out');
 }
 
 Deno.serve(async (req) => {
@@ -112,42 +182,24 @@ Deno.serve(async (req) => {
       accessToken = await refreshCanvaToken(service, connection);
     }
 
-    const exportRes = await fetch(`${CANVA_API}/exports`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        design_id: designId,
-        format: buildFormatPayload(resolvedFormat, pages),
-      }),
-    });
-    const exportData = await exportRes.json();
-    if (!exportRes.ok) {
-      throw new Error(exportData.message || exportData.error || 'Export job creation failed');
-    }
-
-    const jobId = exportData.job?.id;
-    if (!jobId) throw new Error('No export job ID returned');
-
     let downloadUrls: string[] = [];
-    for (let i = 0; i < 30; i++) {
-      await new Promise((r) => setTimeout(r, 2000));
-      const statusRes = await fetch(`${CANVA_API}/exports/${jobId}`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      const statusData = await statusRes.json();
-      if (statusData.job?.status === 'success') {
-        downloadUrls = normalizeDownloadUrls(statusData.job?.urls || []);
-        break;
-      }
-      if (statusData.job?.status === 'failed') {
-        throw new Error(exportErrorMessage(statusData));
+    const proFormat = buildFormatPayload(resolvedFormat, pages, 'pro');
+    try {
+      downloadUrls = await runExportJob(designId, proFormat, accessToken);
+    } catch (err) {
+      const statusData = (err as Error & { statusData?: Record<string, unknown> }).statusData;
+      if (statusData && isProQualityExportError(statusData)) {
+        downloadUrls = await runExportJob(
+          designId,
+          buildFormatPayload(resolvedFormat, pages, 'regular'),
+          accessToken,
+        );
+      } else {
+        throw err;
       }
     }
 
-    if (!downloadUrls.length) throw new Error('Export timed out');
+    if (!downloadUrls.length) throw new Error('Export returned no files');
 
     const { mimeType, ext } = mimeAndExt(resolvedFormat);
     const pathPrefix = clientId ? `${org.id}/${clientId}` : org.id;

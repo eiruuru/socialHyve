@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDocumentMeta } from '@/components/DocumentMeta';
 import { PAGE_DESCRIPTIONS } from '@/lib/pageMeta';
-import { useAuth } from '@/lib/AuthContext';
 import { useClient } from '@/lib/clientContext';
 import { useMembership } from '@/lib/membershipContext';
 import { hasCreativesQaAccess, isCreativesQaRole } from '@/lib/clientRoles';
@@ -12,16 +11,12 @@ import { invokeFunction } from '@/lib/supabaseFunctions';
 import { useLivePosts } from '@/lib/useLivePosts';
 import { showToast } from '@/lib/toast';
 import { PostQueueCard } from '@/features/queue/PostQueueCard';
-import { QueueViewToggle } from '@/features/queue/QueueViewToggle';
 import { EmptyHiveState } from '@/components/EmptyHiveState';
 import { filterQueuePosts, canTransitionApproval } from '@/features/queue/postStatus';
 import { TabsRoot, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
 import { buildPostNavSearch } from '@/features/posts/postNavUtils';
-
-const QUEUE_VIEW_KEY = 'socialhyve_queue_view';
 
 const TABS = [
   { id: 'review', label: 'Needs review' },
@@ -63,7 +58,6 @@ function QueueLegend() {
 
 export default function QueuePage() {
   useDocumentMeta({ title: 'Approval queue', description: PAGE_DESCRIPTIONS.queue });
-  const { user } = useAuth();
   const { activeClient } = useClient();
   const membership = useMembership();
   const canSchedule = hasCreativesQaAccess(membership);
@@ -77,16 +71,8 @@ export default function QueuePage() {
   const [tab, setTab] = useState('review');
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
-  const [viewMode, setViewMode] = useState(() => {
-    const saved = localStorage.getItem(QUEUE_VIEW_KEY);
-    return saved === 'grid' ? 'grid' : 'list';
-  });
 
   useLivePosts(resolvedClientId, { enabled: !!resolvedClientId, showStatusToasts: true });
-
-  useEffect(() => {
-    localStorage.setItem(QUEUE_VIEW_KEY, viewMode);
-  }, [viewMode]);
 
   useEffect(() => {
     setSelectedIds([]);
@@ -180,13 +166,10 @@ export default function QueuePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Review</p>
-          <h2 className="font-display text-2xl font-bold">Approval queue</h2>
-          <p className="text-muted-foreground">Review and approve posts before they go live</p>
-        </div>
-        <QueueViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+      <div>
+        <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Review</p>
+        <h2 className="font-display text-2xl font-bold">Approval queue</h2>
+        <p className="text-muted-foreground">Review and approve posts before they go live</p>
       </div>
 
       <QueueLegend />
@@ -219,22 +202,13 @@ export default function QueuePage() {
             ) : filtered.length === 0 ? (
               <EmptyHiveState title={empty.title} description={empty.description} />
             ) : (
-              <div
-                className={cn(
-                  'rounded-hyve-lg bg-paper-alt p-5',
-                  viewMode === 'grid'
-                    ? 'grid gap-4 sm:grid-cols-2 xl:grid-cols-3'
-                    : 'space-y-3',
-                )}
-              >
+              <div className="grid gap-4 rounded-hyve-lg bg-paper-alt p-5 sm:grid-cols-2 xl:grid-cols-3">
                 {filtered.map((post) => (
                   <PostQueueCard
                     key={post.id}
                     post={post}
-                    variant={viewMode}
                     navSearch={navSearch}
-                    authorEmail={user?.email}
-                    selectable={tab === 'review' && viewMode === 'list'}
+                    selectable={tab === 'review'}
                     selected={selectedIds.includes(post.id)}
                     onSelectChange={() => toggleSelected(post.id)}
                     onApprove={handleApprove}

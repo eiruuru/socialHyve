@@ -285,8 +285,8 @@ const FAQ_SECTIONS = [
           </HelpList>
         </HelpSubsection>
 
-        <HelpSubsection title="List vs grid view">
-          <p>Toggle in the queue header. <strong>List</strong> emphasizes captions and schedule info. <strong>Grid</strong> emphasizes visuals with larger thumbnails. Your preference is remembered.</p>
+        <HelpSubsection title="Grid layout">
+          <p>The queue shows posts as a visual grid with large thumbnails, status badges, and schedule urgency on each card.</p>
         </HelpSubsection>
 
         <HelpSubsection title="Schedule urgency">
@@ -311,7 +311,7 @@ const FAQ_SECTIONS = [
             <li><strong>Edit</strong> — opens the composer to update or schedule the post.</li>
             <li><strong>Click card</strong> — opens post detail.</li>
           </HelpList>
-          <p>On Needs review + list view, select multiple posts and use <strong>Approve selected</strong> for bulk approval.</p>
+          <p>On <strong>Needs review</strong>, select multiple posts with the checkboxes and use <strong>Approve selected</strong> for bulk approval.</p>
         </HelpSubsection>
 
         <HelpSubsection title="Search">
@@ -327,7 +327,7 @@ const FAQ_SECTIONS = [
   },
   {
     title: 'Calendar',
-    summary: 'Month, week, and list views, drag reschedule, urgency, and planning.',
+    summary: 'Month and week views, drag reschedule, urgency, and planning.',
     content: (
       <>
         <p>
@@ -342,10 +342,6 @@ const FAQ_SECTIONS = [
 
         <HelpSubsection title="Week view">
           <p>Seven columns (Mon–Sun) for the current week with taller day cells so more posts fit. Use prev/next arrows to move by week. Same drag-and-drop, + button, and post cards as month view.</p>
-        </HelpSubsection>
-
-        <HelpSubsection title="List view">
-          <p>Chronological list with date/time column and horizontal post cards — useful for scanning a long schedule.</p>
         </HelpSubsection>
 
         <HelpSubsection title="Drag to reschedule">
@@ -504,7 +500,7 @@ const FAQ_SECTIONS = [
             <li>Assign org <strong>Managers</strong> to this client (owners/admins only).</li>
           </HelpSteps>
           <HelpList>
-            <li><strong>Creatives QA</strong> — Queue, Review portal, Calendar, post detail; can Approve or Require edits, and schedule approved posts (not Publish now).</li>
+            <li><strong>Creatives QA</strong> — Queue, Review portal, Calendar, post detail; can Approve or Require edits, schedule approved posts, and Publish now from the edit composer.</li>
             <li><strong>Guest</strong> — read-only Calendar and post detail; no Queue access.</li>
           </HelpList>
           <p>Client-only users see a reduced sidebar: Creative QA review links, Queue (Creatives QA), Calendar, Settings, Help.</p>

@@ -10,7 +10,6 @@ import {
   subMonths,
   addWeeks,
   subWeeks,
-  compareAsc,
 } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
@@ -19,7 +18,7 @@ import { useClient } from '@/lib/clientContext';
 import { reschedulePostToDay } from '@/lib/posts';
 import { isPastCalendarDay } from '@/lib/scheduleTime';
 import { showToast } from '@/lib/toast';
-import { CalendarPostCard, isPostDraggable } from './CalendarPostCard';
+import { isPostDraggable } from './CalendarPostCard';
 import { CalendarDayCell } from './CalendarDayCell';
 import { PostStatusLegend } from '@/features/queue/postStatusIcons';
 import { Button } from '@/components/ui/button';
@@ -64,16 +63,6 @@ export function ContentCalendar({ posts = [], readOnly = false }) {
 
   const calendarMonth = format(currentDate, 'yyyy-MM');
   const monthNavSearch = buildPostNavSearch({ nav: 'calendar', month: calendarMonth });
-  const listNavSearch = buildPostNavSearch({ nav: 'calendar' });
-
-  const sortedPosts = [...posts].sort((a, b) => {
-    const da = a.scheduled_at || a.created_at;
-    const db = b.scheduled_at || b.created_at;
-    if (!da && !db) return 0;
-    if (!da) return 1;
-    if (!db) return -1;
-    return compareAsc(new Date(da), new Date(db));
-  });
 
   const handleDragStart = (_e, post) => {
     setDraggingPostId(post.id);
@@ -193,28 +182,25 @@ export function ContentCalendar({ posts = [], readOnly = false }) {
           <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Calendar</p>
           <h2 className="font-display text-xl font-bold">{activeClient?.name || 'All posts'}</h2>
         </div>
-        {view !== 'list' && (
-          <div className="flex items-center gap-2">
-            <IconTooltip title={prevLabel} description={`Go to the ${prevLabel.toLowerCase()}`}>
-              <Button variant="outline" size="icon" onClick={goPrev} aria-label={prevLabel}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-            </IconTooltip>
-            <h3 className="min-w-[180px] text-center text-lg font-semibold">
-              {periodLabel}
-            </h3>
-            <IconTooltip title={nextLabel} description={`Go to the ${nextLabel.toLowerCase()}`}>
-              <Button variant="outline" size="icon" onClick={goNext} aria-label={nextLabel}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </IconTooltip>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <IconTooltip title={prevLabel} description={`Go to the ${prevLabel.toLowerCase()}`}>
+            <Button variant="outline" size="icon" onClick={goPrev} aria-label={prevLabel}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+          </IconTooltip>
+          <h3 className="min-w-[180px] text-center text-lg font-semibold">
+            {periodLabel}
+          </h3>
+          <IconTooltip title={nextLabel} description={`Go to the ${nextLabel.toLowerCase()}`}>
+            <Button variant="outline" size="icon" onClick={goNext} aria-label={nextLabel}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </IconTooltip>
+        </div>
         <TabsRoot value={view} onValueChange={setView}>
           <TabsList>
             <TabsTrigger value="month">Month</TabsTrigger>
             <TabsTrigger value="week">Week</TabsTrigger>
-            <TabsTrigger value="list">List</TabsTrigger>
           </TabsList>
         </TabsRoot>
       </div>
@@ -242,32 +228,6 @@ export function ContentCalendar({ posts = [], readOnly = false }) {
             ))}
           </div>
           {renderDayGrid(weekDays, { tall: true })}
-        </div>
-      )}
-
-      {view === 'list' && (
-        <div className="space-y-2">
-          {sortedPosts.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No posts scheduled.</p>
-          ) : (
-            sortedPosts.map((post) => (
-              <div key={post.id} className="flex items-center gap-4 rounded-hyve-md border p-3">
-                <div className="w-36 shrink-0 text-sm text-muted-foreground">
-                  {post.scheduled_at
-                    ? format(new Date(post.scheduled_at), 'MMM d, yyyy · h:mm a')
-                    : 'Unscheduled'}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <CalendarPostCard
-                    post={post}
-                    layout="horizontal"
-                    navSearch={listNavSearch}
-                    className="mb-0 border-0 shadow-none"
-                  />
-                </div>
-              </div>
-            ))
-          )}
         </div>
       )}
     </div>

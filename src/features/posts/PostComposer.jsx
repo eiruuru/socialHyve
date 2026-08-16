@@ -405,7 +405,6 @@ export function PostComposer({ editPostId = null }) {
     });
 
   const handlePublishNow = async () => {
-    if (clientScheduleOnly) return;
     if (isPublished) {
       showToast({ title: 'Published posts cannot be edited', variant: 'error' });
       return;
@@ -586,7 +585,6 @@ export function PostComposer({ editPostId = null }) {
         scheduleTimezone={scheduleTimezone}
         approvalStatus={approvalStatus}
         canBypassApproval={canBypassApproval}
-        canPublishNow={!clientScheduleOnly}
         canSubmitForReview={!clientScheduleOnly}
         onSaveDraft={handleSaveDraft}
         onSaveChanges={handleSaveChanges}

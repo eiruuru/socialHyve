@@ -208,12 +208,22 @@ export function AppLayout() {
     <NotificationsProvider>
       <PendingClientInviteNotifier />
       <div className="flex min-h-screen flex-col bg-paper">
-        <header className="relative z-40 flex h-14 shrink-0 items-center gap-3 border-b border-sidebar-border bg-sidebar px-4 sm:px-5">
-          <Logo variant="dark" />
-          <NotificationBell variant="icon" />
+        <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-sidebar-border bg-sidebar px-4 sm:px-5">
+          <div className="flex items-center gap-3">
+            <Logo variant="dark" />
+            <NotificationBell variant="icon" />
+          </div>
+          <button
+            type="button"
+            onClick={logout}
+            className="flex items-center gap-2 rounded-hyve-sm px-3 py-2 text-sm text-neutral-200 transition-colors hover:bg-sidebar-accent hover:text-white"
+          >
+            <LogOut className="h-4 w-4" />
+            <span className="hidden sm:inline">Sign out</span>
+          </button>
         </header>
-        <div className="flex min-h-0 flex-1">
-        <aside className="flex w-60 shrink-0 flex-col bg-sidebar text-sidebar-foreground">
+        <div className="flex flex-1 items-start">
+        <aside className="sticky top-14 z-30 flex h-[calc(100dvh-3.5rem)] w-60 shrink-0 flex-col overflow-hidden bg-sidebar text-sidebar-foreground">
         <div className="border-b border-sidebar-border px-5 py-4">
           {!membership.isClientOnly && (
             <div>
@@ -232,18 +242,8 @@ export function AppLayout() {
             <NavGroup key={group.label ?? 'primary'} label={group.label} items={group.items} />
           ))}
         </nav>
-        <div className="border-t border-sidebar-border p-4">
-          <button
-            type="button"
-            onClick={logout}
-            className="flex w-full items-center gap-3 rounded-hyve-sm px-3 py-2 text-sm text-neutral-200 hover:bg-sidebar-accent hover:text-white"
-          >
-            <LogOut className="h-4 w-4" />
-            Sign out
-          </button>
-        </div>
       </aside>
-      <main className="flex-1 overflow-auto bg-paper">
+      <main className="min-w-0 flex-1 bg-paper">
         <div className={cn('mx-auto p-8', isWide ? 'max-w-none' : 'max-w-6xl')}>
           <Outlet />
         </div>

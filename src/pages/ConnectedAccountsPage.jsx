@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   listSocialAccounts,
   disconnectSocialAccount,
@@ -19,6 +19,7 @@ import { showToast } from '@/lib/toast';
 
 export default function ConnectedAccountsPage() {
   const { activeClient } = useClient();
+  const queryClient = useQueryClient();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
@@ -48,6 +49,7 @@ export default function ConnectedAccountsPage() {
     try {
       await disconnectSocialAccount(acc.id, { clientId: activeClient.id });
       await refetch();
+      await queryClient.invalidateQueries({ queryKey: ['workspace-meta-pages'] });
     } catch (err) {
       showToast({ title: 'Could not unassign', description: err.message, variant: 'error' });
     } finally {
@@ -66,6 +68,7 @@ export default function ConnectedAccountsPage() {
     try {
       await disconnectAllSocialAccounts({ clientId: activeClient.id });
       await refetch();
+      await queryClient.invalidateQueries({ queryKey: ['workspace-meta-pages'] });
     } catch (err) {
       showToast({ title: 'Could not unassign pages', description: err.message, variant: 'error' });
     } finally {

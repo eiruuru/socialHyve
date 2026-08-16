@@ -20,24 +20,56 @@ export async function listWorkspaceMetaSessions() {
 }
 
 export async function listWorkspaceMetaPages({ sessionId } = {}) {
-  let query = supabase
+  let pagesQuery = supabase
     .from('social_accounts')
-    .select(`
-      *,
-      client_social_account_assignments (
-        id,
-        client_id,
-        is_primary,
-        clients ( id, name )
-      )
-    `)
+    .select('*')
     .order('name', { ascending: true });
 
-  if (sessionId) query = query.eq('meta_session_id', sessionId);
+  if (sessionId) pagesQuery = pagesQuery.eq('meta_session_id', sessionId);
 
-  const { data, error } = await query;
-  if (error) throw error;
-  return data || [];
+  const { data: pages, error: pagesError } = await pagesQuery;
+  if (pagesError) throw pagesError;
+
+  const accountIds = (pages || []).map((page) => page.id);
+  if (!accountIds.length) return [];
+
+  const { data: assignments, error: assignmentsError } = await supabase
+    .from('client_social_account_assignments')
+    .select('id, social_account_id, client_id, is_primary')
+    .in('social_account_id', accountIds);
+
+  if (assignmentsError) throw assignmentsError;
+
+  const clientIds = [...new Set((assignments || []).map((row) => row.client_id))];
+  const clientsById = new Map();
+
+  if (clientIds.length) {
+    const { data: clients, error: clientsError } = await supabase
+      .from('clients')
+      .select('id, name')
+      .in('id', clientIds);
+    if (clientsError) throw clientsError;
+    for (const client of clients || []) {
+      clientsById.set(client.id, client);
+    }
+  }
+
+  const assignmentsByAccountId = new Map(
+    (assignments || []).map((row) => [row.social_account_id, row]),
+  );
+
+  return (pages || []).map((page) => {
+    const assignment = assignmentsByAccountId.get(page.id);
+    return {
+      ...page,
+      client_social_account_assignments: assignment
+        ? [{
+          ...assignment,
+          clients: clientsById.get(assignment.client_id) || null,
+        }]
+        : [],
+    };
+  });
 }
 
 export async function listUnassignedMetaPages() {
@@ -102,6 +134,11 @@ export async function assignSocialAccountToClient(socialAccountId, clientId, { i
   }
 
   return mapAssignedAccount(data);
+}
+
+export function getPageAssignmentClientName(page) {
+  const assignment = (page.client_social_account_assignments || [])[0];
+  return assignment?.clients?.name || null;
 }
 
 export async function unassignSocialAccountFromClient(socialAccountId, clientId) {

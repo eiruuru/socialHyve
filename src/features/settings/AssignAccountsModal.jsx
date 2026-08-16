@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { DialogRoot, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { PlatformChip } from '@/components/brand/PlatformChip';
@@ -12,6 +13,7 @@ export function AssignAccountsModal({
   clientName,
   onAssigned,
 }) {
+  const queryClient = useQueryClient();
   const [pages, setPages] = useState([]);
   const [selected, setSelected] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -44,6 +46,7 @@ export function AssignAccountsModal({
       for (const pageId of selected) {
         await assignSocialAccountToClient(pageId, clientId);
       }
+      await queryClient.invalidateQueries({ queryKey: ['workspace-meta-pages'] });
       await onAssigned?.();
       onOpenChange(false);
     } catch (err) {

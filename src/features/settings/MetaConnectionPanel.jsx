@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { invokeFunction } from '@/lib/supabaseFunctions';
 import {
   disconnectMetaSession,
+  getPageAssignmentClientName,
   listWorkspaceMetaPages,
   listWorkspaceMetaSessions,
 } from '@/lib/metaAccounts';
@@ -14,11 +15,6 @@ import { PlatformChip } from '@/components/brand/PlatformChip';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { showToast } from '@/lib/toast';
-
-function assignedClientName(page) {
-  const assignment = (page.client_social_account_assignments || [])[0];
-  return assignment?.clients?.name || null;
-}
 
 export function MetaConnectionPanel() {
   const { isOwnerOrAdmin } = useMembership();
@@ -39,6 +35,7 @@ export function MetaConnectionPanel() {
     queryKey: ['workspace-meta-pages'],
     queryFn: () => listWorkspaceMetaPages(),
     enabled: isOwnerOrAdmin,
+    refetchOnWindowFocus: true,
   });
 
   const clearParams = () => navigate('/app/settings/account?tab=meta', { replace: true });
@@ -186,7 +183,7 @@ export function MetaConnectionPanel() {
                   <p className="text-sm font-medium text-muted-foreground">{session.meta_user_name}</p>
                   <div className="space-y-2">
                     {sessionPages.map((page) => {
-                      const clientName = assignedClientName(page);
+                      const clientName = getPageAssignmentClientName(page);
                       const label = page.platform === 'instagram'
                         ? `@${page.username || page.name}`
                         : page.name;

@@ -58,6 +58,7 @@ function deriveCapabilities(orgRole, clientMemberships) {
     isClientOnly,
     isOrgTeam,
     isManager,
+    isOwnerOrAdmin,
     canManageTeam: isOwnerOrAdmin,
     canManageClients: isOwnerOrAdmin || orgRole === 'editor',
     canAssignManagers: isOwnerOrAdmin,

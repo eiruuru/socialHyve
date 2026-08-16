@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { invokeFunction } from '@/lib/supabaseFunctions';
 import {
   listSocialAccounts,
   disconnectSocialAccount,
@@ -14,18 +13,15 @@ import { Badge } from '@/components/ui/badge';
 import { PlatformChip } from '@/components/brand/PlatformChip';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AccountPickerModal } from '@/features/settings/AccountPickerModal';
+import { AssignAccountsModal } from '@/features/settings/AssignAccountsModal';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { showToast } from '@/lib/toast';
 
 export default function ConnectedAccountsPage() {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const { activeClient, clients, setActiveClient } = useClient();
+  const { activeClient } = useClient();
   const { confirm, dialog: confirmDialog } = useConfirm();
-  const connected = searchParams.get('connected');
-  const clientIdParam = searchParams.get('clientId');
-  const error = searchParams.get('error');
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const { data: accounts = [], refetch, isLoading, isError, error: queryError } = useQuery({
@@ -38,80 +34,32 @@ export default function ConnectedAccountsPage() {
   const igAccounts = accounts.filter((a) => a.platform === 'instagram');
   const hasAccounts = accounts.length > 0;
 
-  useEffect(() => {
-    if (!clientIdParam || !clients.length) return;
-    const match = clients.find((c) => c.id === clientIdParam);
-    if (match && match.id !== activeClient?.id) {
-      setActiveClient(match);
-    }
-  }, [clientIdParam, clients, activeClient?.id, setActiveClient]);
-
-  useEffect(() => {
-    if (connected === 'meta') {
-      refetch();
-    }
-  }, [connected, refetch, activeClient?.id]);
-
-  useEffect(() => {
-    if (connected === 'meta' && fbAccounts.length > 1) {
-      setPickerOpen(true);
-    }
-  }, [connected, fbAccounts.length]);
-
-  const clearConnectParams = () => {
-    navigate('/app/settings/accounts', { replace: true });
-  };
-
-  const startMetaOAuth = async ({ rerequest = false } = {}) => {
-    if (!activeClient?.id) {
-      showToast({ title: 'Select a client before connecting Meta.', variant: 'error' });
-      return;
-    }
-    if (!await confirm({
-      title: rerequest ? 'Reconnect Meta' : 'Connect Meta',
-      description:
-        'When Meta shows Edit configuration, select every Facebook Page you use in SocialHyve — including pages for your other clients. SocialHyve will link new pages to this client and refresh tokens for pages already connected elsewhere.',
-      confirmLabel: rerequest ? 'Continue to Meta' : 'Connect',
-    })) return;
-    setBusy(true);
-    try {
-      const { url } = await invokeFunction('metaOAuthStart', {
-        clientId: activeClient.id,
-        rerequest,
-      });
-      window.location.href = url;
-    } catch (err) {
-      showToast({ title: 'Connection failed', description: err.message, variant: 'error' });
-      setBusy(false);
-    }
-  };
-
-  const disconnect = async (acc) => {
+  const unassign = async (acc) => {
     const label = acc.platform === 'instagram'
       ? `@${acc.username || acc.name}`
       : acc.name;
     if (!await confirm({
-      title: `Disconnect ${label}?`,
-      description: `Remove this account from ${activeClient?.name || 'this client'}.`,
-      confirmLabel: 'Disconnect',
+      title: `Unassign ${label}?`,
+      description: `Remove this page from ${activeClient?.name || 'this client'}. It stays in your organization pool.`,
+      confirmLabel: 'Unassign',
       variant: 'destructive',
     })) return;
     setBusy(true);
     try {
-      await disconnectSocialAccount(acc.id);
+      await disconnectSocialAccount(acc.id, { clientId: activeClient.id });
       await refetch();
     } catch (err) {
-      showToast({ title: 'Could not disconnect', description: err.message, variant: 'error' });
+      showToast({ title: 'Could not unassign', description: err.message, variant: 'error' });
     } finally {
       setBusy(false);
     }
   };
 
-  const disconnectAll = async () => {
+  const unassignAll = async () => {
     if (!await confirm({
-      title: 'Disconnect all Meta accounts?',
-      description: `Remove all connections from ${activeClient?.name || 'this client'}. You can reconnect anytime.`,
-      confirmLabel: 'Disconnect all',
+      title: 'Unassign all pages?',
+      description: `Remove all assigned pages from ${activeClient?.name || 'this client'}.`,
+      confirmLabel: 'Unassign all',
       variant: 'destructive',
     })) return;
     setBusy(true);
@@ -119,7 +67,7 @@ export default function ConnectedAccountsPage() {
       await disconnectAllSocialAccounts({ clientId: activeClient.id });
       await refetch();
     } catch (err) {
-      showToast({ title: 'Could not disconnect', description: err.message, variant: 'error' });
+      showToast({ title: 'Could not unassign pages', description: err.message, variant: 'error' });
     } finally {
       setBusy(false);
     }
@@ -130,11 +78,12 @@ export default function ConnectedAccountsPage() {
     setBusy(true);
     try {
       await setPrimarySocialAccount(id, {
+        clientId: activeClient.id,
         linkInstagram: account?.platform === 'facebook',
       });
       await refetch();
     } catch (err) {
-      showToast({ title: 'Could not disconnect', description: err.message, variant: 'error' });
+      showToast({ title: 'Could not set default', description: err.message, variant: 'error' });
     } finally {
       setBusy(false);
     }
@@ -150,9 +99,7 @@ export default function ConnectedAccountsPage() {
           ) : null}
           <PlatformChip platform={platform} />
           <span className="truncate font-medium">{label}</span>
-          {acc.is_primary && (
-            <Badge variant="published">Default</Badge>
-          )}
+          {acc.is_primary && <Badge variant="published">Default</Badge>}
         </div>
         <div className="flex shrink-0 items-center gap-1">
           {!acc.is_primary && (
@@ -164,10 +111,10 @@ export default function ConnectedAccountsPage() {
             variant="outline"
             size="sm"
             className="text-red-700 hover:bg-red-50 hover:text-red-800"
-            onClick={() => disconnect(acc)}
+            onClick={() => unassign(acc)}
             disabled={busy}
           >
-            Disconnect
+            Unassign
           </Button>
         </div>
       </div>
@@ -180,71 +127,41 @@ export default function ConnectedAccountsPage() {
         <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Settings</p>
         <h2 className="font-display text-2xl font-bold">Connected Accounts</h2>
         <p className="text-muted-foreground">
-          Link Meta accounts for {activeClient?.name || 'this client'}. Each client keeps its own connection — reconnect here after linking another client.
+          Assign Facebook Pages and Instagram accounts to {activeClient?.name || 'this client'}.
+          Connect new pages in{' '}
+          <Link to="/app/settings/meta" className="underline">Meta Connection</Link>.
         </p>
       </div>
 
-      {connected === 'meta' && !isLoading && accounts.length > 0 && fbAccounts.length <= 1 && (
-        <div className="rounded-hyve-md bg-[#DFF3E6] p-4 text-sm text-status-published">
-          You&apos;re connected. Ready to publish.
-          <button type="button" className="ml-2 underline" onClick={clearConnectParams}>Dismiss</button>
-        </div>
-      )}
-      {connected === 'meta' && !isLoading && !isError && accounts.length === 0 && (
-        <div className="rounded-md bg-amber-50 p-4 text-sm text-amber-900">
-          Meta authorization succeeded, but no Facebook Pages were imported for {activeClient?.name || 'this client'}.
-          Make sure your Meta account manages at least one Page, then try connecting again.
-          <button type="button" className="ml-2 underline" onClick={clearConnectParams}>Dismiss</button>
-        </div>
-      )}
       {isError && (
         <div className="rounded-md bg-red-50 p-4 text-sm text-red-700">
           Could not load connected accounts: {queryError?.message || 'Unknown error'}
         </div>
       )}
-      {error && (
-        <div className="rounded-md bg-red-50 p-4 text-sm text-red-700">
-          Connection error: {decodeURIComponent(error)}
-          <div className="mt-2">
-            <Button size="sm" variant="outline" onClick={() => startMetaOAuth({ rerequest: true })} disabled={busy}>
-              Try reconnecting
-            </Button>
-          </div>
-        </div>
-      )}
 
       <Card>
         <CardHeader>
-          <CardTitle>Meta (Facebook & Instagram)</CardTitle>
+          <CardTitle>Assigned pages</CardTitle>
           <CardDescription>
-            Requires a Facebook Page linked to an Instagram Business or Creator account
+            Pages assigned here are used when publishing for this client.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-2">
-            {hasAccounts ? (
+            <Button onClick={() => setAssignOpen(true)} disabled={busy || !activeClient?.id}>
+              Assign from pool
+            </Button>
+            {hasAccounts && (
               <>
-                <Button onClick={() => startMetaOAuth({ rerequest: true })} disabled={busy}>
-                  Reconnect Meta
+                <Button variant="outline" onClick={() => setPickerOpen(true)} disabled={busy}>
+                  Choose defaults
                 </Button>
-                <Button variant="outline" onClick={disconnectAll} disabled={busy}>
-                  Disconnect all
+                <Button variant="outline" onClick={unassignAll} disabled={busy}>
+                  Unassign all
                 </Button>
               </>
-            ) : (
-              <Button onClick={() => startMetaOAuth()} disabled={busy}>
-                Connect Meta Account
-              </Button>
             )}
           </div>
-          {hasAccounts && (
-            <p className="text-xs text-muted-foreground">
-              One Facebook login manages all your clients. On Meta&apos;s Edit configuration screen,
-              always tick every Page you publish from across all clients, even when connecting one
-              client. Tokens for existing clients are refreshed automatically; only new pages are
-              added to {activeClient?.name || 'this client'}.
-            </p>
-          )}
 
           {isLoading ? (
             <p className="text-sm text-muted-foreground">Loading accounts...</p>
@@ -253,20 +170,28 @@ export default function ConnectedAccountsPage() {
               {fbAccounts.map((acc) => renderAccountRow(acc, 'facebook'))}
               {igAccounts.map((acc) => renderAccountRow(acc, 'instagram'))}
               {!accounts.length && (
-                <p className="text-sm text-muted-foreground">No accounts connected yet.</p>
+                <p className="text-sm text-muted-foreground">
+                  No pages assigned yet. Assign pages from your organization pool or connect new ones in Meta Connection.
+                </p>
               )}
             </div>
           )}
         </CardContent>
       </Card>
 
+      <AssignAccountsModal
+        open={assignOpen}
+        onOpenChange={setAssignOpen}
+        clientId={activeClient?.id}
+        clientName={activeClient?.name}
+        onAssigned={refetch}
+      />
+
       <AccountPickerModal
         open={pickerOpen}
-        onOpenChange={(open) => {
-          setPickerOpen(open);
-          if (!open && connected === 'meta') clearConnectParams();
-        }}
+        onOpenChange={setPickerOpen}
         clientName={activeClient?.name}
+        clientId={activeClient?.id}
         fbAccounts={fbAccounts}
         igAccounts={igAccounts}
         onSaved={refetch}

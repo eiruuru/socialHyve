@@ -38,6 +38,7 @@ export function AccountPickerModal({
   open,
   onOpenChange,
   clientName,
+  clientId,
   fbAccounts,
   igAccounts,
   onSaved,
@@ -66,11 +67,11 @@ export function AccountPickerModal({
     setSaving(true);
     try {
       if (fbId) {
-        await setPrimarySocialAccount(fbId, { linkInstagram: true });
+        await setPrimarySocialAccount(fbId, { clientId, linkInstagram: true });
       }
       const currentPrimaryIg = igAccounts.find((a) => a.is_primary);
       if (igId && igId !== currentPrimaryIg?.id) {
-        await setPrimarySocialAccount(igId, { linkInstagram: false });
+        await setPrimarySocialAccount(igId, { clientId, linkInstagram: false });
       }
       await onSaved?.();
       onOpenChange(false);

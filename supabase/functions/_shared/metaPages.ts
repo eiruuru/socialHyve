@@ -80,15 +80,18 @@ export async function debugTokenType(
 export async function debugTokenInfo(
   token: string,
   appAccessToken: string,
-): Promise<{ type: string | null; profileId: string | null }> {
+): Promise<{ type: string | null; profileId: string | null; userId: string | null }> {
   const res = await fetch(
     `${META_GRAPH}/debug_token?input_token=${encodeURIComponent(token)}&access_token=${encodeURIComponent(appAccessToken)}`,
   );
   const data = await res.json();
-  const debug = data.data as { type?: string; profile_id?: string } | undefined;
+  const debug = data.data as { type?: string; profile_id?: string; user_id?: string } | undefined;
+  const profileId = debug?.profile_id ? String(debug.profile_id) : null;
+  const userId = debug?.user_id ? String(debug.user_id) : (debug?.type === 'USER' ? profileId : null);
   return {
     type: debug?.type || null,
-    profileId: debug?.profile_id ? String(debug.profile_id) : null,
+    profileId,
+    userId,
   };
 }
 

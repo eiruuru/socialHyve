@@ -16,6 +16,7 @@ const PostComposerPage = lazyWithRetry(() => import('@/pages/PostComposerPage'))
 const PostImportPage = lazyWithRetry(() => import('@/pages/PostImportPage'));
 const EditPostPage = lazyWithRetry(() => import('@/pages/EditPostPage'));
 const PostDetailPage = lazyWithRetry(() => import('@/pages/PostDetailPage'));
+const MetaConnectionPage = lazyWithRetry(() => import('@/pages/MetaConnectionPage'));
 const ConnectedAccountsPage = lazyWithRetry(() => import('@/pages/ConnectedAccountsPage'));
 const CanvaSettingsPage = lazyWithRetry(() => import('@/pages/CanvaSettingsPage'));
 const AccountSettingsPage = lazyWithRetry(() => import('@/pages/AccountSettingsPage'));
@@ -62,6 +63,7 @@ export function AppRoutes() {
           <Route path="client/:clientId/review" element={<Lazy><ClientReviewPage /></Lazy>} />
           <Route path="team" element={<Lazy><TeamPage /></Lazy>} />
           <Route path="settings/account" element={<Lazy><AccountSettingsPage /></Lazy>} />
+          <Route path="settings/meta" element={<Lazy><MetaConnectionPage /></Lazy>} />
           <Route path="settings/accounts" element={<Lazy><ConnectedAccountsPage /></Lazy>} />
           <Route path="settings/canva" element={<Lazy><CanvaSettingsPage /></Lazy>} />
           <Route path="help" element={<Lazy><HelpPage /></Lazy>} />

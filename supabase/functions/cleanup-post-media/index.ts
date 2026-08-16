@@ -212,11 +212,29 @@ async function getPlatformToken(
   post: { client_id?: string | null; workspace_id?: string | null },
   platform: string,
 ): Promise<string | null> {
-  let query = service.from('social_accounts').select('page_access_token, access_token');
-  query = post.client_id
-    ? query.eq('client_id', post.client_id)
-    : query.eq('workspace_id', post.workspace_id);
-  const { data } = await query.eq('platform', platform).maybeSingle();
+  if (post.client_id) {
+    const { data: rows } = await service
+      .from('client_social_account_assignments')
+      .select('is_primary, social_accounts(page_access_token, access_token, platform)')
+      .eq('client_id', post.client_id);
+
+    const matches = (rows || [])
+      .map((row) => row.social_accounts as Record<string, unknown> | null)
+      .filter((account): account is Record<string, unknown> =>
+        !!account && account.platform === platform
+      );
+
+    const account = matches.find((_, index) => rows?.[index]?.is_primary) || matches[0];
+    if (!account) return null;
+    return readToken((account.page_access_token || account.access_token) as string);
+  }
+
+  const { data } = await service
+    .from('social_accounts')
+    .select('page_access_token, access_token')
+    .eq('workspace_id', post.workspace_id)
+    .eq('platform', platform)
+    .maybeSingle();
   if (!data) return null;
   return readToken((data.page_access_token || data.access_token) as string);
 }

@@ -13,6 +13,23 @@ type IgMediaItem = {
   children?: { data?: IgMediaItem[] };
 };
 
+async function loadClientAssignedAccounts(
+  service: ReturnType<typeof getServiceClient>,
+  clientId: string,
+) {
+  const { data: rows, error } = await service
+    .from('client_social_account_assignments')
+    .select('is_primary, social_accounts(*)')
+    .eq('client_id', clientId);
+
+  if (error) throw error;
+
+  return (rows || []).map((row) => ({
+    ...(row.social_accounts as Record<string, unknown>),
+    is_primary: row.is_primary,
+  }));
+}
+
 Deno.serve(async (req) => {
   const opt = handleOptions(req);
   if (opt) return opt;
@@ -25,14 +42,8 @@ Deno.serve(async (req) => {
     if (!clientId) return jsonResponse({ error: 'clientId required' }, 400);
 
     const service = getServiceClient();
-    const { data: accounts, error: accountErr } = await service
-      .from('social_accounts')
-      .select('*')
-      .eq('client_id', clientId)
-      .eq('platform', 'instagram');
-
-    if (accountErr) throw accountErr;
-    const account = pickPrimaryAccount(accounts || [], 'instagram');
+    const accounts = await loadClientAssignedAccounts(service, clientId);
+    const account = pickPrimaryAccount(accounts, 'instagram');
     if (!account) return jsonResponse({ media: [] });
 
     const igUserId = account.ig_user_id || account.external_id;

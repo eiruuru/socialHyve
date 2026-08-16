@@ -1,9 +1,10 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
+import { clearChunkReloadFlag } from './app/lazyWithRetry';
 import './index.css';
 
-sessionStorage.removeItem('socialhyve_chunk_reload');
+clearChunkReloadFlag();
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

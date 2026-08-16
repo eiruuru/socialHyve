@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
+import { useDocumentMeta } from '@/components/DocumentMeta';
+import { PAGE_DESCRIPTIONS } from '@/lib/pageMeta';
 import { useAuth } from '@/lib/AuthContext';
 import { useMembership } from '@/lib/membershipContext';
 import { getProfile, updateEmail, updateInAppNotificationPreferences, updateNotificationPreferences, updatePassword, updateProfile } from '@/lib/profile';
@@ -63,6 +65,22 @@ export default function AccountSettingsPage() {
     if (tab === 'team' && showTeamTab) return 'team';
     return 'profile';
   })();
+
+  const settingsMeta = useMemo(() => {
+    const tabMeta = {
+      workspace: { title: 'Workspace', description: PAGE_DESCRIPTIONS.workspace },
+      profile: { title: 'Profile', description: PAGE_DESCRIPTIONS.profile },
+      clients: { title: 'Clients', description: PAGE_DESCRIPTIONS.clients },
+      team: { title: 'Team', description: PAGE_DESCRIPTIONS.team },
+      meta: { title: 'Meta accounts', description: PAGE_DESCRIPTIONS.metaAccounts },
+    };
+    return tabMeta[activeTab] ?? {
+      title: 'Workspace settings',
+      description: PAGE_DESCRIPTIONS.workspaceSettings,
+    };
+  }, [activeTab]);
+
+  useDocumentMeta(settingsMeta);
 
   const setActiveTab = (tab) => {
     if (tab === 'profile') {

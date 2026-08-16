@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useDocumentMeta } from '@/components/DocumentMeta';
+import { PAGE_DESCRIPTIONS } from '@/lib/pageMeta';
 import {
   listSocialAccounts,
   disconnectSocialAccount,
@@ -18,6 +20,7 @@ import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { showToast } from '@/lib/toast';
 
 export default function ConnectedAccountsPage() {
+  useDocumentMeta({ title: 'Social links', description: PAGE_DESCRIPTIONS.socialLinks });
   const { activeClient } = useClient();
   const queryClient = useQueryClient();
   const { confirm, dialog: confirmDialog } = useConfirm();

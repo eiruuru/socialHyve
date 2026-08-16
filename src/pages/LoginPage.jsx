@@ -5,6 +5,8 @@ import { acceptInvite, previewInvite } from '@/lib/organization';
 import { formatClientRole, formatRoleLabel, isClientRole } from '@/lib/clientRoles';
 import { savePendingInvite, clearPendingInvite } from '@/lib/membershipContext';
 import { useAuth } from '@/lib/AuthContext';
+import { DocumentMeta } from '@/components/DocumentMeta';
+import { PAGE_DESCRIPTIONS } from '@/lib/pageMeta';
 import { Logo } from '@/components/brand/Logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -134,6 +136,7 @@ export default function LoginPage() {
         `,
       }}
     >
+      <DocumentMeta title="Sign in" description={PAGE_DESCRIPTIONS.login} />
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mb-4 flex justify-center">

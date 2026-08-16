@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { useDocumentMeta } from '@/components/DocumentMeta';
+import { PAGE_DESCRIPTIONS } from '@/lib/pageMeta';
 import { listPosts } from '@/lib/posts';
 import { useClient } from '@/lib/clientContext';
 import { useMembership } from '@/lib/membershipContext';
@@ -9,6 +11,7 @@ import { EmptyHiveState } from '@/components/EmptyHiveState';
 import { Button } from '@/components/ui/button';
 
 export default function CalendarPage() {
+  useDocumentMeta({ title: 'Content calendar', description: PAGE_DESCRIPTIONS.calendar });
   const { activeClient, clients, loading: clientsLoading } = useClient();
   const membership = useMembership();
   const { isManager, isClientOnly } = membership;

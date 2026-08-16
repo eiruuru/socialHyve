@@ -1,8 +1,11 @@
 import { PostComposer } from '@/features/posts/PostComposer';
+import { DocumentMeta } from '@/components/DocumentMeta';
+import { PAGE_DESCRIPTIONS } from '@/lib/pageMeta';
 
 export default function PostComposerPage() {
   return (
     <div className="space-y-6">
+      <DocumentMeta title="New post" description={PAGE_DESCRIPTIONS.newPost} />
       <div>
         <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Create</p>
         <h2 className="font-display text-2xl font-bold">New Post</h2>

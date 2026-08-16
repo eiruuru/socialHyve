@@ -1,5 +1,7 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useDocumentMeta } from '@/components/DocumentMeta';
+import { PAGE_DESCRIPTIONS, truncateForTitle } from '@/lib/pageMeta';
 import { ArrowLeft, Check, Copy, Link2, Pencil, RefreshCw, RotateCcw, Trash2 } from 'lucide-react';
 import {
   getPost,
@@ -82,6 +84,11 @@ export default function PostDetailPage() {
   const postNav = usePostNavigation(id);
 
   useFocusedPostPolling(id, { enabled: !!id });
+
+  useDocumentMeta({
+    title: post ? truncateForTitle(post.internal_name || 'Post detail') : 'Post detail',
+    description: PAGE_DESCRIPTIONS.postDetail,
+  });
 
   if (isLoading) return <p className="text-muted-foreground">Loading…</p>;
   if (!post) return <p className="text-destructive">Post not found</p>;

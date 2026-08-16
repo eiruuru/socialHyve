@@ -1,11 +1,14 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { DocumentMeta } from '@/components/DocumentMeta';
+import { PAGE_DESCRIPTIONS } from '@/lib/pageMeta';
 import { Logo } from '@/components/brand/Logo';
 import { FaqContent } from '@/features/help/FaqContent';
 
 export default function FaqPage() {
   return (
     <div className="min-h-screen bg-paper">
+      <DocumentMeta title="FAQ" description={PAGE_DESCRIPTIONS.faq} />
       <header
         className="border-b border-neutral-200 px-6 py-4"
         style={{

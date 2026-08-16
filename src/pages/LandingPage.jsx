@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom';
+import { DocumentMeta } from '@/components/DocumentMeta';
+import { PAGE_DESCRIPTIONS } from '@/lib/pageMeta';
 import { Logo } from '@/components/brand/Logo';
 import { HexMark } from '@/components/brand/HexMark';
 import { Button } from '@/components/ui/button';
@@ -126,6 +128,7 @@ function ChromeFrame({ url, children }) {
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-paper">
+      <DocumentMeta title="Social scheduling & approval" description={PAGE_DESCRIPTIONS.landing} />
       <header
         className="border-b border-neutral-200 px-6 py-4"
         style={{

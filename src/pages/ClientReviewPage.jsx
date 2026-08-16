@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useDocumentMeta } from '@/components/DocumentMeta';
+import { PAGE_DESCRIPTIONS } from '@/lib/pageMeta';
 import { listPosts, updateApprovalStatus, addPostComment, listPostActivity } from '@/lib/posts';
 import { PostActivityCard } from '@/features/posts/PostActivityCard';
 import { notifyWorkflowEvent, getPostAuthorUserIds } from '@/lib/profile';
@@ -14,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { showToast } from '@/lib/toast';
 
 export default function ClientReviewPage() {
+  useDocumentMeta({ title: 'Review posts', description: PAGE_DESCRIPTIONS.clientReview });
   const { clientId } = useParams();
   const queryClient = useQueryClient();
   const [selectedId, setSelectedId] = useState(null);

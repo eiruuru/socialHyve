@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useDocumentMeta } from '@/components/DocumentMeta';
+import { PAGE_DESCRIPTIONS } from '@/lib/pageMeta';
 import { useAuth } from '@/lib/AuthContext';
 import { useClient } from '@/lib/clientContext';
 import { useMembership } from '@/lib/membershipContext';
@@ -60,6 +62,7 @@ function QueueLegend() {
 }
 
 export default function QueuePage() {
+  useDocumentMeta({ title: 'Approval queue', description: PAGE_DESCRIPTIONS.queue });
   const { user } = useAuth();
   const { activeClient } = useClient();
   const membership = useMembership();

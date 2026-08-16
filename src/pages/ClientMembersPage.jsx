@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useDocumentMeta } from '@/components/DocumentMeta';
+import { PAGE_DESCRIPTIONS } from '@/lib/pageMeta';
 import { useAuth } from '@/lib/AuthContext';
 import { useMembership } from '@/lib/membershipContext';
 import {
@@ -54,6 +56,11 @@ export default function ClientMembersPage() {
     queryFn: listClients,
   });
   const client = clients.find((c) => c.id === clientId);
+
+  useDocumentMeta({
+    title: client?.name ? `${client.name} members` : 'Client members',
+    description: PAGE_DESCRIPTIONS.clientMembers,
+  });
 
   const { data: members = [] } = useQuery({
     queryKey: ['client-members', clientId],

@@ -1,4 +1,6 @@
 import { Link, useParams } from 'react-router-dom';
+import { DocumentMeta } from '@/components/DocumentMeta';
+import { PAGE_DESCRIPTIONS } from '@/lib/pageMeta';
 import { PostComposer } from '@/features/posts/PostComposer';
 import { PostNavigation } from '@/features/posts/PostNavigation';
 import { usePostNavigation } from '@/features/posts/usePostNavigation';
@@ -10,6 +12,7 @@ export default function EditPostPage() {
 
   return (
     <div className="space-y-6">
+      <DocumentMeta title="Edit post" description={PAGE_DESCRIPTIONS.editPost} />
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <Button variant="ghost" size="sm" asChild className="mb-2 -ml-2">

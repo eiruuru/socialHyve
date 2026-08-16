@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useDocumentMeta } from '@/components/DocumentMeta';
+import { PAGE_DESCRIPTIONS, truncateForTitle } from '@/lib/pageMeta';
 import { invokeFunction } from '@/lib/supabaseFunctions';
 import { PlatformPreviewTabs } from '@/features/posts/previews/PlatformPreviewTabs';
 import { normalizeMediaList } from '@/features/posts/previews/mediaUtils';
@@ -29,6 +31,12 @@ export default function ReviewLinkPage() {
 
   const post = data?.post;
   const mediaItems = normalizeMediaList(post?.post_media || []);
+
+  useDocumentMeta({
+    title: post?.internal_name ? truncateForTitle(post.internal_name) : 'Review post',
+    description: PAGE_DESCRIPTIONS.reviewLink,
+    noIndex: true,
+  });
 
   const handleSubmit = async (approvalAction) => {
     if (approvalAction === 'require_edits' && !comment.trim()) {

@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useDocumentMeta } from '@/components/DocumentMeta';
+import { PAGE_DESCRIPTIONS } from '@/lib/pageMeta';
 import { invokeFunction } from '@/lib/supabaseFunctions';
 import { getCanvaConnection, disconnectCanva } from '@/lib/posts';
 import { getActiveClientId, useClient } from '@/lib/clientContext';
@@ -9,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function CanvaSettingsPage() {
+  useDocumentMeta({ title: 'Canva integration', description: PAGE_DESCRIPTIONS.canva });
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();

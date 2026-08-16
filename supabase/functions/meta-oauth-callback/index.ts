@@ -121,11 +121,11 @@ Deno.serve(async (req) => {
       externalId: string,
       tokenFields: Record<string, string | null>,
     ) {
+      const { user_access_token: _userToken, ...pageOnlyFields } = tokenFields;
       await service
         .from('social_accounts')
         .update({
-          ...tokenFields,
-          ...encryptedUserToken,
+          ...pageOnlyFields,
           token_expires_at: tokenExpiresAt,
         })
         .eq('workspace_id', workspaceId)
@@ -286,11 +286,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    await service
-      .from('social_accounts')
-      .update({ ...encryptedUserToken, token_expires_at: tokenExpiresAt })
-      .eq('client_id', clientId);
-
     if (!hasPrimary('instagram') && firstIgExternalId) {
       const igRow = (clientAccounts || []).find(
         (a) => a.platform === 'instagram' && a.external_id === firstIgExternalId,
@@ -303,6 +298,14 @@ Deno.serve(async (req) => {
         if (igPrimaryErr && !primaryErr) throw igPrimaryErr;
       }
     }
+
+    await service.from('client_meta_sessions').upsert({
+      client_id: clientId,
+      workspace_id: workspaceId,
+      user_access_token: encryptedUserToken.user_access_token,
+      token_expires_at: tokenExpiresAt,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'client_id' });
 
     return accountsRedirect({ connected: 'meta' }, clientId);
   } catch (err) {

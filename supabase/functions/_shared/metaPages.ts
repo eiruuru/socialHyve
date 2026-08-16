@@ -128,6 +128,11 @@ export async function fetchGrantedPages(
   return pages.filter((page) => page.access_token);
 }
 
+export async function isPageGrantedToUser(userToken: string, pageId: string): Promise<boolean> {
+  const byId = await collectPagesForUser(userToken);
+  return byId.has(pageId);
+}
+
 /** Resolve a Page access token from a user access token (handles corrupted stored page tokens). */
 export async function resolvePageAccessToken(
   pageId: string,

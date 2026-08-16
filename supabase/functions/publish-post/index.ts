@@ -2,7 +2,7 @@ import { handleOptions, jsonResponse } from '../_shared/cors.ts';
 import { verifyCronSecret } from '../_shared/cronAuth.ts';
 import { readToken, writeToken } from '../_shared/accountTokens.ts';
 import { notifyPublishFailed, notifyPublishSuccess } from '../_shared/workflowNotify.ts';
-import { debugTokenInfo, isValidPageTokenFor, resolvePageAccessToken } from '../_shared/metaPages.ts';
+import { debugTokenInfo, isPageGrantedToUser, isValidPageTokenFor, resolvePageAccessToken } from '../_shared/metaPages.ts';
 import { getServiceClient, META_GRAPH } from '../_shared/supabase.ts';
 
 const META_APP_ID = Deno.env.get('META_APP_ID') || '';
@@ -100,54 +100,103 @@ Deno.serve(async (req) => {
   }
 });
 
+async function getClientMetaUserToken(
+  service: ReturnType<typeof getServiceClient>,
+  clientId: string,
+): Promise<string | null> {
+  const { data: session } = await service
+    .from('client_meta_sessions')
+    .select('user_access_token')
+    .eq('client_id', clientId)
+    .maybeSingle();
+
+  if (session?.user_access_token) {
+    return readToken(session.user_access_token as string);
+  }
+
+  const { data: account } = await service
+    .from('social_accounts')
+    .select('user_access_token')
+    .eq('client_id', clientId)
+    .not('user_access_token', 'is', null)
+    .limit(1)
+    .maybeSingle();
+
+  if (!account?.user_access_token) return null;
+  return readToken(account.user_access_token as string);
+}
+
 async function ensurePageAccessToken(
   service: ReturnType<typeof getServiceClient>,
   account: Record<string, unknown>,
-  options: { forceRefresh?: boolean } = {},
+  options: { forceRefresh?: boolean; clientId?: string } = {},
 ): Promise<string> {
   const pageId = String(account.page_id || account.external_id || '');
+  const accountClientId = String(account.client_id || '');
+  const clientId = options.clientId || accountClientId;
+
+  if (!pageId) {
+    throw new Error('Missing Page credentials. Reconnect Meta in Settings → Accounts.');
+  }
+  if (clientId && accountClientId && clientId !== accountClientId) {
+    throw new Error('Account does not belong to this client. Reconnect Meta in Settings → Accounts.');
+  }
+
   const stored = await readToken((account.page_access_token || account.access_token) as string);
-  if (!pageId || !stored) {
+  if (!stored) {
     throw new Error('Missing Page credentials. Reconnect Meta in Settings → Accounts.');
   }
 
   const storedInfo = await debugTokenInfo(stored, APP_ACCESS_TOKEN);
+
+  if (storedInfo.type === 'PAGE' && storedInfo.profileId && storedInfo.profileId !== pageId) {
+    throw new Error(
+      `Stored token belongs to a different Facebook Page (${storedInfo.profileId}). ` +
+      'Reconnect Meta for this client in Settings → Accounts.',
+    );
+  }
+
   if (!options.forceRefresh && isValidPageTokenFor(storedInfo, pageId)) {
     return stored;
   }
 
-  const rawUserToken = account.user_access_token as string | undefined;
-  const userToken =
-    (rawUserToken ? await readToken(rawUserToken) : undefined) ||
-    (storedInfo.type === 'USER' ? stored : undefined);
-
-  if (userToken) {
-    const pageToken = await resolvePageAccessToken(pageId, userToken, APP_ACCESS_TOKEN);
-    const resolvedInfo = await debugTokenInfo(pageToken, APP_ACCESS_TOKEN);
-    if (!isValidPageTokenFor(resolvedInfo, pageId)) {
-      throw new Error(
-        'Facebook returned an invalid Page token. Reconnect Meta in Settings → Accounts.',
-      );
-    }
-    if (account.id) {
-      const encrypted = await writeToken(pageToken);
-      const encryptedUser = userToken ? await writeToken(userToken) : null;
-      await service.from('social_accounts').update({
-        access_token: encrypted,
-        page_access_token: encrypted,
-        user_access_token: encryptedUser,
-      }).eq('id', account.id);
-    }
-    return pageToken;
+  if (storedInfo.type === 'USER') {
+    throw new Error(
+      'Page token is missing or outdated for this client. Reconnect Meta in Settings → Accounts.',
+    );
   }
 
-  if (isValidPageTokenFor(storedInfo, pageId)) {
-    return stored;
+  const userToken = clientId ? await getClientMetaUserToken(service, clientId) : null;
+  if (!userToken) {
+    throw new Error(
+      'Facebook Page token expired. Reconnect Meta for this client in Settings → Accounts.',
+    );
   }
 
-  throw new Error(
-    'Facebook Page token is invalid. Reconnect Meta in Settings → Accounts.',
-  );
+  const pageGranted = await isPageGrantedToUser(userToken, pageId);
+  if (!pageGranted) {
+    throw new Error(
+      `Facebook Page ${pageId} is not authorized for this client. ` +
+      'Reconnect Meta and select every Page you publish from (including other clients).',
+    );
+  }
+
+  const pageToken = await resolvePageAccessToken(pageId, userToken, APP_ACCESS_TOKEN);
+  const resolvedInfo = await debugTokenInfo(pageToken, APP_ACCESS_TOKEN);
+  if (!isValidPageTokenFor(resolvedInfo, pageId)) {
+    throw new Error(
+      'Facebook returned an invalid Page token. Reconnect Meta for this client in Settings → Accounts.',
+    );
+  }
+
+  if (account.id) {
+    const encrypted = await writeToken(pageToken);
+    await service.from('social_accounts').update({
+      access_token: encrypted,
+      page_access_token: encrypted,
+    }).eq('id', account.id);
+  }
+  return pageToken;
 }
 
 function isImpersonationError(message: string): boolean {
@@ -159,15 +208,16 @@ async function publishWithPageToken<T>(
   service: ReturnType<typeof getServiceClient>,
   account: Record<string, unknown>,
   publish: (token: string) => Promise<T>,
+  clientId?: string,
 ): Promise<{ result: T; pageToken: string }> {
-  let pageToken = await ensurePageAccessToken(service, account);
+  let pageToken = await ensurePageAccessToken(service, account, { clientId });
   try {
     const result = await publish(pageToken);
     return { result, pageToken };
   } catch (err) {
     const message = (err as Error).message;
     if (!isImpersonationError(message)) throw err;
-    pageToken = await ensurePageAccessToken(service, account, { forceRefresh: true });
+    pageToken = await ensurePageAccessToken(service, account, { forceRefresh: true, clientId });
     const result = await publish(pageToken);
     return { result, pageToken };
   }
@@ -196,10 +246,12 @@ async function resolveWorkingAccount(
   accounts: Record<string, unknown>[],
   platform: string,
   preferredId?: string | null,
+  clientId?: string,
 ): Promise<Record<string, unknown> | null> {
   for (const account of accountCandidates(accounts, platform, preferredId)) {
+    if (clientId && account.client_id && account.client_id !== clientId) continue;
     try {
-      await ensurePageAccessToken(service, account);
+      await ensurePageAccessToken(service, account, { clientId });
       return account;
     } catch {
       // Try the next connected account for this client.
@@ -224,13 +276,27 @@ async function publishPost(service: ReturnType<typeof getServiceClient>, postId:
     : service.from('social_accounts').select('*').eq('workspace_id', post.workspace_id);
 
   const { data: accounts } = await accountQuery;
-  const accountRows = accounts || [];
+  const accountRows = (accounts || []).filter(
+    (row) => !post.client_id || row.client_id === post.client_id,
+  );
 
   const fbAccount = post.publish_facebook
-    ? await resolveWorkingAccount(service, accountRows, 'facebook', post.facebook_account_id)
+    ? await resolveWorkingAccount(
+      service,
+      accountRows,
+      'facebook',
+      post.facebook_account_id,
+      post.client_id,
+    )
     : null;
   const igAccount = post.publish_instagram
-    ? await resolveWorkingAccount(service, accountRows, 'instagram', post.instagram_account_id)
+    ? await resolveWorkingAccount(
+      service,
+      accountRows,
+      'instagram',
+      post.instagram_account_id,
+      post.client_id,
+    )
     : null;
   const media: MediaItem[] = (post.post_media || []).sort(
     (a: MediaItem, b: MediaItem) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
@@ -254,6 +320,7 @@ async function publishPost(service: ReturnType<typeof getServiceClient>, postId:
           const fbWithToken = { ...fbAccount, page_access_token: token, access_token: token };
           return publishToFacebook(fbWithToken, fbCaption, media, fbSchedule);
         },
+        post.client_id as string,
       );
       const permalink = await fetchMetaPermalink(externalId, pageToken);
       await service.from('post_targets').upsert({
@@ -295,6 +362,7 @@ async function publishPost(service: ReturnType<typeof getServiceClient>, postId:
           const igWithToken = { ...igAccount, page_access_token: token, access_token: token };
           return publishToInstagram(igWithToken, igCaption, media, igSchedule);
         },
+        post.client_id as string,
       );
       const permalink = await fetchMetaPermalink(externalId, pageToken);
       if (firstComment.trim() && !isFutureSchedule(igSchedule)) {

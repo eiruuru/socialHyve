@@ -135,10 +135,11 @@ export function CalendarPostCard({
   };
 
   const cardClassName = cn(
-    'relative mb-1 w-full overflow-hidden rounded-hyve-sm border bg-white text-left shadow-sm transition-shadow hover:shadow-md',
+    'relative mb-1 w-full overflow-hidden rounded-hyve-sm border bg-white text-left shadow-sm',
+    'transition-[transform,box-shadow] duration-200 ease-out hover:scale-[0.98] hover:shadow-md motion-reduce:transition-none motion-reduce:hover:scale-100',
     cardBorderClass,
     draggable && 'cursor-grab active:cursor-grabbing',
-    isDragging && 'opacity-50',
+    isDragging && 'scale-100 opacity-50',
     className,
   );
 

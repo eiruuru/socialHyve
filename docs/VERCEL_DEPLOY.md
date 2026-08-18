@@ -34,11 +34,13 @@ Keep `http://localhost:5173/**` for local dev.
 
 ## 4. Edge Function secrets
 
-Update `APP_URL` to your production URL:
+Update `APP_URL` to your production URL and configure invite email:
 
 ```bash
 # In .env
 APP_URL=https://your-app.vercel.app
+RESEND_API_KEY=re_...
+INVITE_FROM_EMAIL=invites@yourdomain.com
 bash scripts/set-secrets.sh
 ```
 

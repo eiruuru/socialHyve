@@ -12,7 +12,56 @@ export async function acceptInvite(token, type) {
 }
 
 export async function sendInviteEmail(payload) {
-  return invokeFunction('sendInviteEmail', payload);
+  const result = await invokeFunction('sendInviteEmail', {
+    ...payload,
+    appOrigin: typeof window !== 'undefined' ? window.location.origin : undefined,
+  });
+  if (result?.skipped) {
+    throw new Error('Email not configured');
+  }
+  if (result?.error) {
+    throw new Error(result.error);
+  }
+  return result;
+}
+
+export async function tryAddMemberByEmail({ type, email, role, clientId }) {
+  return invokeFunction('addMemberByEmail', {
+    type,
+    email: email.trim().toLowerCase(),
+    role,
+    clientId,
+  });
+}
+
+/** Add an existing user immediately, or create an invite if they have no account yet. */
+export async function addOrInviteOrganizationMember(email, role = 'editor') {
+  const normalizedEmail = email.trim().toLowerCase();
+  const addResult = await tryAddMemberByEmail({
+    type: 'organization',
+    email: normalizedEmail,
+    role,
+  });
+  if (addResult?.added) {
+    return { mode: 'added', ...addResult };
+  }
+  const invite = await inviteOrganizationMember(normalizedEmail, role);
+  return { mode: 'invited', invite, email: normalizedEmail };
+}
+
+export async function addOrInviteClientMember(clientId, email, role = CLIENT_ROLE.APPROVER) {
+  const normalizedEmail = email.trim().toLowerCase();
+  const addResult = await tryAddMemberByEmail({
+    type: 'client',
+    email: normalizedEmail,
+    role,
+    clientId,
+  });
+  if (addResult?.added) {
+    return { mode: 'added', ...addResult };
+  }
+  const invite = await inviteClientMember(clientId, normalizedEmail, role);
+  return { mode: 'invited', invite, email: normalizedEmail };
 }
 
 export async function getMembershipForUser() {
@@ -243,11 +292,12 @@ export async function addClientMember(clientId, userId, role = CLIENT_ROLE.APPRO
 export async function inviteOrganizationMember(email, role = 'editor') {
   const org = await getOrganization();
   if (!org) throw new Error('No organization');
+  const normalizedEmail = email.trim().toLowerCase();
   const token = crypto.randomUUID();
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
   const { data, error } = await supabase
     .from('organization_invites')
-    .insert({ organization_id: org.id, email, role, token, expires_at: expiresAt })
+    .insert({ organization_id: org.id, email: normalizedEmail, role, token, expires_at: expiresAt })
     .select()
     .single();
   if (error) throw error;
@@ -363,7 +413,7 @@ export async function listMyPendingOrganizationInvites() {
   const { data, error } = await supabase
     .from('organization_invites')
     .select('*, organizations(id, name)')
-    .eq('email', email)
+    .ilike('email', email)
     .gt('expires_at', new Date().toISOString())
     .order('created_at', { ascending: false });
   if (error) throw error;
@@ -384,6 +434,37 @@ export function buildClientInviteLink(token) {
 
 export function buildOrganizationInviteLink(token) {
   return `${window.location.origin}/app/login?invite=${token}`;
+}
+
+export async function deliverInviteLink({
+  type,
+  token,
+  email,
+  inviterName,
+  targetName,
+  role,
+}) {
+  const link = type === 'organization'
+    ? buildOrganizationInviteLink(token)
+    : buildClientInviteLink(token);
+  await navigator.clipboard.writeText(link);
+  let emailSent = false;
+  try {
+    await sendInviteEmail({
+      type,
+      token,
+      email,
+      inviterName,
+      targetName,
+      role,
+    });
+    emailSent = true;
+  } catch (err) {
+    if (!String(err.message).includes('Email not configured')) {
+      throw err;
+    }
+  }
+  return { emailSent, link };
 }
 
 export async function resendClientInviteReminder(inviteId) {

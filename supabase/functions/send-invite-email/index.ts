@@ -4,9 +4,10 @@ const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') || '';
 const INVITE_FROM_EMAIL = Deno.env.get('INVITE_FROM_EMAIL') || 'onboarding@resend.dev';
 const APP_URL = Deno.env.get('APP_URL') || 'http://localhost:5173';
 
-function inviteLink(type: string, token: string) {
+function inviteLink(type: string, token: string, appOrigin?: string) {
   const param = type === 'organization' ? 'invite' : 'clientInvite';
-  return `${APP_URL}/app/login?${param}=${token}`;
+  const base = (appOrigin || APP_URL).replace(/\/$/, '');
+  return `${base}/app/login?${param}=${token}`;
 }
 
 function formatClientRole(role: string): string {
@@ -52,13 +53,13 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { type, token, email, inviterName, targetName, role } = body;
+    const { type, token, email, inviterName, targetName, role, appOrigin } = body;
 
     if (!type || !token || !email) {
       return jsonResponse({ error: 'type, token, and email required' }, 400);
     }
 
-    const link = inviteLink(type, token);
+    const link = inviteLink(type, token, appOrigin as string | undefined);
     const html = buildHtml({
       inviterName: inviterName || 'Someone',
       targetName: targetName || 'socialHyve',

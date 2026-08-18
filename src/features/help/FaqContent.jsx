@@ -147,12 +147,13 @@ const FAQ_SECTIONS = [
         </HelpSubsection>
 
         <HelpSubsection title="Team tab (owners & admins)">
-          <p>Invite org teammates who work across clients.</p>
+          <p>Invite org teammates who work across clients, or add someone who already has an account.</p>
           <HelpSteps>
-            <li>Settings → <strong>Team</strong> → enter email, pick role (Editor, Manager, Admin) → <strong>Send invite</strong>.</li>
-            <li>Invite link is copied; an email is sent when configured.</li>
+            <li>Settings → <strong>Team</strong> → enter email, pick role (Editor, Manager, Admin) → <strong>Invite or add</strong>.</li>
+            <li>Existing users are added immediately; new users get a sign-up link (email + clipboard).</li>
             <li>Manage pending invites: copy link, resend email, or revoke.</li>
             <li>Change roles or remove members from the active list.</li>
+            <li>Logged-in invitees can accept from the notification bell.</li>
           </HelpSteps>
           <p>
             <strong>Publishing workflow</strong> toggle: when &quot;Require approval before schedule or publish&quot; is
@@ -646,7 +647,16 @@ const FAQ_SECTIONS = [
             <li>Click a row to jump to the related post, queue, or invite.</li>
             <li><strong>Mark all read</strong> clears unread state.</li>
           </HelpList>
-          <p>Client and org invites show inline Accept / Decline or View invite actions.</p>
+          <p>Client and org invites show inline Accept / Decline actions when you&apos;re logged in with the invited email.</p>
+        </HelpSubsection>
+
+        <HelpSubsection title="Invite links not working?">
+          <ul className="list-disc space-y-1 pl-5">
+            <li>Team invites use <code className="text-xs">/app/login?invite=…</code>; client invites use <code className="text-xs">?clientInvite=…</code>.</li>
+            <li>Links expire after 7 days — ask an admin to resend or use <strong>Invite or add</strong> again.</li>
+            <li>If email link fails but copied link works, your admin may need to update <strong>APP_URL</strong> in server settings.</li>
+            <li>After sign-up with email confirmation on, sign in again — the invite completes automatically.</li>
+          </ul>
         </HelpSubsection>
 
         <HelpSubsection title="What triggers notifications">

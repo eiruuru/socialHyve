@@ -59,7 +59,7 @@ function NotificationRow({ item, onNavigate, onAcceptClient, onDeclineClient, on
       {item.invite?.kind === 'org' && (
         <div className="mt-2 flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
           <Button size="sm" onClick={() => onAcceptOrg(item)}>
-            View invite
+            Accept
           </Button>
         </div>
       )}
@@ -121,9 +121,23 @@ export function NotificationPanel({ onClose }) {
   };
 
   const handleAcceptOrg = async (item) => {
-    await markRead(item);
-    onClose();
-    navigate(`/app/login?invite=${item.invite.invite.token}`);
+    const invite = item.invite?.invite;
+    if (!invite) return;
+    try {
+      const result = await acceptInvite(invite.token, 'organization');
+      await markRead(item);
+      await refreshMembership();
+      queryClient.invalidateQueries({ queryKey: ['org-members'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      showToast({
+        title: `Joined ${invite.organizations?.name || 'team'}`,
+        variant: 'success',
+      });
+      onClose();
+      if (result?.redirectTo) navigate(result.redirectTo);
+    } catch (err) {
+      showToast({ title: 'Could not accept invite', description: err.message, variant: 'error' });
+    }
   };
 
   return (

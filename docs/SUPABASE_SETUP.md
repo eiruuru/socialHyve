@@ -70,6 +70,8 @@ bash scripts/set-secrets.sh
 | `CANVA_CLIENT_ID` | [Canva Developer Portal](https://www.canva.dev/) |
 | `CANVA_CLIENT_SECRET` | Canva Developer Portal |
 | `CANVA_REDIRECT_URI` | `https://YOUR_REF.supabase.co/functions/v1/canva-oauth-callback` |
+| `RESEND_API_KEY` | Optional — invite emails skipped without it |
+| `INVITE_FROM_EMAIL` | Verified sender in Resend (default sandbox: `onboarding@resend.dev`) |
 | `APP_URL` | `http://localhost:5173` (dev) or your production URL |
 
 Set secrets in Dashboard: **Project Settings** → **Edge Functions** → **Secrets**
@@ -147,6 +149,17 @@ Open [http://localhost:5173](http://localhost:5173), sign up, then:
 | Canva "not connected" | Run `bash scripts/set-secrets.sh` after filling Canva credentials |
 | Posts not publishing on schedule | Run `supabase/setup/cron.sql` in SQL Editor |
 | CORS errors on Edge Functions | Functions include CORS headers; ensure you're logged in (JWT sent) |
+| Invite email not received | Set `RESEND_API_KEY` and verified `INVITE_FROM_EMAIL` via `bash scripts/set-secrets.sh` |
+| "Invalid or expired invite" | Use the full link from email; team invites use `?invite=`, client invites use `?clientInvite=`; check token not revoked/expired (7 days); set `APP_URL` to your production domain |
+| Invite link works but email wrong host | Update `APP_URL` in Edge Function secrets to match your deployed app URL |
+
+## Invite and email checklist (production)
+
+1. **`APP_URL`** — must match your live app (e.g. `https://your-app.vercel.app`). Used in invite emails.
+2. **`RESEND_API_KEY`** + **`INVITE_FROM_EMAIL`** — verified sender domain in Resend; run `bash scripts/set-secrets.sh`.
+3. **Supabase Auth → URL Configuration** — Site URL and Redirect URLs include production `/**`.
+4. **Email confirmation** — if enabled, invitees must confirm email then sign in; pending invite completes automatically.
+5. Deploy **`accept-invite`**, **`send-invite-email`**, and **`add-member-by-email`** via `bash scripts/deploy-edge-functions.sh`.
 
 ## Quick checklist
 

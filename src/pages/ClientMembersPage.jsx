@@ -6,7 +6,7 @@ import { PAGE_DESCRIPTIONS } from '@/lib/pageMeta';
 import { useAuth } from '@/lib/AuthContext';
 import { useMembership } from '@/lib/membershipContext';
 import {
-  inviteClientMember,
+  addOrInviteClientMember,
   listClientInvites,
   listClientMembers,
   listClientManagers,
@@ -19,7 +19,7 @@ import {
   resendClientInviteReminder,
   buildClientInviteLink,
   displayMember,
-  sendInviteEmail,
+  deliverInviteLink,
   updateClientMemberRole,
   canChangeClientMemberRole,
 } from '@/lib/organization';
@@ -100,24 +100,33 @@ export default function ClientMembersPage() {
     if (!email.trim()) return;
     setInviting(true);
     try {
-      const invite = await inviteClientMember(clientId, email.trim(), role);
-      const link = buildClientInviteLink(invite.token);
-      await navigator.clipboard.writeText(link);
-      try {
-        await sendInviteEmail({
-          type: 'client',
-          token: invite.token,
-          email: email.trim(),
-          inviterName: user?.email,
-          targetName: client?.name,
-          role: formatClientRole(role),
+      const normalizedEmail = email.trim().toLowerCase();
+      const result = await addOrInviteClientMember(clientId, normalizedEmail, role);
+
+      if (result.mode === 'added') {
+        showToast({
+          title: 'Member added',
+          description: `${normalizedEmail} can access this client with their existing account.`,
+          variant: 'success',
         });
-      } catch {
-        // email optional
+        setEmail('');
+        invalidateMembers();
+        return;
       }
+
+      const { emailSent } = await deliverInviteLink({
+        type: 'client',
+        token: result.invite.token,
+        email: normalizedEmail,
+        inviterName: user?.email,
+        targetName: client?.name,
+        role: formatClientRole(role),
+      });
       showToast({
-        title: 'Invite sent',
-        description: `Link copied for ${email}. If they're logged in, they'll see an in-app invite too.`,
+        title: emailSent ? 'Invite sent' : 'Invite link copied',
+        description: emailSent
+          ? `Link copied for ${normalizedEmail}. They'll also see an in-app invite if logged in.`
+          : `${normalizedEmail} has no account yet — share the copied link (email not configured).`,
         variant: 'success',
       });
       setEmail('');
@@ -159,22 +168,20 @@ export default function ClientMembersPage() {
   const handleResendInvite = async (invite) => {
     try {
       await resendClientInviteReminder(invite.id);
-      try {
-        await sendInviteEmail({
-          type: 'client',
-          token: invite.token,
-          email: invite.email,
-          inviterName: user?.email,
-          targetName: client?.name,
-          role: formatClientRole(invite.role),
-        });
-      } catch {
-        // email optional
-      }
+      const { emailSent } = await deliverInviteLink({
+        type: 'client',
+        token: invite.token,
+        email: invite.email,
+        inviterName: user?.email,
+        targetName: client?.name,
+        role: formatClientRole(invite.role),
+      });
       invalidateMembers();
       showToast({
-        title: 'Reminder sent',
-        description: `If ${invite.email} is logged in, they'll see the invite toast again.`,
+        title: emailSent ? 'Reminder sent' : 'Invite link copied',
+        description: emailSent
+          ? `If ${invite.email} is logged in, they'll see the invite toast again.`
+          : 'Email not configured — link copied to clipboard.',
         variant: 'success',
       });
     } catch (err) {
@@ -247,19 +254,18 @@ export default function ClientMembersPage() {
         </Button>
         <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Client access</p>
         <h2 className="font-display text-2xl font-bold">{client?.name || 'Client'} members</h2>
-        <p className="text-muted-foreground">Invite Creatives QA or Guests to review and approve posts</p>
+        <p className="text-muted-foreground">Add or invite Creatives QA and Guests to review and approve posts</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Invite member</CardTitle>
+          <CardTitle>Invite or add member</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Each client has its own members. To add someone to another client, open that client&apos;s
-            Members page and invite them again — you can choose a different role (e.g. Creatives QA here,
-            Guest elsewhere). If they&apos;re already logged in, they&apos;ll get an in-app invitation
-            to accept or decline; otherwise share the copied link.
+            Existing socialHyve users are added immediately. New emails receive an invite link by email
+            or clipboard. Each client has its own members — open another client&apos;s Members page to
+            add the same person with a different role.
           </p>
           <form onSubmit={handleInvite} className="flex flex-wrap items-end gap-2">
             <div>
@@ -285,7 +291,7 @@ export default function ClientMembersPage() {
               </select>
             </div>
             <Button type="submit" disabled={inviting || !email.trim()}>
-              {inviting ? 'Inviting…' : 'Send invite'}
+              {inviting ? 'Adding…' : 'Invite or add'}
             </Button>
           </form>
         </CardContent>

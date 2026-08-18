@@ -3,26 +3,58 @@ import { getServiceClient, requireUser } from '../_shared/supabase.ts';
 
 type InviteType = 'organization' | 'client';
 
-async function lookupOrgInvite(service: ReturnType<typeof getServiceClient>, token: string) {
-  const { data, error } = await service
+async function lookupOrgInvite(
+  service: ReturnType<typeof getServiceClient>,
+  token: string,
+  { requireValid = true } = {},
+) {
+  let query = service
     .from('organization_invites')
     .select('*, organizations(name)')
-    .eq('token', token)
-    .gt('expires_at', new Date().toISOString())
-    .maybeSingle();
+    .eq('token', token);
+
+  if (requireValid) {
+    query = query.gt('expires_at', new Date().toISOString());
+  }
+
+  const { data, error } = await query.maybeSingle();
   if (error) throw error;
   return data;
 }
 
-async function lookupClientInvite(service: ReturnType<typeof getServiceClient>, token: string) {
-  const { data, error } = await service
+async function lookupClientInvite(
+  service: ReturnType<typeof getServiceClient>,
+  token: string,
+  { requireValid = true } = {},
+) {
+  let query = service
     .from('client_invites')
     .select('*, clients(id, name)')
-    .eq('token', token)
-    .gt('expires_at', new Date().toISOString())
-    .maybeSingle();
+    .eq('token', token);
+
+  if (requireValid) {
+    query = query.gt('expires_at', new Date().toISOString());
+  }
+
+  const { data, error } = await query.maybeSingle();
   if (error) throw error;
   return data;
+}
+
+async function inviteLookupError(
+  service: ReturnType<typeof getServiceClient>,
+  type: InviteType,
+  token: string,
+): Promise<string> {
+  const lookup = type === 'organization' ? lookupOrgInvite : lookupClientInvite;
+  const row = await lookup(service, token, { requireValid: false });
+  if (!row) {
+    return 'Invalid invite link — use the full link from your invite email or ask for a new one.';
+  }
+  if (new Date(row.expires_at as string) <= new Date()) {
+    return 'This invite has expired. Ask your admin to send a new invite.';
+  }
+  return 'Invalid or expired invite';
 }
 
 Deno.serve(async (req) => {
@@ -44,7 +76,9 @@ Deno.serve(async (req) => {
     if (action === 'preview') {
       if (type === 'organization') {
         const invite = await lookupOrgInvite(service, token);
-        if (!invite) return jsonResponse({ error: 'Invalid or expired invite' }, 404);
+        if (!invite) {
+          return jsonResponse({ error: await inviteLookupError(service, type, token) }, 404);
+        }
         return jsonResponse({
           type: 'organization',
           email: invite.email,
@@ -54,7 +88,9 @@ Deno.serve(async (req) => {
       }
 
       const invite = await lookupClientInvite(service, token);
-      if (!invite) return jsonResponse({ error: 'Invalid or expired invite' }, 404);
+      if (!invite) {
+        return jsonResponse({ error: await inviteLookupError(service, type, token) }, 404);
+      }
       return jsonResponse({
         type: 'client',
         email: invite.email,
@@ -70,7 +106,9 @@ Deno.serve(async (req) => {
 
       if (type === 'organization') {
         const invite = await lookupOrgInvite(service, token);
-        if (!invite) return jsonResponse({ error: 'Invalid or expired invite' }, 404);
+        if (!invite) {
+          return jsonResponse({ error: await inviteLookupError(service, type, token) }, 404);
+        }
         if (invite.email.toLowerCase() !== userEmail) {
           return jsonResponse({ error: 'Invite email does not match your account' }, 403);
         }
@@ -81,7 +119,7 @@ Deno.serve(async (req) => {
             user_id: user.id,
             role: invite.role,
           },
-          { onConflict: 'organization_id,user_id' }
+          { onConflict: 'organization_id,user_id' },
         );
         await service.from('organization_invites').delete().eq('token', token);
 
@@ -89,7 +127,9 @@ Deno.serve(async (req) => {
       }
 
       const invite = await lookupClientInvite(service, token);
-      if (!invite) return jsonResponse({ error: 'Invalid or expired invite' }, 404);
+      if (!invite) {
+        return jsonResponse({ error: await inviteLookupError(service, type, token) }, 404);
+      }
       if (invite.email.toLowerCase() !== userEmail) {
         return jsonResponse({ error: 'Invite email does not match your account' }, 403);
       }
@@ -101,7 +141,7 @@ Deno.serve(async (req) => {
           user_id: user.id,
           role: invite.role,
         },
-        { onConflict: 'client_id,user_id' }
+        { onConflict: 'client_id,user_id' },
       );
       await service.from('client_invites').delete().eq('token', token);
 

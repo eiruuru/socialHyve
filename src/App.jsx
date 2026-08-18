@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { LoginRedirect } from '@/app/LoginRedirect';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/lib/AuthContext';
 import { ToastProvider } from '@/lib/toast';
@@ -39,7 +40,7 @@ export default function App() {
             <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/faq" element={<FaqPage />} />
-              <Route path="/login" element={<Navigate to="/app/login" replace />} />
+              <Route path="/login" element={<LoginRedirect />} />
               <Route path="/review/:token" element={<ReviewLinkPage />} />
               <Route path="/app/*" element={<AppRoutes />} />
               <Route path="*" element={<Navigate to="/" replace />} />

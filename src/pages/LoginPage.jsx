@@ -87,7 +87,7 @@ export default function LoginPage() {
           return;
         }
         savePendingInvite(inviteType, inviteToken);
-        setError('Check your email to confirm your account, then sign in again to complete the invite.');
+        setError('Check your email to confirm your account, then sign in again — your invite will complete automatically.');
         return;
       }
 

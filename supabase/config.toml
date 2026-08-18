@@ -60,6 +60,9 @@ verify_jwt = false
 [functions.accept-invite]
 verify_jwt = false
 
+[functions.add-member-by-email]
+verify_jwt = true
+
 [functions.send-invite-email]
 verify_jwt = true
 

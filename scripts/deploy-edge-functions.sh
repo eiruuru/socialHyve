@@ -55,6 +55,7 @@ FUNCTIONS=(
   refresh-tokens
   review-by-token
   accept-invite
+  add-member-by-email
   send-invite-email
   send-workflow-email
   create-notifications

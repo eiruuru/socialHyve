@@ -18,6 +18,7 @@ const FUNCTION_MAP = {
   refreshTokens: 'refresh-tokens',
   reviewByToken: 'review-by-token',
   acceptInvite: 'accept-invite',
+  addMemberByEmail: 'add-member-by-email',
   sendInviteEmail: 'send-invite-email',
   sendWorkflowEmail: 'send-workflow-email',
   createNotifications: 'create-notifications',

@@ -3,11 +3,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { useMembership } from '@/lib/membershipContext';
 import {
-  inviteOrganizationMember,
+  addOrInviteOrganizationMember,
   listOrganizationInvites,
   listOrganizationMembers,
   displayMember,
-  sendInviteEmail,
+  deliverInviteLink,
   getOrganization,
   updateOrganizationSettings,
   revokeOrganizationInvite,
@@ -57,23 +57,37 @@ export function TeamPanel() {
     if (!email.trim()) return;
     setInviting(true);
     try {
-      const invite = await inviteOrganizationMember(email.trim(), role);
+      const normalizedEmail = email.trim().toLowerCase();
       const orgData = await getOrganization();
-      const link = buildOrganizationInviteLink(invite.token);
-      await navigator.clipboard.writeText(link);
-      try {
-        await sendInviteEmail({
-          type: 'organization',
-          token: invite.token,
-          email: email.trim(),
-          inviterName: user?.email,
-          targetName: orgData?.name,
-          role,
+      const result = await addOrInviteOrganizationMember(normalizedEmail, role);
+
+      if (result.mode === 'added') {
+        showToast({
+          title: 'Member added',
+          description: `${normalizedEmail} can sign in with their existing account.`,
+          variant: 'success',
         });
-      } catch {
-        // email optional
+        setEmail('');
+        queryClient.invalidateQueries({ queryKey: ['org-members'] });
+        queryClient.invalidateQueries({ queryKey: ['org-invites'] });
+        return;
       }
-      showToast({ title: 'Invite link copied', description: email.trim(), variant: 'success' });
+
+      const { emailSent } = await deliverInviteLink({
+        type: 'organization',
+        token: result.invite.token,
+        email: normalizedEmail,
+        inviterName: user?.email,
+        targetName: orgData?.name,
+        role,
+      });
+      showToast({
+        title: emailSent ? 'Invite link copied and email sent' : 'Invite link copied',
+        description: emailSent
+          ? `${normalizedEmail} will receive an email to sign up.`
+          : `${normalizedEmail} has no account yet — share the copied link (email not configured).`,
+        variant: 'success',
+      });
       setEmail('');
       queryClient.invalidateQueries({ queryKey: ['org-invites'] });
     } catch (err) {
@@ -109,7 +123,7 @@ export function TeamPanel() {
   const handleResendInviteEmail = async (invite) => {
     try {
       const orgData = org || (await getOrganization());
-      await sendInviteEmail({
+      const { emailSent } = await deliverInviteLink({
         type: 'organization',
         token: invite.token,
         email: invite.email,
@@ -117,18 +131,13 @@ export function TeamPanel() {
         targetName: orgData?.name,
         role: invite.role,
       });
-      showToast({ title: 'Invite email sent again', variant: 'success' });
-    } catch {
-      try {
-        await navigator.clipboard.writeText(buildOrganizationInviteLink(invite.token));
-        showToast({
-          title: 'Email not configured — link copied',
-          description: 'Share the link manually with your teammate.',
-          variant: 'info',
-        });
-      } catch (err) {
-        showToast({ title: 'Could not resend invite', description: err.message, variant: 'error' });
-      }
+      showToast({
+        title: emailSent ? 'Invite email sent again' : 'Invite link copied',
+        description: emailSent ? undefined : 'Email not configured — link copied to clipboard.',
+        variant: 'success',
+      });
+    } catch (err) {
+      showToast({ title: 'Could not resend invite', description: err.message, variant: 'error' });
     }
   };
 
@@ -180,13 +189,15 @@ export function TeamPanel() {
     <div className="space-y-6">
       {confirmDialog}
       <p className="text-sm text-muted-foreground">
-        Invite editors, managers, and admins. Managers get client access once assigned on a client&apos;s members page.
+        Add teammates who already use socialHyve instantly, or send an invite link for new users.
       </p>
 
       <Card>
         <CardHeader>
-          <CardTitle>Invite team member</CardTitle>
-          <CardDescription>Send an invite link by email or copy it to share manually.</CardDescription>
+          <CardTitle>Invite or add team member</CardTitle>
+          <CardDescription>
+            Existing users are added immediately. New emails get a sign-up invite link by email or clipboard.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleInvite} className="flex flex-wrap items-end gap-2">
@@ -213,7 +224,7 @@ export function TeamPanel() {
               </select>
             </div>
             <Button type="submit" disabled={inviting || !email.trim()}>
-              {inviting ? 'Inviting…' : 'Send invite'}
+              {inviting ? 'Adding…' : 'Invite or add'}
             </Button>
           </form>
         </CardContent>

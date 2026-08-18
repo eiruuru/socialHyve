@@ -3,8 +3,8 @@ import { acceptInvite } from '@/lib/organization';
 import {
   clearPendingInvite,
   loadPendingInvite,
-  savePendingInvite,
 } from '@/lib/membershipContext';
+import { showToast } from '@/lib/toast';
 import { EmptyHiveState } from '@/components/EmptyHiveState';
 
 export function InviteAcceptanceGate({ children }) {
@@ -29,6 +29,14 @@ export function InviteAcceptanceGate({ children }) {
         }
       } catch (err) {
         console.error('Pending invite accept failed:', err);
+        clearPendingInvite();
+        if (!cancelled) {
+          showToast({
+            title: 'Could not complete invite',
+            description: err.message,
+            variant: 'error',
+          });
+        }
       }
 
       if (!cancelled) setChecking(false);
@@ -49,4 +57,4 @@ export function InviteAcceptanceGate({ children }) {
   return children;
 }
 
-export { savePendingInvite };
+export { savePendingInvite } from '@/lib/membershipContext';

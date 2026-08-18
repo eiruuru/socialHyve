@@ -37,7 +37,8 @@ export default function LoginPage() {
       .then((preview) => {
         setInvitePreview(preview);
         setEmail(preview.email || '');
-        if (preview.type === 'client') setIsSignUp(true);
+        // Invite links are for new accounts; existing users can switch to sign in.
+        setIsSignUp(true);
       })
       .catch((err) => setError(err.message))
       .finally(() => setInviteLoading(false));
@@ -184,8 +185,23 @@ export default function LoginPage() {
                 <p className="text-sm text-status-published">Password reset link sent — check your email.</p>
               )}
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Loading...' : invitePreview ? 'Accept & continue' : isSignUp ? 'Sign up' : 'Sign in'}
+                {loading
+                  ? 'Loading...'
+                  : invitePreview
+                    ? (isSignUp ? 'Create account & accept' : 'Sign in & accept')
+                    : isSignUp
+                      ? 'Sign up'
+                      : 'Sign in'}
               </Button>
+              {invitePreview && (
+                <button
+                  type="button"
+                  className="w-full text-sm text-muted-foreground hover:text-foreground"
+                  onClick={() => setIsSignUp(!isSignUp)}
+                >
+                  {isSignUp ? 'Already have an account? Sign in' : 'Need an account? Create one'}
+                </button>
+              )}
               {!invitePreview && !isSignUp && (
                 <button
                   type="button"

@@ -5,8 +5,9 @@ export const DEFAULT_DESCRIPTION =
 
 /** @type {Record<string, string>} */
 export const PAGE_DESCRIPTIONS = {
-  landing: DEFAULT_DESCRIPTION,
-  faq: 'Answers about workspace Meta pool, approvals, calendar, CSV import, team roles, and client review links.',
+  landing:
+    'Draft, review, and publish Instagram and Facebook for every client — Fine-Tune overrides, approval queue, calendar, Interactions inbox, and URL shortener in one hive.',
+  faq: 'Answers about workspace Meta pool, Fine-Tune, approvals, calendar, Interactions, URL shortener, team roles, and client review links.',
   login: 'Sign in to your socialHyve workspace to manage clients, approvals, and scheduled posts.',
   calendar: 'View and reschedule content on the month or week calendar. Drag posts to new dates and spot overdue items.',
   interactions: 'Reply to Facebook and Instagram comments and DMs in one inbox. Sync, assign, archive, and link threads to posts.',

@@ -1,21 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
-
-function ChromeFrame({ url, children }) {
-  return (
-    <div className="overflow-hidden rounded-hyve-lg border border-neutral-200 bg-white shadow-hyve-sm">
-      <div className="flex items-center gap-1.5 border-b border-neutral-200 bg-neutral-100 px-3.5 py-2.5">
-        <span className="h-2.5 w-2.5 rounded-full bg-[#EF6A5F]" />
-        <span className="h-2.5 w-2.5 rounded-full bg-[#F5BD4F]" />
-        <span className="h-2.5 w-2.5 rounded-full bg-[#61C454]" />
-        <span className="ml-2.5 rounded-md border border-neutral-200 bg-white px-2.5 py-0.5 font-mono text-[11px] text-neutral-500">
-          {url}
-        </span>
-      </div>
-      {children}
-    </div>
-  );
-}
+import { MarketingChromeFrame } from '@/features/marketing/MarketingChromeFrame';
+import { MARKETING_SCREENSHOTS } from '@/features/marketing/marketingAssets';
+import {
+  CalendarDemo,
+  ClientsGridDemo,
+  ComposerDemo,
+  InteractionsDemo,
+  PreviewGridDemo,
+  QueueDemo,
+} from '@/features/marketing/MarketingDemos';
 
 function Example({ children }) {
   return (
@@ -45,6 +39,7 @@ function HelpList({ children }) {
 
 const FAQ_SECTIONS = [
   {
+    id: 'getting-started',
     title: 'Getting started',
     summary: 'First-time workspace setup from name to first approved post.',
     content: (
@@ -86,25 +81,18 @@ const FAQ_SECTIONS = [
           pages to River Retail, then drafts a weekend promo and submits it for the café owner to approve.
         </Example>
 
-        <ChromeFrame url="socialhyve.app/settings/account?tab=clients">
-          <div className="space-y-2 p-4">
-            <div className="rounded-hyve-sm bg-honey px-3 py-2 text-sm font-semibold text-white shadow-hyve-sm">
-              River Studio
-            </div>
-            <div className="flex items-center justify-between rounded-hyve-sm border border-neutral-200 px-3 py-2">
-              <span className="font-medium">River Café</span>
-              <span className="text-xs text-status-published">2 pages assigned</span>
-            </div>
-            <div className="flex items-center justify-between rounded-hyve-sm border border-neutral-200 px-3 py-2">
-              <span className="font-medium">River Retail</span>
-              <span className="text-xs text-muted-foreground">Unassigned pool</span>
-            </div>
-          </div>
-        </ChromeFrame>
+        <MarketingChromeFrame
+          url={MARKETING_SCREENSHOTS.settingsClients.url}
+          screenshot={MARKETING_SCREENSHOTS.settingsClients.src}
+          screenshotAlt={MARKETING_SCREENSHOTS.settingsClients.alt}
+        >
+          <ClientsGridDemo />
+        </MarketingChromeFrame>
       </>
     ),
   },
   {
+    id: 'workspace-settings',
     title: 'Workspace settings',
     summary: 'Workspace name, profile, clients, team, and Meta Accounts tabs.',
     content: (
@@ -136,14 +124,25 @@ const FAQ_SECTIONS = [
         </HelpSubsection>
 
         <HelpSubsection title="Clients tab (org team)">
-          <p>Each client is a separate brand with its own calendar, social links, and approval workflow.</p>
+          <p>Each client is a separate brand with its own calendar, social links, and approval workflow. Clients appear as a card grid with timezone, assigned pages, and an <strong>Open calendar</strong> shortcut.</p>
           <HelpSteps>
             <li>Settings → <strong>Clients</strong> → enter a name → <strong>Add client</strong>.</li>
             <li>Edit a client to change name or <strong>default timezone</strong> (used for scheduling).</li>
             <li>Click <strong>Members</strong> to invite Creatives QA, Guests, or assign org Managers.</li>
+            <li>Use <strong>Open calendar</strong> on a client card to jump straight to that brand&apos;s calendar.</li>
             <li>Delete removes the client and all its posts, connections, and members (destructive).</li>
           </HelpSteps>
           <p>Owners, admins, and editors can manage clients. New clients are auto-selected in the sidebar switcher.</p>
+        </HelpSubsection>
+
+        <HelpSubsection title="Activity tab (owners & admins)">
+          <p>Settings → <strong>Activity</strong> shows a durable audit log for your workspace:</p>
+          <HelpList>
+            <li>Post created, scheduled, published, or deleted.</li>
+            <li>Team and client membership changes.</li>
+            <li>Recent events with actor, timestamp, and summary text.</li>
+          </HelpList>
+          <p>Use Activity when you need to trace who published or removed content without digging through individual post detail pages.</p>
         </HelpSubsection>
 
         <HelpSubsection title="Team tab (owners & admins)">
@@ -177,6 +176,7 @@ const FAQ_SECTIONS = [
     ),
   },
   {
+    id: 'composer',
     title: 'Composer',
     summary: 'Draft, review, schedule, publish, and fine-tune per platform.',
     content: (
@@ -233,43 +233,71 @@ const FAQ_SECTIONS = [
         </HelpSubsection>
 
         <HelpSubsection title="Fine tune (per-platform overrides)">
-          <p>Expand the <strong>Fine tune</strong> card below the action bar when Facebook and/or Instagram is enabled.</p>
+          <p>
+            Expand the optional <strong>Fine tune</strong> card below the action bar when Facebook and/or Instagram is
+            enabled. Use it when one post needs different captions, schedules, placements, or platform-specific extras.
+          </p>
+          <p className="mt-4 text-sm font-semibold text-ink">Placements &amp; publish mode</p>
           <HelpList>
-            <li><strong>Facebook</strong> — override caption, override schedule time, Feed-only placement note.</li>
-            <li><strong>Instagram</strong> — override caption, override schedule time, <strong>First comment</strong> (auto-posted after publish), Feed-only placement note.</li>
+            <li><strong>Facebook</strong> — Feed, Carousel, Reels, or Stories placement.</li>
+            <li><strong>Instagram</strong> — Feed, Reels, or Stories placement.</li>
+            <li><strong>Publish mode</strong> — choose whether the platform uses the main post schedule or its own override time.</li>
+          </HelpList>
+          <p className="mt-4 text-sm font-semibold text-ink">Facebook overrides</p>
+          <HelpList>
+            <li><strong>Caption override</strong> — different FB copy from the main caption.</li>
+            <li><strong>Caption toolbar</strong> — emoji, hashtag, variables (<code className="text-xs">{'{client_name}'}</code>, <code className="text-xs">{'{post_label}'}</code>), and link insert.</li>
+            <li><strong>Shorten URLs</strong> — rewrites links to <code className="text-xs">https://socialhyve.app/s/…</code> when publishing to Facebook (see URL shortener below).</li>
+            <li><strong>Schedule override</strong> — publish FB at a different time than the main schedule.</li>
+            <li><strong>Carousel link</strong> — destination URL when Carousel placement is selected.</li>
+            <li><strong>Media overrides</strong> — swap or reorder media for Facebook only.</li>
+          </HelpList>
+          <p className="mt-4 text-sm font-semibold text-ink">Instagram overrides</p>
+          <HelpList>
+            <li><strong>Caption override</strong> — different IG copy from the main caption.</li>
+            <li><strong>Schedule override</strong> — publish IG at a different time.</li>
+            <li><strong>First comment</strong> — auto-posted after publish (great for hashtags).</li>
+            <li><strong>Location</strong> — search and tag an Instagram location on the post.</li>
+            <li><strong>Collaborators</strong> — tag Instagram collaborator accounts.</li>
+            <li><strong>AI Generated</strong> — mark content as AI-generated when required by Meta.</li>
+            <li><strong>Media overrides</strong> — swap or reorder media for Instagram only.</li>
           </HelpList>
           <Example>
-            One caption for both platforms, but Fine tune schedules Instagram 30 minutes after Facebook with a shorter IG caption and a first comment with hashtags.
+            One caption for both platforms, but Fine tune schedules Instagram 30 minutes after Facebook with a shorter IG
+            caption, a first comment with hashtags, and Shorten URLs enabled for the Facebook link.
           </Example>
+        </HelpSubsection>
+
+        <HelpSubsection title="URL shortener">
+          <p>
+            When <strong>Shorten URLs</strong> is enabled in Fine tune for Facebook, long links in the FB caption are
+            replaced with tracked short links at publish time:
+          </p>
+          <HelpList>
+            <li>Format: <code className="text-xs">https://socialhyve.app/s/{'{slug}'}</code></li>
+            <li>Created automatically when you publish — no manual copy/paste.</li>
+            <li>Short links redirect to the original destination URL.</li>
+            <li>Use the caption toolbar checkbox or enable before publishing from Fine tune.</li>
+          </HelpList>
+          <p>Instagram captions do not use the shortener today — FB only.</p>
         </HelpSubsection>
 
         <HelpSubsection title="Editing & published posts">
           <p>Edit existing drafts from post detail or Queue. Published posts cannot be edited in the composer — create a new post instead.</p>
         </HelpSubsection>
 
-        <ChromeFrame url="socialhyve.app/posts/new">
-          <div className="grid gap-3 p-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <div className="h-16 rounded-hyve-sm border border-neutral-200 bg-paper-alt px-3 py-2 text-xs text-neutral-500">
-                Caption…
-              </div>
-              <div className="flex gap-2">
-                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-800">FB</span>
-                <span className="rounded-full bg-pink-100 px-2 py-0.5 text-[10px] font-semibold text-pink-800">IG</span>
-              </div>
-              <div className="rounded-hyve-sm border border-neutral-200 px-3 py-2 text-[10px] text-neutral-500">
-                Save draft · Submit for review · Schedule · Publish now
-              </div>
-            </div>
-            <div className="flex aspect-square items-center justify-center rounded-hyve-sm bg-neutral-200 text-xs text-neutral-500">
-              FB / IG previews
-            </div>
-          </div>
-        </ChromeFrame>
+        <MarketingChromeFrame
+          url={MARKETING_SCREENSHOTS.composer.url}
+          screenshot={MARKETING_SCREENSHOTS.composer.src}
+          screenshotAlt={MARKETING_SCREENSHOTS.composer.alt}
+        >
+          <ComposerDemo />
+        </MarketingChromeFrame>
       </>
     ),
   },
   {
+    id: 'approval-queue',
     title: 'Approval queue',
     summary: 'Review tabs, urgency badges, approve, request changes, and publish.',
     content: (
@@ -283,6 +311,7 @@ const FAQ_SECTIONS = [
             <li><strong>Needs review</strong> — Pending review and Changes requested (not yet published).</li>
             <li><strong>Approved</strong> — Approved posts still in draft or scheduled status, ready to schedule/publish.</li>
             <li><strong>All active</strong> — Every non-published post regardless of approval state.</li>
+            <li><strong>Published</strong> — Archive of posts that have gone live; useful for checking recent publish history.</li>
           </HelpList>
         </HelpSubsection>
 
@@ -323,10 +352,19 @@ const FAQ_SECTIONS = [
           A post scheduled for 4 PM today sits in Needs review with a red Past due badge. The client approves from
           their review link; your editor then schedules it for the next available slot.
         </Example>
+
+        <MarketingChromeFrame
+          url={MARKETING_SCREENSHOTS.queue.url}
+          screenshot={MARKETING_SCREENSHOTS.queue.src}
+          screenshotAlt={MARKETING_SCREENSHOTS.queue.alt}
+        >
+          <QueueDemo />
+        </MarketingChromeFrame>
       </>
     ),
   },
   {
+    id: 'calendar',
     title: 'Calendar',
     summary: 'Month and week views, drag reschedule, urgency, and planning.',
     content: (
@@ -367,21 +405,18 @@ const FAQ_SECTIONS = [
           <p>Guest client members see a read-only calendar (no drag, no new post buttons). Creatives QA can drag to reschedule and open approved posts to schedule, but cannot create new posts or import CSV.</p>
         </HelpSubsection>
 
-        <ChromeFrame url="socialhyve.app/calendar">
-          <div className="grid grid-cols-7 gap-px bg-neutral-200 p-px">
-            {Array.from({ length: 7 }, (_, i) => (
-              <div key={i} className="aspect-square bg-white p-1">
-                {i === 3 && (
-                  <div className="h-full rounded-sm bg-honey-light/40 ring-1 ring-honey-dark/30" title="Scheduled post" />
-                )}
-              </div>
-            ))}
-          </div>
-        </ChromeFrame>
+        <MarketingChromeFrame
+          url={MARKETING_SCREENSHOTS.calendar.url}
+          screenshot={MARKETING_SCREENSHOTS.calendar.src}
+          screenshotAlt={MARKETING_SCREENSHOTS.calendar.alt}
+        >
+          <CalendarDemo />
+        </MarketingChromeFrame>
       </>
     ),
   },
   {
+    id: 'csv-import',
     title: 'CSV import',
     summary: 'Bulk-create draft posts from a spreadsheet.',
     content: (
@@ -424,6 +459,7 @@ const FAQ_SECTIONS = [
     ),
   },
   {
+    id: 'previews',
     title: 'Previews',
     summary: 'Facebook feed, Instagram feed, grid, and Reels previews.',
     content: (
@@ -454,30 +490,25 @@ const FAQ_SECTIONS = [
             <li>Your draft appears highlighted with a honey ring among recent and scheduled posts.</li>
             <li>Toggle <strong>Show future posts</strong> to include scheduled content not yet live — useful for checking visual rhythm.</li>
           </HelpSteps>
-          <p>Draft and Scheduled badges appear on grid cells. Reels grid preview shows a coming-soon placeholder when Reels mode is selected.</p>
+          <p>Draft and Scheduled badges appear on grid cells. Switch preview modes with the toolbar — Feed, Grid, and Reels each reflect placement-aware layouts.</p>
         </HelpSubsection>
 
         <HelpSubsection title="Instagram Reels preview">
-          <p>Vertical 9:16 preview for video content when Reels mode is selected in the preview toolbar.</p>
+          <p>Vertical 9:16 preview for video content when Reels placement or preview mode is selected in the toolbar.</p>
         </HelpSubsection>
 
-        <ChromeFrame url="socialhyve.app/posts/new · previews">
-          <div className="grid grid-cols-3 gap-0.5 p-3">
-            {Array.from({ length: 9 }, (_, i) => (
-              <div
-                key={i}
-                className={cn(
-                  'aspect-square bg-neutral-200',
-                  i === 4 && 'ring-2 ring-honey ring-inset bg-honey-light/50',
-                )}
-              />
-            ))}
-          </div>
-        </ChromeFrame>
+        <MarketingChromeFrame
+          url={MARKETING_SCREENSHOTS.previewGrid.url}
+          screenshot={MARKETING_SCREENSHOTS.previewGrid.src}
+          screenshotAlt={MARKETING_SCREENSHOTS.previewGrid.alt}
+        >
+          <PreviewGridDemo />
+        </MarketingChromeFrame>
       </>
     ),
   },
   {
+    id: 'team-roles',
     title: 'Team & roles',
     summary: 'Org teammates, client roles, review portal, and review links.',
     content: (
@@ -532,6 +563,7 @@ const FAQ_SECTIONS = [
     ),
   },
   {
+    id: 'interactions',
     title: 'Interactions',
     summary: 'Facebook and Instagram comments and DMs in one inbox.',
     content: (
@@ -578,6 +610,14 @@ const FAQ_SECTIONS = [
           </p>
         </HelpSubsection>
 
+        <MarketingChromeFrame
+          url={MARKETING_SCREENSHOTS.interactions.url}
+          screenshot={MARKETING_SCREENSHOTS.interactions.src}
+          screenshotAlt={MARKETING_SCREENSHOTS.interactions.alt}
+        >
+          <InteractionsDemo />
+        </MarketingChromeFrame>
+
         <Example>
           A café post goes live on Instagram; a customer comment appears in Interactions within minutes after sync.
           Your community manager replies from socialHyve and assigns the thread to a teammate for follow-up.
@@ -586,6 +626,7 @@ const FAQ_SECTIONS = [
     ),
   },
   {
+    id: 'integrations',
     title: 'Integrations',
     summary: 'Meta pool, Social Links, and Canva — setup and daily use.',
     content: (
@@ -631,6 +672,7 @@ const FAQ_SECTIONS = [
     ),
   },
   {
+    id: 'notifications',
     title: 'Notifications',
     summary: 'Bell icon, in-app alerts, email, and push preferences.',
     content: (
@@ -654,7 +696,7 @@ const FAQ_SECTIONS = [
           <ul className="list-disc space-y-1 pl-5">
             <li>Team invites use <code className="text-xs">/app/login?invite=…</code>; client invites use <code className="text-xs">?clientInvite=…</code>.</li>
             <li>Links expire after 7 days — ask an admin to resend or use <strong>Invite or add</strong> again.</li>
-            <li>If email link fails but copied link works, your admin may need to update <strong>APP_URL</strong> in server settings.</li>
+            <li>If email link fails but copied link works, confirm production links use <code className="text-xs">https://socialhyve.app</code> (admin: <strong>APP_URL</strong> server setting).</li>
             <li>After sign-up with email confirmation on, sign in again — the invite completes automatically.</li>
           </ul>
         </HelpSubsection>
@@ -688,8 +730,29 @@ const FAQ_SECTIONS = [
 ];
 
 export function FaqContent({ className, defaultSectionIndex = 0 }) {
-  const [activeIndex, setActiveIndex] = useState(defaultSectionIndex);
+  const getIndexForHash = () => {
+    const hash = window.location.hash.replace(/^#/, '');
+    if (!hash) return defaultSectionIndex;
+    const index = FAQ_SECTIONS.findIndex((item) => item.id === hash);
+    return index >= 0 ? index : defaultSectionIndex;
+  };
+
+  const [activeIndex, setActiveIndex] = useState(getIndexForHash);
   const section = FAQ_SECTIONS[activeIndex] ?? FAQ_SECTIONS[0];
+
+  useEffect(() => {
+    const syncFromHash = () => setActiveIndex(getIndexForHash());
+    window.addEventListener('hashchange', syncFromHash);
+    return () => window.removeEventListener('hashchange', syncFromHash);
+  }, [defaultSectionIndex]);
+
+  const selectSection = (index) => {
+    setActiveIndex(index);
+    const id = FAQ_SECTIONS[index]?.id;
+    if (id) {
+      window.history.replaceState(null, '', `#${id}`);
+    }
+  };
 
   return (
     <div className={cn('flex flex-col gap-6 lg:flex-row lg:items-start', className)}>
@@ -701,9 +764,9 @@ export function FaqContent({ className, defaultSectionIndex = 0 }) {
           const isActive = index === activeIndex;
           return (
             <button
-              key={item.title}
+              key={item.id}
               type="button"
-              onClick={() => setActiveIndex(index)}
+              onClick={() => selectSection(index)}
               aria-current={isActive ? 'true' : undefined}
               className={cn(
                 'w-full rounded-hyve-sm px-3 py-2.5 text-left transition-colors',
@@ -726,7 +789,10 @@ export function FaqContent({ className, defaultSectionIndex = 0 }) {
         })}
       </nav>
 
-      <article className="min-w-0 flex-1 rounded-hyve-lg border border-neutral-200 bg-white p-6 shadow-hyve-sm lg:p-8">
+      <article
+        id={section.id}
+        className="min-w-0 flex-1 scroll-mt-24 rounded-hyve-lg border border-neutral-200 bg-white p-6 shadow-hyve-sm lg:p-8"
+      >
         <h3 className="font-display text-xl font-bold text-ink">{section.title}</h3>
         <p className="mt-1 text-sm text-muted-foreground">{section.summary}</p>
         <div className="mt-6 space-y-1">{section.content}</div>

@@ -34,7 +34,8 @@ export default function FaqPage() {
         <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Help</p>
         <h1 className="mt-2 font-display text-4xl font-bold text-ink">Frequently asked questions</h1>
         <p className="mt-3 text-neutral-600">
-          Step-by-step guides for workspace setup, composing, approvals, calendar, integrations, roles, and notifications.
+          Step-by-step guides for workspace setup, Fine-Tune overrides, approvals, calendar, Interactions inbox, URL
+          shortener, team roles, and notifications.
         </p>
         <FaqContent className="mt-10" />
       </main>

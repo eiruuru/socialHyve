@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Facebook, Instagram } from 'lucide-react';
 import { useOptionalClient } from '@/lib/clientContext';
+import { getPlatformPlacement } from '@/features/posts/platformOverrides';
 import { FacebookFeedPreview } from './FacebookFeedPreview';
+import { FacebookReelsPreview } from './FacebookReelsPreview';
+import { FacebookStoriesPreview } from './FacebookStoriesPreview';
 import { InstagramPreviewPanel } from './InstagramPreviewPanel';
 import { PreviewFrame } from './PreviewFrame';
 import { IconTooltip } from '@/components/ui/IconTooltip';
@@ -20,9 +23,13 @@ export function PlatformPreviewTabs({
   instagramCaption,
   facebookAccountId = null,
   instagramAccountId = null,
+  platformOverrides = {},
 }) {
   const clientCtx = useOptionalClient();
   const clientId = clientIdProp || clientCtx?.activeClient?.id;
+
+  const facebookPlacement = getPlatformPlacement(platformOverrides, 'facebook');
+  const instagramPlacement = getPlatformPlacement(platformOverrides, 'instagram');
 
   const showFacebook = publishFacebook;
   const showInstagram = publishInstagram;
@@ -43,18 +50,46 @@ export function PlatformPreviewTabs({
     );
   }
 
-  const renderPreview = (platform) => {
-    if (platform === 'facebook') {
+  const renderFacebookPreview = () => {
+    const captionText = facebookCaption ?? caption;
+    if (facebookPlacement === 'reels') {
       return (
         <PreviewFrame platform="facebook" scheduledAt={scheduledAt} scheduleTimezone={scheduleTimezone}>
-          <FacebookFeedPreview
-            caption={facebookCaption ?? caption}
+          <FacebookReelsPreview
+            caption={captionText}
             media={media}
-            embedded
             facebookAccountId={facebookAccountId}
           />
         </PreviewFrame>
       );
+    }
+    if (facebookPlacement === 'stories') {
+      return (
+        <PreviewFrame platform="facebook" scheduledAt={scheduledAt} scheduleTimezone={scheduleTimezone}>
+          <FacebookStoriesPreview
+            caption={captionText}
+            media={media}
+            facebookAccountId={facebookAccountId}
+          />
+        </PreviewFrame>
+      );
+    }
+    return (
+      <PreviewFrame platform="facebook" scheduledAt={scheduledAt} scheduleTimezone={scheduleTimezone}>
+        <FacebookFeedPreview
+          caption={captionText}
+          media={media}
+          embedded
+          facebookAccountId={facebookAccountId}
+          carouselMode={facebookPlacement === 'carousel'}
+        />
+      </PreviewFrame>
+    );
+  };
+
+  const renderPreview = (platform) => {
+    if (platform === 'facebook') {
+      return renderFacebookPreview();
     }
     return (
       <InstagramPreviewPanel
@@ -66,6 +101,7 @@ export function PlatformPreviewTabs({
         currentPostId={currentPostId}
         publishInstagram={publishInstagram}
         instagramAccountId={instagramAccountId}
+        placement={instagramPlacement}
       />
     );
   };

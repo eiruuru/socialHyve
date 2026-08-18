@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Film, LayoutGrid, Square } from 'lucide-react';
 import { InstagramFeedPreview } from './InstagramFeedPreview';
 import { InstagramGridPreview } from './InstagramGridPreview';
 import { InstagramReelsPreview } from './InstagramReelsPreview';
+import { InstagramStoriesPreview } from './InstagramStoriesPreview';
 import { PreviewFrame } from './PreviewFrame';
 import { IconTooltip } from '@/components/ui/IconTooltip';
 import { cn } from '@/lib/utils';
@@ -25,6 +26,12 @@ function IconToggle({ active, onClick, title, description, children }) {
   );
 }
 
+function placementToContentFilter(placement) {
+  if (placement === 'reels') return 'reels';
+  if (placement === 'stories') return 'stories';
+  return 'posts';
+}
+
 export function InstagramPreviewPanel({
   caption,
   media,
@@ -34,10 +41,16 @@ export function InstagramPreviewPanel({
   currentPostId,
   publishInstagram = true,
   instagramAccountId = null,
+  placement = 'feed',
 }) {
   const [viewMode, setViewMode] = useState('post');
-  const [contentFilter, setContentFilter] = useState('posts');
+  const [contentFilter, setContentFilter] = useState(placementToContentFilter(placement));
   const [showFuturePosts, setShowFuturePosts] = useState(true);
+  const drivenByFineTune = placement && placement !== 'feed';
+
+  useEffect(() => {
+    setContentFilter(placementToContentFilter(placement));
+  }, [placement]);
 
   const toolbar = (
     <>
@@ -57,23 +70,27 @@ export function InstagramPreviewPanel({
       >
         <LayoutGrid className="h-4 w-4" />
       </IconToggle>
-      <span className="mx-1 h-4 w-px bg-neutral-300" />
-      <IconToggle
-        active={contentFilter === 'posts'}
-        onClick={() => setContentFilter('posts')}
-        title="Posts"
-        description="Show feed posts in the grid"
-      >
-        <Square className="h-3.5 w-3.5" />
-      </IconToggle>
-      <IconToggle
-        active={contentFilter === 'reels'}
-        onClick={() => setContentFilter('reels')}
-        title="Reels"
-        description="Preview as an Instagram Reel"
-      >
-        <Film className="h-4 w-4" />
-      </IconToggle>
+      {!drivenByFineTune && (
+        <>
+          <span className="mx-1 h-4 w-px bg-neutral-300" />
+          <IconToggle
+            active={contentFilter === 'posts'}
+            onClick={() => setContentFilter('posts')}
+            title="Posts"
+            description="Show feed posts in the grid"
+          >
+            <Square className="h-3.5 w-3.5" />
+          </IconToggle>
+          <IconToggle
+            active={contentFilter === 'reels'}
+            onClick={() => setContentFilter('reels')}
+            title="Reels"
+            description="Preview as an Instagram Reel"
+          >
+            <Film className="h-4 w-4" />
+          </IconToggle>
+        </>
+      )}
     </>
   );
 
@@ -96,6 +113,8 @@ export function InstagramPreviewPanel({
   const content = viewMode === 'post' ? (
     contentFilter === 'reels' ? (
       <InstagramReelsPreview caption={caption} media={media} instagramAccountId={instagramAccountId} />
+    ) : contentFilter === 'stories' ? (
+      <InstagramStoriesPreview caption={caption} media={media} instagramAccountId={instagramAccountId} />
     ) : (
       <InstagramFeedPreview caption={caption} media={media} embedded instagramAccountId={instagramAccountId} />
     )

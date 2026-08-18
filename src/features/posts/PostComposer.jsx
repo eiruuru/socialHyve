@@ -41,9 +41,12 @@ import { FineTunePanel } from '@/features/posts/composer/FineTunePanel';
 import { PlatformPreviewTabs } from '@/features/posts/previews/PlatformPreviewTabs';
 import { MAX_CAROUSEL_ITEMS } from '@/features/posts/MediaStrip';
 import { buildScheduleReturnPath } from '@/features/posts/postNavUtils';
-
-const IG_CAPTION_LIMIT = 2200;
-const FB_CAPTION_LIMIT = 63206;
+import {
+  getEffectiveCaption,
+  IG_CAPTION_LIMIT,
+  FB_CAPTION_LIMIT,
+  validateFineTune,
+} from '@/features/posts/platformOverrides';
 
 function validatePost({ caption, media, publishInstagram, publishFacebook }) {
   const errors = [];
@@ -217,14 +220,23 @@ export function PostComposer({ editPostId = null }) {
 
   const isPublished = existingPost?.status === 'published';
   const isQueued = isEditMode && getEffectivePublishStatus(existingPost) === 'scheduled';
-  const validationErrors = validatePost({ caption, media, publishInstagram, publishFacebook });
-  const captionHint = publishInstagram
-    ? `${caption.length}/${IG_CAPTION_LIMIT} (Instagram)`
-    : `${caption.length}/${FB_CAPTION_LIMIT} (Facebook)`;
-
   const scheduledAtUtc = scheduledAt
     ? zonedLocalToUtc(scheduledAt, scheduleTimezone)
     : null;
+  const validationErrors = validatePost({ caption, media, publishInstagram, publishFacebook });
+  const fineTuneValidation = validateFineTune({
+    caption,
+    media,
+    platformOverrides,
+    publishFacebook,
+    publishInstagram,
+    scheduledAt: scheduledAtUtc || scheduledAt,
+    firstComment,
+  });
+  const allValidationErrors = [...validationErrors, ...fineTuneValidation.errors];
+  const captionHint = publishInstagram
+    ? `${caption.length}/${IG_CAPTION_LIMIT} (Instagram)`
+    : `${caption.length}/${FB_CAPTION_LIMIT} (Facebook)`;
 
   const buildPayload = (requestedStatus, nextApprovalStatus = approvalStatus) => ({
     caption,
@@ -332,8 +344,8 @@ export function PostComposer({ editPostId = null }) {
       showToast({ title: 'Published posts cannot be edited', variant: 'error' });
       return;
     }
-    if (validationErrors.length) {
-      showToast({ title: 'Fix validation errors', description: validationErrors[0], variant: 'error' });
+    if (allValidationErrors.length) {
+      showToast({ title: 'Fix validation errors', description: allValidationErrors[0], variant: 'error' });
       return;
     }
     setSaving(true);
@@ -424,8 +436,8 @@ export function PostComposer({ editPostId = null }) {
       showToast({ title: 'Approval required', description: 'Submit for review and get approval before publishing.', variant: 'info' });
       return;
     }
-    if (validationErrors.length) {
-      showToast({ title: 'Fix validation errors', description: validationErrors[0], variant: 'error' });
+    if (allValidationErrors.length) {
+      showToast({ title: 'Fix validation errors', description: allValidationErrors[0], variant: 'error' });
       return;
     }
 
@@ -509,8 +521,16 @@ export function PostComposer({ editPostId = null }) {
       navigate('/app/queue');
     });
 
-  const fbCaption = platformOverrides.facebook?.caption ?? caption;
-  const igCaption = platformOverrides.instagram?.caption ?? caption;
+  const fbCaption = getEffectiveCaption(caption, platformOverrides, 'facebook');
+  const igCaption = getEffectiveCaption(caption, platformOverrides, 'instagram');
+
+  const fineTuneHints = [];
+  if (publishFacebook && fineTuneValidation.platformStatus.facebook?.errors.length) {
+    fineTuneHints.push('Facebook is incomplete');
+  }
+  if (publishInstagram && fineTuneValidation.platformStatus.instagram?.errors.length) {
+    fineTuneHints.push('Instagram is incomplete');
+  }
 
   if (isEditMode && loadingPost) {
     return <p className="text-muted-foreground">Loading post…</p>;
@@ -568,6 +588,7 @@ export function PostComposer({ editPostId = null }) {
             currentPostId={draftPostId}
             facebookCaption={fbCaption}
             instagramCaption={igCaption}
+            platformOverrides={platformOverrides}
           />
         </div>
       </div>
@@ -597,6 +618,7 @@ export function PostComposer({ editPostId = null }) {
         approvalStatus={approvalStatus}
         canBypassApproval={canBypassApproval}
         canSubmitForReview={!clientScheduleOnly}
+        fineTuneHints={fineTuneHints}
         onSaveDraft={handleSaveDraft}
         onSaveChanges={handleSaveChanges}
         onSubmitForReview={handleSubmitForReview}
@@ -608,13 +630,18 @@ export function PostComposer({ editPostId = null }) {
         open={fineTuneOpen}
         onOpenChange={setFineTuneOpen}
         caption={caption}
+        internalName={internalName}
+        label={label}
         platformOverrides={platformOverrides}
         setPlatformOverrides={setPlatformOverrides}
         firstComment={firstComment}
         setFirstComment={setFirstComment}
         scheduledAt={scheduledAt}
+        scheduleTimezone={scheduleTimezone}
         publishFacebook={publishFacebook}
         publishInstagram={publishInstagram}
+        media={media}
+        onMediaChange={handleMediaChange}
       />
     </div>
   );

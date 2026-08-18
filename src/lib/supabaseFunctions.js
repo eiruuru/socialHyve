@@ -14,6 +14,7 @@ const FUNCTION_MAP = {
   metaReplyInteraction: 'meta-reply-interaction',
   metaInteractionAction: 'meta-interaction-action',
   publishPost: 'publish-post',
+  generateCaption: 'generate-caption',
   cleanupPostMedia: 'cleanup-post-media',
   refreshTokens: 'refresh-tokens',
   reviewByToken: 'review-by-token',

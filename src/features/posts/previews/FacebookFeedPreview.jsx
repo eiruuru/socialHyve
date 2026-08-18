@@ -93,9 +93,16 @@ function FacebookMedia({ items }) {
   return <FacebookCollage items={items} />;
 }
 
-export function FacebookFeedPreview({ caption, media = [], embedded = false, facebookAccountId = null }) {
+export function FacebookFeedPreview({
+  caption,
+  media = [],
+  embedded = false,
+  facebookAccountId = null,
+  carouselMode = false,
+}) {
   const { facebook } = usePreviewAccounts({ facebookAccountId });
   const items = normalizeMediaList(media);
+  const showCarousel = carouselMode && items.length > 1;
 
   return (
     <div className={embedded ? 'bg-white' : 'overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm'}>
@@ -115,6 +122,9 @@ export function FacebookFeedPreview({ caption, media = [], embedded = false, fac
         <p className="whitespace-pre-wrap px-3 pb-3 text-[15px] leading-snug text-gray-900">{caption}</p>
       )}
 
+      {showCarousel && (
+        <p className="px-3 pb-2 text-xs font-medium text-blue-600">Carousel · {items.length} items</p>
+      )}
       <FacebookMedia items={items} />
 
       <div className="flex items-center justify-around border-t border-gray-200 px-4 py-2 text-sm font-medium text-gray-600">

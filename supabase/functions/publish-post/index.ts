@@ -16,10 +16,54 @@ type MediaItem = {
   sort_order?: number;
 };
 
-type PlatformOverrides = {
-  facebook?: { caption?: string; scheduled_at?: string };
-  instagram?: { caption?: string; scheduled_at?: string };
+type PlatformOverride = {
+  caption?: string;
+  scheduled_at?: string;
+  placement?: string;
+  publish_mode?: string;
+  carousel_link?: string;
 };
+
+type PlatformOverrides = {
+  facebook?: PlatformOverride;
+  instagram?: PlatformOverride;
+};
+
+function getPlatformPlacement(post: Record<string, unknown>, platform: 'facebook' | 'instagram'): string {
+  const overrides = (post.platform_overrides || {}) as PlatformOverrides;
+  return overrides[platform]?.placement || 'feed';
+}
+
+function getPublishMode(post: Record<string, unknown>, platform: 'facebook' | 'instagram'): string {
+  const overrides = (post.platform_overrides || {}) as PlatformOverrides;
+  const mode = overrides[platform]?.publish_mode || 'automatic';
+  return mode === 'manual' ? 'manual' : 'automatic';
+}
+
+function assertAutomaticPlacementSupported(
+  post: Record<string, unknown>,
+  platform: 'facebook' | 'instagram',
+): void {
+  const placement = getPlatformPlacement(post, platform);
+  const publishMode = getPublishMode(post, platform);
+  if (publishMode === 'manual') {
+    if (placement === 'reels' || placement === 'stories') {
+      const label = platform === 'facebook' ? 'Facebook' : 'Instagram';
+      const placementLabel = placement.charAt(0).toUpperCase() + placement.slice(1);
+      throw new Error(
+        `${label} ${placementLabel} is set to manual publish — publish through Meta directly.`,
+      );
+    }
+    return;
+  }
+  if (placement === 'reels' || placement === 'stories') {
+    const label = platform === 'facebook' ? 'Facebook' : 'Instagram';
+    const placementLabel = placement.charAt(0).toUpperCase() + placement.slice(1);
+    throw new Error(
+      `${label} ${placementLabel} automatic publishing is not supported yet — switch to Manual or Feed in Fine tune.`,
+    );
+  }
+}
 
 function resolvePlatformCaption(post: Record<string, unknown>, platform: 'facebook' | 'instagram'): string {
   const overrides = (post.platform_overrides || {}) as PlatformOverrides;
@@ -314,6 +358,7 @@ async function publishPost(service: ReturnType<typeof getServiceClient>, postId:
 
   if (post.publish_facebook && fbAccount) {
     try {
+      assertAutomaticPlacementSupported(post, 'facebook');
       const { result: externalId, pageToken } = await publishWithPageToken(
         service,
         fbAccount,
@@ -355,6 +400,7 @@ async function publishPost(service: ReturnType<typeof getServiceClient>, postId:
 
   if (post.publish_instagram && igAccount) {
     try {
+      assertAutomaticPlacementSupported(post, 'instagram');
       const { result: externalId, pageToken } = await publishWithPageToken(
         service,
         igAccount,

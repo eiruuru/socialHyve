@@ -51,6 +51,7 @@ FUNCTIONS=(
   meta-interaction-action
   meta-interactions-webhook
   publish-post
+  generate-caption
   cleanup-post-media
   refresh-tokens
   review-by-token

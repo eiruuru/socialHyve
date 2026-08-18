@@ -61,6 +61,10 @@ if [ -n "${RESEND_API_KEY:-}" ]; then
   args+=("RESEND_API_KEY=${RESEND_API_KEY}")
 fi
 
+if [ -n "${OPENAI_API_KEY:-}" ]; then
+  args+=("OPENAI_API_KEY=${OPENAI_API_KEY}")
+fi
+
 if [ -n "${INVITE_FROM_EMAIL:-}" ]; then
   args+=("INVITE_FROM_EMAIL=${INVITE_FROM_EMAIL}")
 fi

@@ -14,6 +14,7 @@ export function ComposerActionBar({
   canBypassApproval = false,
   canPublishNow = true,
   canSubmitForReview = true,
+  fineTuneHints = [],
   onSaveDraft,
   onSaveChanges,
   onSubmitForReview,
@@ -30,12 +31,15 @@ export function ComposerActionBar({
         : 'Submit for review and get approval before scheduling or publishing.')
     : null;
 
+  const fineTuneHint = fineTuneHints.length ? fineTuneHints.join(' · ') : null;
+  const statusHint = fineTuneHint || approvalHint;
+
   return (
     <Card className="border-honey/30 bg-paper shadow-sm">
       <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
         <div className="min-w-0 text-sm text-muted-foreground">
-          {approvalHint ? (
-            <span>{approvalHint}</span>
+          {statusHint ? (
+            <span className={fineTuneHint ? 'text-red-700' : undefined}>{statusHint}</span>
           ) : isEditMode ? (
             <span>
               {canPublishNow

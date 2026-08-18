@@ -122,7 +122,6 @@ export function CaptionOverrideField({
           <div className="px-3 pb-2">
             <CaptionEditorToolbar
               textareaRef={textareaRef}
-              value={value}
               onChange={onChange}
               shortenUrls={shortenUrls}
               onShortenUrlsChange={onShortenUrlsChange}

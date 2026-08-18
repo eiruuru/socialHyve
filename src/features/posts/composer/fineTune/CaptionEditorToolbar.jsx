@@ -64,7 +64,6 @@ function EmojiPickerPopover({ onSelect }) {
 
 export function CaptionEditorToolbar({
   textareaRef,
-  value,
   onChange,
   shortenUrls,
   onShortenUrlsChange,
@@ -93,7 +92,7 @@ export function CaptionEditorToolbar({
       return;
     }
     onChange(result.next);
-    requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
       textarea.focus();
       textarea.setSelectionRange(result.cursor, result.cursor);
     });

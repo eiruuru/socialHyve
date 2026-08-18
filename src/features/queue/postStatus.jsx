@@ -69,6 +69,8 @@ export function filterQueuePosts(posts, tab) {
       );
     case 'active':
       return posts.filter((p) => p.status !== 'published');
+    case 'published':
+      return posts.filter((p) => p.status === 'published');
     default:
       return posts;
   }

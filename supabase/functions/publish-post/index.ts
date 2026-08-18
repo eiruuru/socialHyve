@@ -403,11 +403,17 @@ async function publishPost(service: ReturnType<typeof getServiceClient>, postId:
   }
 
   const finalStatus = hasError ? 'failed' : 'published';
-  await service.from('posts').update({
+  const publishedAt = hasError ? null : new Date().toISOString();
+  const postUpdate: Record<string, unknown> = {
     status: finalStatus,
-    published_at: hasError ? null : new Date().toISOString(),
+    published_at: publishedAt,
     error_message: errors.length ? errors.join('; ') : null,
-  }).eq('id', postId);
+  };
+  // Keep calendar day in sync when publishing without a planned date (e.g. queue "Publish now").
+  if (!hasError && !post.scheduled_at) {
+    postUpdate.scheduled_at = publishedAt;
+  }
+  await service.from('posts').update(postUpdate).eq('id', postId);
 
   if (hasError) {
     const { data: existingJob } = await service

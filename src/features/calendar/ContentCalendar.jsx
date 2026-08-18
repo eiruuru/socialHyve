@@ -25,7 +25,7 @@ import { PostStatusLegend } from '@/features/queue/postStatusIcons';
 import { Button } from '@/components/ui/button';
 import { IconTooltip } from '@/components/ui/IconTooltip';
 import { TabsRoot, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { buildPostNavSearch, parseCalendarMonthParam } from '@/features/posts/postNavUtils';
+import { buildPostNavSearch, getPostCalendarDate, parseCalendarMonthParam } from '@/features/posts/postNavUtils';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -72,7 +72,7 @@ export function ContentCalendar({ posts = [], readOnly = false }) {
 
   const getPostsForDay = (day) =>
     posts.filter((p) => {
-      const date = p.scheduled_at || p.created_at;
+      const date = getPostCalendarDate(p);
       return date && isSameDay(new Date(date), day);
     });
 
@@ -108,7 +108,7 @@ export function ContentCalendar({ posts = [], readOnly = false }) {
       return;
     }
 
-    const postDate = post.scheduled_at || post.created_at;
+    const postDate = getPostCalendarDate(post);
     if (postDate && isSameDay(new Date(postDate), day)) {
       setDraggingPostId(null);
       return;

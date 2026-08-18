@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { PlatformChip } from '@/components/brand/PlatformChip';
 import { getScheduleUrgency } from '@/features/queue/scheduleUrgency';
 import { PostStatusIconRow } from '@/features/queue/postStatusIcons';
+import { getPostCalendarDate } from '@/features/posts/postNavUtils';
 import { shouldShowScheduleUrgency } from '@/lib/publishStatus';
 import { isVideo } from '@/features/posts/previews/mediaUtils';
 import { cn } from '@/lib/utils';
@@ -58,9 +59,8 @@ export function CalendarPostCard({
   const title =
     post.internal_name ||
     (post.caption ? `${post.caption.slice(0, 36)}${post.caption.length > 36 ? '…' : ''}` : 'Untitled');
-  const timeLabel = post.scheduled_at
-    ? format(new Date(post.scheduled_at), 'h:mm a')
-    : null;
+  const calendarDate = getPostCalendarDate(post);
+  const timeLabel = calendarDate ? format(new Date(calendarDate), 'h:mm a') : null;
   const isCarousel = media.length > 1;
 
   const handleClick = () => {

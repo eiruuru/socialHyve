@@ -1,6 +1,15 @@
 import { compareAsc, endOfMonth, format, isValid, parse, startOfMonth } from 'date-fns';
 import { filterQueuePosts } from '@/features/queue/postStatus';
 
+/** Day bucket for calendar cells and post navigation. */
+export function getPostCalendarDate(post) {
+  if (!post) return null;
+  if (post.status === 'published') {
+    return post.scheduled_at || post.published_at || post.created_at || null;
+  }
+  return post.scheduled_at || post.created_at || null;
+}
+
 export function parseCalendarMonthParam(month) {
   if (!month || !/^\d{4}-\d{2}$/.test(month)) return null;
   const parsed = parse(`${month}-01`, 'yyyy-MM-dd', new Date());
@@ -28,8 +37,8 @@ export function buildPostNavSearch({ nav, tab, month } = {}) {
 
 export function sortPostsForNavigation(posts) {
   return [...posts].sort((a, b) => {
-    const da = a.scheduled_at || a.created_at;
-    const db = b.scheduled_at || b.created_at;
+    const da = getPostCalendarDate(a);
+    const db = getPostCalendarDate(b);
     if (!da && !db) return 0;
     if (!da) return 1;
     if (!db) return -1;
@@ -46,7 +55,7 @@ export function filterPostsForNavigation(posts, { nav, tab, month } = {}) {
     const start = startOfMonth(new Date(y, m - 1));
     const end = endOfMonth(start);
     return posts.filter((p) => {
-      const date = p.scheduled_at || p.created_at;
+      const date = getPostCalendarDate(p);
       if (!date) return false;
       const d = new Date(date);
       return d >= start && d <= end;

@@ -22,6 +22,7 @@ const TABS = [
   { id: 'review', label: 'Needs review' },
   { id: 'approved', label: 'Approved' },
   { id: 'active', label: 'All active' },
+  { id: 'published', label: 'Published' },
 ];
 
 const EMPTY_COPY = {
@@ -36,6 +37,10 @@ const EMPTY_COPY = {
   active: {
     title: 'The hive is empty',
     description: 'Draft your first post to get started.',
+  },
+  published: {
+    title: 'No published posts yet',
+    description: 'Posts that go live appear here for quick reference.',
   },
 };
 

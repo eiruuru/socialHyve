@@ -8,7 +8,7 @@ export function MarketingScreenshot({ src, alt, className, priority = false, onE
       loading={priority ? 'eager' : 'lazy'}
       decoding="async"
       onError={onError}
-      className={cn('block w-full bg-neutral-50', className)}
+      className={cn('block h-auto w-full bg-neutral-50', className)}
     />
   );
 }

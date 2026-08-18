@@ -121,6 +121,7 @@ const SHOWCASES = [
     desc: 'Needs review, Approved, All active, and Published tabs — with urgency badges and bulk approve.',
     asset: MARKETING_SCREENSHOTS.queue,
     Demo: QueueDemo,
+    splitLayout: true,
   },
   {
     key: 'composer',
@@ -158,23 +159,38 @@ const SHOWCASES = [
   },
 ];
 
-function ShowcaseSection({ label, title, desc, asset, Demo, altBg = false, priority = false }) {
+function ShowcaseSection({ label, title, desc, asset, Demo, altBg = false, priority = false, splitLayout = false }) {
+  const frame = (
+    <MarketingChromeFrame
+      url={asset.url}
+      screenshot={asset.src}
+      screenshotAlt={asset.alt}
+      priority={priority}
+    >
+      <Demo />
+    </MarketingChromeFrame>
+  );
+
   return (
     <section className={altBg ? 'border-t border-neutral-200 bg-paper-alt px-6 py-16' : 'mx-auto max-w-6xl px-6 py-16'}>
       <div className={altBg ? 'mx-auto max-w-6xl' : undefined}>
-        <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">{label}</p>
-        <h2 className="mt-2 font-display text-3xl font-bold">{title}</h2>
-        <p className="mt-2 max-w-2xl text-neutral-600">{desc}</p>
-        <div className="mt-8">
-          <MarketingChromeFrame
-            url={asset.url}
-            screenshot={asset.src}
-            screenshotAlt={asset.alt}
-            priority={priority}
-          >
-            <Demo />
-          </MarketingChromeFrame>
-        </div>
+        {splitLayout ? (
+          <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-12">
+            <div>
+              <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">{label}</p>
+              <h2 className="mt-2 font-display text-3xl font-bold">{title}</h2>
+              <p className="mt-2 text-neutral-600">{desc}</p>
+            </div>
+            {frame}
+          </div>
+        ) : (
+          <>
+            <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">{label}</p>
+            <h2 className="mt-2 font-display text-3xl font-bold">{title}</h2>
+            <p className="mt-2 max-w-2xl text-neutral-600">{desc}</p>
+            <div className="mt-8">{frame}</div>
+          </>
+        )}
       </div>
     </section>
   );

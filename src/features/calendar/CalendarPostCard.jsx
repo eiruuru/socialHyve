@@ -15,9 +15,9 @@ export function isPostDraggable(post) {
   return post && !NON_DRAGGABLE_STATUSES.has(post.status);
 }
 
-function PostThumbnail({ thumb, isCarousel, className }) {
+function PostThumbnail({ thumb, isCarousel, sizeClassName }) {
   return (
-    <div className={cn('relative shrink-0 overflow-hidden bg-neutral-100', className)}>
+    <div className={cn('relative shrink-0 overflow-hidden rounded-[6px] bg-neutral-100', sizeClassName)}>
       {thumb?.public_url ? (
         isVideo(thumb.mime_type) ? (
           <video src={thumb.public_url} className="h-full w-full object-cover" muted />
@@ -25,7 +25,7 @@ function PostThumbnail({ thumb, isCarousel, className }) {
           <img src={thumb.public_url} alt="" className="h-full w-full object-cover" />
         )
       ) : (
-        <div className="flex h-full items-center justify-center text-[9px] text-neutral-400">No media</div>
+        <div className="flex h-full w-full items-center justify-center text-[9px] text-neutral-400">No media</div>
       )}
       {isCarousel && (
         <span className="absolute bottom-0.5 right-0.5 rounded bg-black/50 px-1 text-[8px] text-white">
@@ -36,10 +36,29 @@ function PostThumbnail({ thumb, isCarousel, className }) {
   );
 }
 
+function CalendarMetaRow({ post }) {
+  const hasPlatforms = post.publish_facebook || post.publish_instagram;
+
+  return (
+    <div className="flex min-w-0 items-center gap-1">
+      <PostStatusIconRow post={post} size="sm" />
+      {hasPlatforms && (
+        <>
+          <span className="h-3 w-px shrink-0 bg-neutral-200" aria-hidden />
+          <div className="flex shrink-0 items-center gap-0.5">
+            {post.publish_facebook && <PlatformChip platform="facebook" iconOnly />}
+            {post.publish_instagram && <PlatformChip platform="instagram" iconOnly />}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function CalendarPostCard({
   post,
   className,
-  layout = 'stacked',
+  compact = false,
   draggable = false,
   onDragStart,
   onDragEnd,
@@ -62,6 +81,8 @@ export function CalendarPostCard({
   const calendarDate = getPostCalendarDate(post);
   const timeLabel = calendarDate ? format(new Date(calendarDate), 'h:mm a') : null;
   const isCarousel = media.length > 1;
+  const thumbSize = compact ? 'h-10 w-10' : 'h-14 w-14';
+  const titleClass = compact ? 'text-[11px]' : 'text-xs';
 
   const handleClick = () => {
     if (didDragRef.current) {
@@ -83,65 +104,40 @@ export function CalendarPostCard({
     onDragEnd?.(e, post);
   };
 
-  const interactionProps = {
-    type: 'button',
-    draggable,
-    onClick: handleClick,
-    onDragStart: draggable ? handleDragStart : undefined,
-    onDragEnd: draggable ? handleDragEnd : undefined,
-  };
-
-  const cardClassName = cn(
-    'w-full overflow-hidden rounded-hyve-sm border bg-white text-left shadow-sm transition-shadow hover:shadow-md',
-    cardBorderClass,
-    draggable && 'cursor-grab active:cursor-grabbing',
-    isDragging && 'opacity-50',
-    className,
-  );
-
-  if (layout === 'horizontal') {
-    return (
-      <button
-        {...interactionProps}
-        className={cn(cardClassName, 'relative mb-1 flex items-stretch gap-2 p-1')}
-      >
-        <PostThumbnail thumb={thumb} isCarousel={isCarousel} className="h-11 w-11 rounded-[6px]" />
-        <div className="min-w-0 flex-1 py-0.5 pr-1">
-          <p className="truncate text-[11px] font-medium leading-tight">{title}</p>
-          {timeLabel && (
-            <p className="text-[10px] leading-tight text-muted-foreground">{timeLabel}</p>
-          )}
-          <div className="mt-0.5 flex flex-wrap items-center gap-1">
-            <PostStatusIconRow post={post} />
-            {post.publish_facebook && <PlatformChip platform="facebook" iconOnly />}
-            {post.publish_instagram && <PlatformChip platform="instagram" iconOnly />}
-          </div>
-        </div>
-        {scheduleUrgency && (
-          <span
-            className={cn(
-              'absolute right-1 top-1 rounded-full px-1 py-0.5 text-[8px] font-semibold leading-tight',
-              scheduleUrgency.badgeClass,
-            )}
-            title={scheduleUrgency.urgencyLabel}
-          >
-            {scheduleUrgency.shortLabel}
-          </span>
-        )}
-      </button>
-    );
-  }
-
   return (
     <button
-      {...interactionProps}
-      className={cn(cardClassName, 'relative mb-1.5')}
+      type="button"
+      draggable={draggable}
+      onClick={handleClick}
+      onDragStart={draggable ? handleDragStart : undefined}
+      onDragEnd={draggable ? handleDragEnd : undefined}
+      className={cn(
+        'relative mb-1 flex w-full items-center gap-2 overflow-hidden rounded-hyve-sm border bg-white p-1.5 text-left shadow-sm transition-shadow hover:shadow-md',
+        cardBorderClass,
+        draggable && 'cursor-grab active:cursor-grabbing',
+        isDragging && 'opacity-50',
+        className,
+      )}
     >
-      <PostThumbnail thumb={thumb} isCarousel={isCarousel} className="h-14 w-full" />
+      <PostThumbnail thumb={thumb} isCarousel={isCarousel} sizeClassName={thumbSize} />
+      <div className="min-w-0 flex-1 space-y-0.5">
+        <div className="flex min-w-0 items-baseline gap-1 pr-8">
+          <p className={cn('truncate font-medium leading-tight', titleClass)}>{title}</p>
+          {timeLabel && (
+            <>
+              <span className="shrink-0 text-[10px] text-neutral-300" aria-hidden>
+                ·
+              </span>
+              <span className="shrink-0 text-[10px] text-muted-foreground">{timeLabel}</span>
+            </>
+          )}
+        </div>
+        <CalendarMetaRow post={post} />
+      </div>
       {scheduleUrgency && (
         <span
           className={cn(
-            'absolute right-1 top-1 z-10 rounded-full px-1.5 py-0.5 text-[9px] font-semibold leading-tight shadow-sm',
+            'absolute right-1 top-1 rounded-full px-1 py-0.5 text-[8px] font-semibold leading-tight',
             scheduleUrgency.badgeClass,
           )}
           title={scheduleUrgency.urgencyLabel}
@@ -149,19 +145,6 @@ export function CalendarPostCard({
           {scheduleUrgency.shortLabel}
         </span>
       )}
-      <div className="space-y-0.5 p-1.5">
-        <p className="truncate text-xs font-medium leading-tight">{title}</p>
-        {timeLabel && (
-          <p className="text-[10px] text-muted-foreground">{timeLabel}</p>
-        )}
-        <div className="flex items-center gap-1">
-          <PostStatusIconRow post={post} />
-        </div>
-        <div className="flex gap-1 pt-0.5">
-          {post.publish_facebook && <PlatformChip platform="facebook" iconOnly />}
-          {post.publish_instagram && <PlatformChip platform="instagram" iconOnly />}
-        </div>
-      </div>
     </button>
   );
 }

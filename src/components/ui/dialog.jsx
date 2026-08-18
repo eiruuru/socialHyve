@@ -1,9 +1,26 @@
+import { useEffect } from 'react';
 import * as RadixDialog from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
+import { clearModalLocks } from '@/lib/clearModalLocks';
 import { cn } from '@/lib/utils';
 
-export function DialogRoot({ children, ...props }) {
-  return <RadixDialog.Root {...props}>{children}</RadixDialog.Root>;
+export function DialogRoot({ children, open, onOpenChange, ...props }) {
+  useEffect(() => {
+    if (open === false) clearModalLocks();
+  }, [open]);
+
+  useEffect(() => () => clearModalLocks(), []);
+
+  const handleOpenChange = (nextOpen) => {
+    if (!nextOpen) clearModalLocks();
+    onOpenChange?.(nextOpen);
+  };
+
+  return (
+    <RadixDialog.Root open={open} onOpenChange={handleOpenChange} {...props}>
+      {children}
+    </RadixDialog.Root>
+  );
 }
 
 export function DialogTrigger({ className, ...props }) {

@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { clearModalLocks } from '@/lib/clearModalLocks';
 import {
   Calendar,
   ClipboardCheck,
@@ -211,6 +213,10 @@ export function AppLayout() {
   const { workspace } = useWorkspace();
   const location = useLocation();
   useNavigateOnClientSwitch();
+
+  useEffect(() => {
+    clearModalLocks();
+  }, [location.pathname]);
   const isWide = location.pathname.includes('/calendar')
     || location.pathname.includes('/interactions');
 
@@ -243,7 +249,7 @@ export function AppLayout() {
           </div>
         </header>
         <div className="flex flex-1 items-start">
-        <aside className="sticky top-14 z-30 flex h-[calc(100dvh-3.5rem)] w-60 shrink-0 flex-col overflow-hidden bg-sidebar text-sidebar-foreground">
+        <aside className="sticky top-14 z-40 flex h-[calc(100dvh-3.5rem)] w-60 shrink-0 flex-col overflow-hidden bg-sidebar text-sidebar-foreground">
         <div className="border-b border-sidebar-border px-5 py-4">
           {workspace?.name && !membership.isClientOnly && (
             <div

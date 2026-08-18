@@ -216,7 +216,8 @@ export async function listClients() {
 }
 
 export async function createClient(name) {
-  const timezone = getBrowserTimezone();
+  const org = await getOrganization();
+  const timezone = org?.default_timezone || getBrowserTimezone();
   const { data, error } = await supabase.rpc('create_client', {
     p_name: name,
     p_timezone: timezone,
@@ -227,7 +228,6 @@ export async function createClient(name) {
   // Fallback when migration 013 is not applied yet.
   if (error?.code !== 'PGRST202') throw error;
 
-  const org = await getOrganization();
   if (!org) throw new Error('No organization');
 
   const baseSlug = slugify(name);

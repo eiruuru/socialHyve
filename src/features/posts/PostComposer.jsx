@@ -84,8 +84,6 @@ export function PostComposer({ editPostId = null }) {
   const originalMediaIdsRef = useRef([]);
   const trackedStoragePathsRef = useRef(new Set());
 
-  const defaultTimezone = activeClient?.default_timezone || getBrowserTimezone();
-
   const { data: existingPost, isLoading: loadingPost } = useQuery({
     queryKey: ['post', editPostId],
     queryFn: () => getPost(editPostId),
@@ -105,6 +103,11 @@ export function PostComposer({ editPostId = null }) {
 
   const requireApproval = org?.require_approval_before_publish !== false;
   const canBypassApproval = canManageTeam || !requireApproval;
+  const workspaceTimezone = org?.default_timezone || null;
+  const workspaceLocale = org?.default_locale || null;
+  const resolvedDefaultTimezone = activeClient?.default_timezone
+    || workspaceTimezone
+    || getBrowserTimezone();
 
   const fbAccounts = socialAccounts.filter((a) => a.platform === 'facebook');
   const igAccounts = socialAccounts.filter((a) => a.platform === 'instagram');
@@ -120,7 +123,7 @@ export function PostComposer({ editPostId = null }) {
   const [publishInstagram, setPublishInstagram] = useState(true);
   const [facebookAccountId, setFacebookAccountId] = useState(null);
   const [instagramAccountId, setInstagramAccountId] = useState(null);
-  const [scheduleTimezone, setScheduleTimezone] = useState(defaultTimezone);
+  const [scheduleTimezone, setScheduleTimezone] = useState(getBrowserTimezone());
   const [scheduledAt, setScheduledAt] = useState('');
   const [media, setMedia] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -130,19 +133,19 @@ export function PostComposer({ editPostId = null }) {
 
   useEffect(() => {
     if (isEditMode) return;
-    setScheduleTimezone(activeClient?.default_timezone || getBrowserTimezone());
-  }, [activeClient?.id, activeClient?.default_timezone, isEditMode]);
+    setScheduleTimezone(resolvedDefaultTimezone);
+  }, [activeClient?.id, activeClient?.default_timezone, workspaceTimezone, isEditMode, resolvedDefaultTimezone]);
 
   useEffect(() => {
     if (presetDate && !scheduledAt) {
-      const tz = activeClient?.default_timezone || getBrowserTimezone();
+      const tz = resolvedDefaultTimezone;
       const d = new Date(presetDate);
       if (!Number.isNaN(d.getTime())) {
         d.setHours(12, 0, 0, 0);
         setScheduledAt(utcToZonedLocalInput(d.toISOString(), tz));
       }
     }
-  }, [presetDate, activeClient?.default_timezone, scheduledAt]);
+  }, [presetDate, resolvedDefaultTimezone, scheduledAt]);
 
   useEffect(() => {
     if (!existingPost || hydratedRef.current) return;
@@ -150,6 +153,7 @@ export function PostComposer({ editPostId = null }) {
     const tz = resolveScheduleTimezone({
       postTimezone: existingPost.schedule_timezone,
       clientTimezone: activeClient?.default_timezone,
+      workspaceTimezone,
     });
     setDraftPostId(existingPost.id);
     setInternalName(existingPost.internal_name || '');
@@ -183,7 +187,7 @@ export function PostComposer({ editPostId = null }) {
     trackedStoragePathsRef.current = new Set(
       sortedMedia.map((m) => m.storage_path).filter(Boolean),
     );
-  }, [existingPost, activeClient?.default_timezone]);
+  }, [existingPost, activeClient?.default_timezone, workspaceTimezone]);
 
   useEffect(() => {
     accountsInitializedRef.current = false;
@@ -416,7 +420,7 @@ export function PostComposer({ editPostId = null }) {
       await queryClient.invalidateQueries({ queryKey: ['post', id] });
       showToast({
         title: 'Post scheduled',
-        description: formatScheduledLabel(scheduledAtUtc, scheduleTimezone),
+        description: formatScheduledLabel(scheduledAtUtc, scheduleTimezone, workspaceLocale),
         variant: 'success',
       });
       navigate(buildScheduleReturnPath({
@@ -570,12 +574,13 @@ export function PostComposer({ editPostId = null }) {
           setScheduledAt={setScheduledAt}
           scheduleTimezone={scheduleTimezone}
           setScheduleTimezone={setScheduleTimezone}
+          workspaceTimezone={workspaceTimezone}
           media={media}
           setMedia={handleMediaChange}
           validationErrors={validationErrors}
         />
 
-        <div className="lg:sticky lg:top-8 lg:self-start">
+        <div className="lg:sticky lg:top-[4.5rem] lg:z-0 lg:self-start">
           <PlatformPreviewTabs
             caption={caption}
             media={media}

@@ -1,3 +1,6 @@
+import { formatTimezoneOptionLabel } from '@/lib/timezoneOptions';
+
+/** @deprecated Prefer TIMEZONE_CATALOG in timezoneOptions.js */
 export const COMMON_TIMEZONES = [
   { value: 'Pacific/Honolulu', label: 'Hawaii (HST)' },
   { value: 'America/Los_Angeles', label: 'Pacific Time (PT)' },
@@ -29,9 +32,11 @@ export function getBrowserTimezone() {
 
 export function formatTimezoneLabel(timeZone) {
   if (!timeZone) return 'UTC';
-  const match = COMMON_TIMEZONES.find((tz) => tz.value === timeZone);
-  if (match) return match.label;
-  return timeZone.replace(/_/g, ' ');
+  try {
+    return formatTimezoneOptionLabel(timeZone, { includeOffset: false });
+  } catch {
+    return timeZone.replace(/_/g, ' ');
+  }
 }
 
 function partsInTimeZone(date, timeZone) {
@@ -85,12 +90,12 @@ export function utcToZonedLocalInput(iso, timeZone) {
   return `${p.year}-${pad(p.month)}-${pad(p.day)}T${pad(p.hour)}:${pad(p.minute)}`;
 }
 
-export function formatScheduledLabel(iso, timeZone) {
+export function formatScheduledLabel(iso, timeZone, locale) {
   if (!iso) return '';
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '';
 
-  const formatted = new Intl.DateTimeFormat(undefined, {
+  const formatted = new Intl.DateTimeFormat(locale || undefined, {
     timeZone: timeZone || getBrowserTimezone(),
     month: 'short',
     day: 'numeric',
@@ -102,8 +107,12 @@ export function formatScheduledLabel(iso, timeZone) {
   return `${formatted} (${formatTimezoneLabel(timeZone)})`;
 }
 
-export function resolveScheduleTimezone({ postTimezone, clientTimezone }) {
-  return postTimezone || clientTimezone || getBrowserTimezone();
+export function resolveScheduleTimezone({
+  postTimezone,
+  clientTimezone,
+  workspaceTimezone,
+}) {
+  return postTimezone || clientTimezone || workspaceTimezone || getBrowserTimezone();
 }
 
 /** Calendar day (local midnight) is strictly before today. */

@@ -39,6 +39,7 @@ export function GenericContentStep({
   setScheduledAt,
   scheduleTimezone,
   setScheduleTimezone,
+  workspaceTimezone,
   media,
   setMedia,
   validationErrors,
@@ -210,6 +211,7 @@ export function GenericContentStep({
             <TimezoneSelect
               value={scheduleTimezone}
               onChange={setScheduleTimezone}
+              workspaceDefault={workspaceTimezone}
             />
           </div>
           <p className="mt-1 text-xs text-muted-foreground">

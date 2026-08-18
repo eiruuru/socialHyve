@@ -17,6 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TabsRoot, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useClient } from '@/lib/clientContext';
+import { useWorkspace } from '@/lib/WorkspaceContext';
 import { showToast } from '@/lib/toast';
 
 function filterApprovalPosts(posts) {
@@ -32,6 +33,7 @@ export default function ClientReviewPage() {
   const { clientId } = useParams();
   const queryClient = useQueryClient();
   const { activeClient } = useClient();
+  const { workspace } = useWorkspace();
   const [tab, setTab] = useState('approval');
   const [approvalSelectedId, setApprovalSelectedId] = useState(null);
   const [scheduleSelectedId, setScheduleSelectedId] = useState(null);
@@ -241,6 +243,7 @@ export default function ClientReviewPage() {
                         <PostSchedulePanel
                           post={scheduleSelected}
                           clientTimezone={activeClient?.default_timezone}
+                          workspaceTimezone={workspace?.default_timezone}
                           onUpdated={invalidateSchedule}
                         />
                       </CardContent>

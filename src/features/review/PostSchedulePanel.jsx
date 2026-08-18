@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { showToast } from '@/lib/toast';
 
-export function PostSchedulePanel({ post, clientTimezone, onUpdated }) {
+export function PostSchedulePanel({ post, clientTimezone, workspaceTimezone, onUpdated }) {
   const isQueued = getEffectivePublishStatus(post) === 'scheduled';
   const [scheduledAt, setScheduledAt] = useState('');
   const [scheduleTimezone, setScheduleTimezone] = useState('UTC');
@@ -26,10 +26,11 @@ export function PostSchedulePanel({ post, clientTimezone, onUpdated }) {
     const tz = resolveScheduleTimezone({
       postTimezone: post.schedule_timezone,
       clientTimezone,
+      workspaceTimezone,
     });
     setScheduleTimezone(tz);
     setScheduledAt(post.scheduled_at ? utcToZonedLocalInput(post.scheduled_at, tz) : '');
-  }, [post, clientTimezone]);
+  }, [post, clientTimezone, workspaceTimezone]);
 
   if (!post || post.approval_status !== 'approved') {
     return (
@@ -100,7 +101,11 @@ export function PostSchedulePanel({ post, clientTimezone, onUpdated }) {
           min={minScheduleLocalInput(scheduleTimezone)}
           onChange={(e) => setScheduledAt(e.target.value)}
         />
-        <TimezoneSelect value={scheduleTimezone} onChange={setScheduleTimezone} />
+        <TimezoneSelect
+          value={scheduleTimezone}
+          onChange={setScheduleTimezone}
+          workspaceDefault={workspaceTimezone}
+        />
       </div>
       <p className="text-xs text-muted-foreground">
         Posts at this time in {formatTimezoneLabel(scheduleTimezone)}

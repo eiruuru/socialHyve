@@ -37,6 +37,7 @@ import { showToast } from '@/lib/toast';
 import { notifyWorkflowEvent, getPostAuthorUserIds } from '@/lib/profile';
 import { useMembership } from '@/lib/membershipContext';
 import { useClient } from '@/lib/clientContext';
+import { useWorkspace } from '@/lib/WorkspaceContext';
 import { hasCreativesQaAccess } from '@/lib/clientRoles';
 import { getEffectivePublishStatus } from '@/lib/publishStatus';
 import { PostSchedulePanel } from '@/features/review/PostSchedulePanel';
@@ -74,6 +75,7 @@ export default function PostDetailPage() {
   const { confirm, dialog: confirmDialog } = useConfirm();
   const membership = useMembership();
   const { activeClient } = useClient();
+  const { workspace } = useWorkspace();
   const readOnly = membership.isClientOnly;
   const canApprove = hasCreativesQaAccess(membership);
   const canSchedule = canApprove;
@@ -385,6 +387,7 @@ export default function PostDetailPage() {
                       <PostSchedulePanel
                         post={post}
                         clientTimezone={activeClient?.default_timezone}
+                        workspaceTimezone={workspace?.default_timezone}
                         onUpdated={invalidatePost}
                       />
                     </div>

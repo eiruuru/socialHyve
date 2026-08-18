@@ -19,7 +19,7 @@ export const PAGE_DESCRIPTIONS = {
   clientMembers: 'Manage client team members, invites, and manager assignments.',
   clientReview: 'Review and approve pending posts for a client without full app access.',
   workspaceSettings: 'Manage workspace name, profile, clients, team, and Meta account connections.',
-  workspace: 'Edit your workspace name and organization details.',
+  workspace: 'Edit your workspace name, language, region, and timezone defaults.',
   profile: 'Update your profile, email, password, and notification preferences.',
   clients: 'Add and manage client brands in your workspace.',
   team: 'Invite teammates and manage workspace roles.',

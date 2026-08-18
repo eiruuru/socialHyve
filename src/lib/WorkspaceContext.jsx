@@ -7,7 +7,13 @@ const WorkspaceContext = createContext(null);
 async function loadWorkspaceSnapshot() {
   const org = await getOrganization();
   if (org) {
-    return { id: org.id, name: org.name, owner_id: org.owner_id };
+    return {
+      id: org.id,
+      name: org.name,
+      owner_id: org.owner_id,
+      default_timezone: org.default_timezone,
+      default_locale: org.default_locale,
+    };
   }
   return getWorkspace();
 }

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Calendar, Pencil, Trash2 } from 'lucide-react';
-import { createClient, deleteClient, listClients, updateClient } from '@/lib/organization';
+import { createClient, deleteClient, getOrganization, listClients, updateClient } from '@/lib/organization';
 import { useClient } from '@/lib/clientContext';
 import { useMembership } from '@/lib/membershipContext';
 import { TimezoneSelect } from '@/components/schedule/TimezoneSelect';
@@ -23,22 +23,24 @@ function ClientCard({
   onDeleted,
   onOpenCalendar,
   canManage,
+  workspaceTimezone,
 }) {
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(client.name);
-  const [timezone, setTimezone] = useState(client.default_timezone || getBrowserTimezone());
+  const fallbackTimezone = client.default_timezone || workspaceTimezone || getBrowserTimezone();
+  const [timezone, setTimezone] = useState(fallbackTimezone);
   const [saving, setSaving] = useState(false);
 
   const resetEdit = () => {
     setEditing(false);
     setName(client.name);
-    setTimezone(client.default_timezone || getBrowserTimezone());
+    setTimezone(client.default_timezone || workspaceTimezone || getBrowserTimezone());
   };
 
   const handleSave = async () => {
     const nameChanged = name.trim() && name.trim() !== client.name;
-    const tzChanged = timezone !== (client.default_timezone || getBrowserTimezone());
+    const tzChanged = timezone !== (client.default_timezone || workspaceTimezone || getBrowserTimezone());
     if (!nameChanged && !tzChanged) {
       resetEdit();
       return;
@@ -77,7 +79,7 @@ function ClientCard({
 
   const startEditing = () => {
     setName(client.name);
-    setTimezone(client.default_timezone || getBrowserTimezone());
+    setTimezone(client.default_timezone || workspaceTimezone || getBrowserTimezone());
     setEditing(true);
   };
 
@@ -131,7 +133,11 @@ function ClientCard({
                 if (e.key === 'Escape') resetEdit();
               }}
             />
-            <TimezoneSelect value={timezone} onChange={setTimezone} />
+            <TimezoneSelect
+              value={timezone}
+              onChange={setTimezone}
+              workspaceDefault={workspaceTimezone}
+            />
             <div className="flex gap-2">
               <Button size="sm" onClick={handleSave} disabled={saving}>
                 {saving ? 'Saving…' : 'Save'}
@@ -143,7 +149,7 @@ function ClientCard({
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">
-            Timezone: {formatTimezoneLabel(client.default_timezone || getBrowserTimezone())}
+            Timezone: {formatTimezoneLabel(client.default_timezone || workspaceTimezone || getBrowserTimezone())}
           </p>
         )}
       </CardContent>
@@ -176,6 +182,11 @@ export function ClientsPanel() {
   const { data: clients = [], isLoading } = useQuery({
     queryKey: ['clients'],
     queryFn: listClients,
+  });
+
+  const { data: org } = useQuery({
+    queryKey: ['organization'],
+    queryFn: getOrganization,
   });
 
   const handleCreate = async (e) => {
@@ -272,6 +283,7 @@ export function ClientsPanel() {
                 onDeleted={handleDeleted}
                 onOpenCalendar={handleOpenCalendar}
                 canManage={canManageClients}
+                workspaceTimezone={org?.default_timezone}
               />
             ))}
           </div>

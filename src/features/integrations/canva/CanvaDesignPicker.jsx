@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import { clearModalLocks } from '@/lib/clearModalLocks';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { CanvaIcon } from '@/components/icons/CanvaIcon';
@@ -57,10 +59,26 @@ export function CanvaDesignPicker({ onSelect, disabled, iconOnly = false, mediaC
     setContinuation(null);
   };
 
+  const location = useLocation();
+
   const handleOpenChange = (next) => {
     setOpen(next);
-    if (!next) resetState();
+    if (!next) {
+      resetState();
+      clearModalLocks();
+    }
   };
+
+  useEffect(() => () => {
+    setOpen(false);
+    clearModalLocks();
+  }, []);
+
+  useEffect(() => {
+    setOpen(false);
+    resetState();
+    clearModalLocks();
+  }, [location.pathname]);
 
   const loadMore = async () => {
     if (!continuation || loadingMore) return;
@@ -133,6 +151,7 @@ export function CanvaDesignPicker({ onSelect, disabled, iconOnly = false, mediaC
           </Button>
         </DialogTrigger>
       </IconTooltip>
+      {open ? (
       <DialogContent className="flex max-h-[88vh] w-[92vw] max-w-5xl flex-col overflow-hidden p-6">
         <DialogHeader>
           <DialogTitle>
@@ -218,6 +237,7 @@ export function CanvaDesignPicker({ onSelect, disabled, iconOnly = false, mediaC
           />
         )}
       </DialogContent>
+      ) : null}
     </DialogRoot>
   );
 }

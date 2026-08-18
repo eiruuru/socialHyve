@@ -69,6 +69,7 @@ export function CalendarDayCell({
         <CalendarPostCard
           key={post.id}
           post={post}
+          layout={dayPosts.length > 1 ? 'horizontal' : 'stacked'}
           navSearch={navSearch}
           draggable={!readOnly && isPostDraggable(post)}
           isDragging={draggingPostId === post.id}

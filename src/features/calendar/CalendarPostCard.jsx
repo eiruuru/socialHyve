@@ -25,7 +25,7 @@ function PostThumbnail({ thumb, isCarousel, className }) {
           <img src={thumb.public_url} alt="" className="h-full w-full object-cover" />
         )
       ) : (
-        <div className="flex h-full items-center justify-center text-[10px] text-neutral-400">No media</div>
+        <div className="flex h-full items-center justify-center text-[9px] text-neutral-400">No media</div>
       )}
       {isCarousel && (
         <span className="absolute bottom-0.5 right-0.5 rounded bg-black/50 px-1 text-[8px] text-white">
@@ -83,58 +83,59 @@ export function CalendarPostCard({
     onDragEnd?.(e, post);
   };
 
+  const interactionProps = {
+    type: 'button',
+    draggable,
+    onClick: handleClick,
+    onDragStart: draggable ? handleDragStart : undefined,
+    onDragEnd: draggable ? handleDragEnd : undefined,
+  };
+
+  const cardClassName = cn(
+    'w-full overflow-hidden rounded-hyve-sm border bg-white text-left shadow-sm transition-shadow hover:shadow-md',
+    cardBorderClass,
+    draggable && 'cursor-grab active:cursor-grabbing',
+    isDragging && 'opacity-50',
+    className,
+  );
+
   if (layout === 'horizontal') {
     return (
       <button
-        type="button"
-        onClick={handleClick}
-        className={cn(
-          'flex w-full items-center gap-3 overflow-hidden rounded-hyve-sm border bg-white text-left shadow-sm transition-shadow hover:shadow-md',
-          cardBorderClass,
-          isDragging && 'opacity-50',
-          className,
-        )}
+        {...interactionProps}
+        className={cn(cardClassName, 'relative mb-1 flex items-stretch gap-2 p-1')}
       >
-        <PostThumbnail thumb={thumb} isCarousel={isCarousel} className="h-[72px] w-[72px] rounded-hyve-sm" />
-        <div className="min-w-0 flex-1 space-y-1 py-1 pr-3">
-          <p className="truncate text-sm font-medium leading-tight">{title}</p>
-          <div className="flex flex-wrap items-center gap-1">
+        <PostThumbnail thumb={thumb} isCarousel={isCarousel} className="h-11 w-11 rounded-[6px]" />
+        <div className="min-w-0 flex-1 py-0.5 pr-1">
+          <p className="truncate text-[11px] font-medium leading-tight">{title}</p>
+          {timeLabel && (
+            <p className="text-[10px] leading-tight text-muted-foreground">{timeLabel}</p>
+          )}
+          <div className="mt-0.5 flex flex-wrap items-center gap-1">
             <PostStatusIconRow post={post} />
-            {scheduleUrgency && (
-              <span
-                className={cn(
-                  'rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-tight',
-                  scheduleUrgency.badgeClass,
-                )}
-                title={scheduleUrgency.urgencyLabel}
-              >
-                {scheduleUrgency.shortLabel}
-              </span>
-            )}
-          </div>
-          <div className="flex gap-1">
             {post.publish_facebook && <PlatformChip platform="facebook" iconOnly />}
             {post.publish_instagram && <PlatformChip platform="instagram" iconOnly />}
           </div>
         </div>
+        {scheduleUrgency && (
+          <span
+            className={cn(
+              'absolute right-1 top-1 rounded-full px-1 py-0.5 text-[8px] font-semibold leading-tight',
+              scheduleUrgency.badgeClass,
+            )}
+            title={scheduleUrgency.urgencyLabel}
+          >
+            {scheduleUrgency.shortLabel}
+          </span>
+        )}
       </button>
     );
   }
 
   return (
     <button
-      type="button"
-      draggable={draggable}
-      onClick={handleClick}
-      onDragStart={draggable ? handleDragStart : undefined}
-      onDragEnd={draggable ? handleDragEnd : undefined}
-      className={cn(
-        'relative mb-1.5 w-full overflow-hidden rounded-hyve-sm border bg-white text-left shadow-sm transition-shadow hover:shadow-md',
-        cardBorderClass,
-        draggable && 'cursor-grab active:cursor-grabbing',
-        isDragging && 'opacity-50',
-        className,
-      )}
+      {...interactionProps}
+      className={cn(cardClassName, 'relative mb-1.5')}
     >
       <PostThumbnail thumb={thumb} isCarousel={isCarousel} className="h-14 w-full" />
       {scheduleUrgency && (

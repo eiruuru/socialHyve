@@ -16,6 +16,7 @@ import { TabsRoot, TabsList, TabsTrigger, TabsContent } from '@/components/ui/ta
 import { MetaConnectionPanel } from '@/features/settings/MetaConnectionPanel';
 import { ClientsPanel } from '@/features/settings/ClientsPanel';
 import { TeamPanel } from '@/features/settings/TeamPanel';
+import { ActivityLogPanel } from '@/features/settings/ActivityLogPanel';
 import { WorkspacePanel } from '@/features/settings/WorkspacePanel';
 
 function Field({ label, htmlFor, children, hint }) {
@@ -50,6 +51,7 @@ export default function AccountSettingsPage() {
   const showWorkspaceTab = canManageTeam;
   const showClientsTab = isOrgTeam && !isClientOnly;
   const showTeamTab = canManageTeam;
+  const showActivityTab = isOwnerOrAdmin;
   const showMetaTab = isOwnerOrAdmin;
 
   const activeTab = (() => {
@@ -63,6 +65,7 @@ export default function AccountSettingsPage() {
     }
     if (tab === 'clients' && showClientsTab) return 'clients';
     if (tab === 'team' && showTeamTab) return 'team';
+    if (tab === 'activity' && showActivityTab) return 'activity';
     return 'profile';
   })();
 
@@ -72,6 +75,7 @@ export default function AccountSettingsPage() {
       profile: { title: 'Profile', description: PAGE_DESCRIPTIONS.profile },
       clients: { title: 'Clients', description: PAGE_DESCRIPTIONS.clients },
       team: { title: 'Team', description: PAGE_DESCRIPTIONS.team },
+      activity: { title: 'Activity', description: PAGE_DESCRIPTIONS.activity },
       meta: { title: 'Meta accounts', description: PAGE_DESCRIPTIONS.metaAccounts },
     };
     return tabMeta[activeTab] ?? {
@@ -276,6 +280,7 @@ export default function AccountSettingsPage() {
           <TabsTrigger value="profile">Profile</TabsTrigger>
           {showClientsTab && <TabsTrigger value="clients">Clients</TabsTrigger>}
           {showTeamTab && <TabsTrigger value="team">Team</TabsTrigger>}
+          {showActivityTab && <TabsTrigger value="activity">Activity</TabsTrigger>}
           {showMetaTab && <TabsTrigger value="meta">Meta Accounts</TabsTrigger>}
         </TabsList>
 
@@ -497,6 +502,12 @@ export default function AccountSettingsPage() {
         {showTeamTab && (
           <TabsContent value="team">
             <TeamPanel />
+          </TabsContent>
+        )}
+
+        {showActivityTab && (
+          <TabsContent value="activity">
+            <ActivityLogPanel />
           </TabsContent>
         )}
 

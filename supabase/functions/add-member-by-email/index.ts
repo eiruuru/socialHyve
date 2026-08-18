@@ -1,5 +1,6 @@
 import { handleOptions, jsonResponse } from '../_shared/cors.ts';
 import { getOrganizationForUser, getServiceClient, requireUser } from '../_shared/supabase.ts';
+import { logWorkspaceEvent } from '../_shared/workspaceEvents.ts';
 
 type MemberType = 'organization' | 'client';
 
@@ -129,6 +130,17 @@ Deno.serve(async (req) => {
         .eq('organization_id', org.id)
         .ilike('email', email);
 
+      await logWorkspaceEvent(service, {
+        organizationId: org.id,
+        actorUserId: user.id,
+        entityType: 'member',
+        entityId: userId,
+        entityLabel: email,
+        action: 'member_added',
+        detail: `Added to team as ${role}`,
+        metadata: { role, type: 'organization' },
+      });
+
       return jsonResponse({ added: true, email, role, userId, member });
     }
 
@@ -151,6 +163,24 @@ Deno.serve(async (req) => {
         .delete()
         .eq('client_id', clientId)
         .ilike('email', email);
+
+      const { data: clientRow } = await service
+        .from('clients')
+        .select('organization_id')
+        .eq('id', clientId)
+        .maybeSingle();
+
+      await logWorkspaceEvent(service, {
+        organizationId: (clientRow?.organization_id as string) || org.id,
+        clientId,
+        actorUserId: user.id,
+        entityType: 'member',
+        entityId: userId,
+        entityLabel: email,
+        action: 'member_added',
+        detail: `Added to client as ${role}`,
+        metadata: { role, type: 'client' },
+      });
 
       return jsonResponse({ added: true, email, role, userId, member, clientId });
     }

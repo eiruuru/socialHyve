@@ -4,6 +4,7 @@ import { readToken, writeToken } from '../_shared/accountTokens.ts';
 import { notifyPublishFailed, notifyPublishSuccess } from '../_shared/workflowNotify.ts';
 import { debugTokenInfo, isPageGrantedToUser, isValidPageTokenFor, resolvePageAccessToken } from '../_shared/metaPages.ts';
 import { getServiceClient, META_GRAPH } from '../_shared/supabase.ts';
+import { buildPostEntityLabel, logWorkspaceEvent } from '../_shared/workspaceEvents.ts';
 
 const META_APP_ID = Deno.env.get('META_APP_ID') || '';
 const META_APP_SECRET = Deno.env.get('META_APP_SECRET') || '';
@@ -414,6 +415,23 @@ async function publishPost(service: ReturnType<typeof getServiceClient>, postId:
     postUpdate.scheduled_at = publishedAt;
   }
   await service.from('posts').update(postUpdate).eq('id', postId);
+
+  const orgId = post.workspace_id as string;
+  const entityLabel = buildPostEntityLabel(post as Record<string, unknown>);
+  await logWorkspaceEvent(service, {
+    organizationId: orgId,
+    clientId: post.client_id as string | null,
+    entityType: 'post',
+    entityId: postId,
+    entityLabel,
+    action: hasError ? 'publish_failed' : 'published',
+    detail: hasError ? errors.join('; ') : 'Post published to connected platforms',
+    metadata: {
+      status: finalStatus,
+      published_at: publishedAt,
+      errors: hasError ? errors : undefined,
+    },
+  });
 
   if (hasError) {
     const { data: existingJob } = await service

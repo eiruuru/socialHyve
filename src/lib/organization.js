@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import { CLIENT_ROLE } from './clientRoles';
 import { invokeFunction } from './supabaseFunctions';
 import { getBrowserTimezone } from './scheduleTime';
+import { logWorkspaceEvent } from './workspaceEvents';
 
 export async function previewInvite(token, type) {
   return invokeFunction('acceptInvite', { action: 'preview', token, type });
@@ -276,6 +277,17 @@ export async function inviteClientMember(clientId, email, role = CLIENT_ROLE.APP
     .select()
     .single();
   if (error) throw error;
+  const org = await getOrganization();
+  await logWorkspaceEvent({
+    organizationId: org?.id,
+    clientId,
+    entityType: 'invite',
+    entityId: data.id,
+    entityLabel: normalizedEmail,
+    action: 'invite_sent',
+    detail: `Client invite sent as ${role}`,
+    metadata: { role, type: 'client' },
+  });
   return data;
 }
 
@@ -301,6 +313,15 @@ export async function inviteOrganizationMember(email, role = 'editor') {
     .select()
     .single();
   if (error) throw error;
+  await logWorkspaceEvent({
+    organizationId: org.id,
+    entityType: 'invite',
+    entityId: data.id,
+    entityLabel: normalizedEmail,
+    action: 'invite_sent',
+    detail: `Team invite sent as ${role}`,
+    metadata: { role, type: 'organization' },
+  });
   return data;
 }
 
@@ -324,6 +345,23 @@ export async function updateClient(clientId, updates) {
 }
 
 export async function deleteClient(clientId) {
+  const { data: client, error: fetchErr } = await supabase
+    .from('clients')
+    .select('id, name, organization_id')
+    .eq('id', clientId)
+    .single();
+  if (fetchErr) throw fetchErr;
+
+  await logWorkspaceEvent({
+    organizationId: client.organization_id,
+    clientId: client.id,
+    entityType: 'client',
+    entityId: client.id,
+    entityLabel: client.name,
+    action: 'client_deleted',
+    detail: 'Client and all posts permanently deleted',
+  });
+
   const { error } = await supabase.from('clients').delete().eq('id', clientId);
   if (error) throw error;
 }

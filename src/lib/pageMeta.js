@@ -22,6 +22,7 @@ export const PAGE_DESCRIPTIONS = {
   profile: 'Update your profile, email, password, and notification preferences.',
   clients: 'Add and manage client brands in your workspace.',
   team: 'Invite teammates and manage workspace roles.',
+  activity: 'Review workspace activity including post deletes, publishes, and team changes.',
   metaAccounts: 'Connect Facebook logins and import Pages and Instagram accounts for your workspace.',
   socialLinks: 'Assign Facebook Pages and Instagram accounts from your workspace Meta pool to each client.',
   canva: 'Connect Canva to import finished designs straight into the post composer.',

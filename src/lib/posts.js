@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { filterClientActivity } from '@/features/posts/postActivityUtils';
+import { buildPostEntityLabel, logWorkspaceEvent } from '@/lib/workspaceEvents';
 import { stampWorkspaceId, getCurrentWorkspaceId } from './workspace';
 import { getActiveClientId } from './clientContext';
 import { format } from 'date-fns';
@@ -71,6 +72,14 @@ export async function createPost(postData) {
   const { data, error } = await supabase.from('posts').insert(payload).select().single();
   if (error) throw error;
   await logPostActivity(data.id, 'created', 'Post created');
+  await logWorkspaceEvent({
+    clientId: data.client_id,
+    entityType: 'post',
+    entityId: data.id,
+    entityLabel: buildPostEntityLabel(data),
+    action: 'created',
+    detail: 'Post created',
+  });
   return data;
 }
 
@@ -94,11 +103,28 @@ export async function deleteStorageObjects(storagePaths) {
 }
 
 export async function deletePost(id) {
+  const post = await getPost(id);
+
   const { data: mediaRows, error: mediaErr } = await supabase
     .from('post_media')
     .select('storage_path, preview_storage_path, original_storage_path')
     .eq('post_id', id);
   if (mediaErr) throw mediaErr;
+
+  await logWorkspaceEvent({
+    organizationId: post.workspace_id,
+    clientId: post.client_id,
+    entityType: 'post',
+    entityId: post.id,
+    entityLabel: buildPostEntityLabel(post),
+    action: 'deleted',
+    detail: 'Post permanently deleted',
+    metadata: {
+      status: post.status,
+      scheduled_at: post.scheduled_at,
+      published_at: post.published_at,
+    },
+  });
 
   await deleteStorageObjects(
     (mediaRows || []).flatMap((row) => [
@@ -181,6 +207,15 @@ export async function schedulePost(postId, scheduledAt) {
   const post = await updatePost(postId, { status: 'scheduled', scheduled_at: scheduledAt });
   const scheduleLabel = formatScheduledLabel(scheduledAt, post.schedule_timezone);
   await logPostActivity(postId, 'scheduled', `Scheduled for ${scheduleLabel}`);
+  await logWorkspaceEvent({
+    clientId: post.client_id,
+    entityType: 'post',
+    entityId: postId,
+    entityLabel: buildPostEntityLabel(post),
+    action: 'scheduled',
+    detail: `Scheduled for ${scheduleLabel}`,
+    metadata: { scheduled_at: scheduledAt },
+  });
   await supabase.from('publish_jobs').upsert({
     post_id: postId,
     attempts: 0,
@@ -194,6 +229,14 @@ export async function unschedulePost(postId) {
   const post = await updatePost(postId, { status: 'draft', scheduled_at: null });
   await supabase.from('publish_jobs').delete().eq('post_id', postId);
   await logPostActivity(postId, 'unscheduled', 'Removed from publish queue');
+  await logWorkspaceEvent({
+    clientId: post.client_id,
+    entityType: 'post',
+    entityId: postId,
+    entityLabel: buildPostEntityLabel(post),
+    action: 'unscheduled',
+    detail: 'Removed from publish queue',
+  });
   return post;
 }
 
@@ -218,6 +261,15 @@ export async function reschedulePostToDay(postId, targetDay, post, clientTimezon
     'rescheduled',
     `Rescheduled to ${format(targetDay, 'MMM d, yyyy')}`,
   );
+  await logWorkspaceEvent({
+    clientId: post.client_id,
+    entityType: 'post',
+    entityId: postId,
+    entityLabel: buildPostEntityLabel(post),
+    action: 'rescheduled',
+    detail: `Rescheduled to ${format(targetDay, 'MMM d, yyyy')}`,
+    metadata: { scheduled_at: scheduledAt },
+  });
 
   if (post.status === 'scheduled') {
     await supabase.from('publish_jobs').upsert({

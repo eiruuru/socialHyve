@@ -1,5 +1,3 @@
-import { getBrowserTimezone as getBrowserTz } from '@/lib/scheduleTime';
-
 /** Continents ordered with common agency audiences first (NN/g: surface likely regions early). */
 export const TIMEZONE_REGION_ORDER = [
   'Americas',
@@ -147,13 +145,21 @@ export function formatTimezoneOptionLabel(value, { includeOffset = true } = {}) 
   return `${location} · ${entry.offset}`;
 }
 
+export function getBrowserTimezone() {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  } catch {
+    return 'UTC';
+  }
+}
+
 export function buildTimezoneSelectOptions({
   browserTz,
   workspaceDefault,
   includeValue,
 } = {}) {
   const values = new Set(TIMEZONE_CATALOG.map((entry) => entry.value));
-  const detected = browserTz || getBrowserTz();
+  const detected = browserTz || getBrowserTimezone();
   values.add(detected);
   if (workspaceDefault) values.add(workspaceDefault);
   if (includeValue) values.add(includeValue);
@@ -196,10 +202,6 @@ export function groupTimezoneOptions(options) {
     .filter((group) => group.entries.length > 0);
 }
 
-export function getBrowserTimezone() {
-  return getBrowserTz();
-}
-
 export function resolveWorkspaceTimezone({ clientTimezone, workspaceTimezone, browserTimezone } = {}) {
-  return clientTimezone || workspaceTimezone || browserTimezone || getBrowserTz();
+  return clientTimezone || workspaceTimezone || browserTimezone || getBrowserTimezone();
 }

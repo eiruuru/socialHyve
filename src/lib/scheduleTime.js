@@ -1,4 +1,4 @@
-import { formatTimezoneOptionLabel } from '@/lib/timezoneOptions';
+import { formatTimezoneOptionLabel } from './timezoneOptions.js';
 
 /** @deprecated Prefer TIMEZONE_CATALOG in timezoneOptions.js */
 export const COMMON_TIMEZONES = [

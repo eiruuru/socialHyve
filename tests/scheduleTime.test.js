@@ -24,12 +24,23 @@ test('utcToZonedLocalInput round-trips with zonedLocalToUtc', () => {
   assert.equal(back, naive);
 });
 
-test('resolveScheduleTimezone prefers post then client then browser', () => {
+test('resolveScheduleTimezone prefers post then client then workspace then browser', () => {
   assert.equal(
     resolveScheduleTimezone({ postTimezone: 'Asia/Tokyo', clientTimezone: 'UTC' }),
     'Asia/Tokyo',
   );
   assert.equal(resolveScheduleTimezone({ clientTimezone: 'Europe/London' }), 'Europe/London');
+  assert.equal(
+    resolveScheduleTimezone({ workspaceTimezone: 'Asia/Manila' }),
+    'Asia/Manila',
+  );
+  assert.equal(
+    resolveScheduleTimezone({
+      clientTimezone: 'Europe/London',
+      workspaceTimezone: 'Asia/Manila',
+    }),
+    'Europe/London',
+  );
 });
 
 test('isPastCalendarDay detects days before today', () => {

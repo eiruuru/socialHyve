@@ -15,9 +15,23 @@ export function isPostDraggable(post) {
   return post && !NON_DRAGGABLE_STATUSES.has(post.status);
 }
 
-function PostThumbnail({ thumb, isCarousel, sizeClassName }) {
+function MediaPlaceholder({ className }) {
   return (
-    <div className={cn('relative shrink-0 overflow-hidden rounded-[6px] bg-neutral-100', sizeClassName)}>
+    <div
+      className={cn(
+        'flex items-center justify-center bg-neutral-100 text-neutral-300',
+        className,
+      )}
+      aria-hidden
+    >
+      <span className="text-base font-semibold leading-none">?</span>
+    </div>
+  );
+}
+
+function PostThumbnail({ thumb, isCarousel, className }) {
+  return (
+    <div className={cn('relative shrink-0 overflow-hidden bg-neutral-100', className)}>
       {thumb?.public_url ? (
         isVideo(thumb.mime_type) ? (
           <video src={thumb.public_url} className="h-full w-full object-cover" muted />
@@ -25,7 +39,7 @@ function PostThumbnail({ thumb, isCarousel, sizeClassName }) {
           <img src={thumb.public_url} alt="" className="h-full w-full object-cover" />
         )
       ) : (
-        <div className="flex h-full w-full items-center justify-center text-[9px] text-neutral-400">No media</div>
+        <MediaPlaceholder className="h-full w-full" />
       )}
       {isCarousel && (
         <span className="absolute bottom-0.5 right-0.5 rounded bg-black/50 px-1 text-[8px] text-white">
@@ -55,6 +69,23 @@ function CalendarMetaRow({ post }) {
   );
 }
 
+function ScheduleUrgencyBadge({ scheduleUrgency, className }) {
+  if (!scheduleUrgency) return null;
+
+  return (
+    <span
+      className={cn(
+        'absolute rounded-full px-1 py-0.5 text-[8px] font-semibold leading-tight',
+        scheduleUrgency.badgeClass,
+        className,
+      )}
+      title={scheduleUrgency.urgencyLabel}
+    >
+      {scheduleUrgency.shortLabel}
+    </span>
+  );
+}
+
 export function CalendarPostCard({
   post,
   className,
@@ -81,8 +112,6 @@ export function CalendarPostCard({
   const calendarDate = getPostCalendarDate(post);
   const timeLabel = calendarDate ? format(new Date(calendarDate), 'h:mm a') : null;
   const isCarousel = media.length > 1;
-  const thumbSize = compact ? 'h-10 w-10' : 'h-14 w-14';
-  const titleClass = compact ? 'text-[11px]' : 'text-xs';
 
   const handleClick = () => {
     if (didDragRef.current) {
@@ -104,6 +133,44 @@ export function CalendarPostCard({
     onDragEnd?.(e, post);
   };
 
+  const cardClassName = cn(
+    'relative mb-1 w-full overflow-hidden rounded-hyve-sm border bg-white text-left shadow-sm transition-shadow hover:shadow-md',
+    cardBorderClass,
+    draggable && 'cursor-grab active:cursor-grabbing',
+    isDragging && 'opacity-50',
+    className,
+  );
+
+  if (compact) {
+    return (
+      <button
+        type="button"
+        draggable={draggable}
+        onClick={handleClick}
+        onDragStart={draggable ? handleDragStart : undefined}
+        onDragEnd={draggable ? handleDragEnd : undefined}
+        className={cn(cardClassName, 'flex items-center gap-2 p-1.5')}
+      >
+        <PostThumbnail thumb={thumb} isCarousel={isCarousel} className="h-10 w-10 rounded-[6px]" />
+        <div className="min-w-0 flex-1 space-y-0.5">
+          <div className="flex min-w-0 items-baseline gap-1 pr-8">
+            <p className="truncate text-[11px] font-medium leading-tight">{title}</p>
+            {timeLabel && (
+              <>
+                <span className="shrink-0 text-[10px] text-neutral-300" aria-hidden>
+                  ·
+                </span>
+                <span className="shrink-0 text-[10px] text-muted-foreground">{timeLabel}</span>
+              </>
+            )}
+          </div>
+          <CalendarMetaRow post={post} />
+        </div>
+        <ScheduleUrgencyBadge scheduleUrgency={scheduleUrgency} className="right-1 top-1" />
+      </button>
+    );
+  }
+
   return (
     <button
       type="button"
@@ -111,40 +178,20 @@ export function CalendarPostCard({
       onClick={handleClick}
       onDragStart={draggable ? handleDragStart : undefined}
       onDragEnd={draggable ? handleDragEnd : undefined}
-      className={cn(
-        'relative mb-1 flex w-full items-center gap-2 overflow-hidden rounded-hyve-sm border bg-white p-1.5 text-left shadow-sm transition-shadow hover:shadow-md',
-        cardBorderClass,
-        draggable && 'cursor-grab active:cursor-grabbing',
-        isDragging && 'opacity-50',
-        className,
-      )}
+      className={cn(cardClassName, 'mb-1.5')}
     >
-      <PostThumbnail thumb={thumb} isCarousel={isCarousel} sizeClassName={thumbSize} />
-      <div className="min-w-0 flex-1 space-y-0.5">
-        <div className="flex min-w-0 items-baseline gap-1 pr-8">
-          <p className={cn('truncate font-medium leading-tight', titleClass)}>{title}</p>
-          {timeLabel && (
-            <>
-              <span className="shrink-0 text-[10px] text-neutral-300" aria-hidden>
-                ·
-              </span>
-              <span className="shrink-0 text-[10px] text-muted-foreground">{timeLabel}</span>
-            </>
-          )}
-        </div>
+      <PostThumbnail thumb={thumb} isCarousel={isCarousel} className="h-14 w-full" />
+      <ScheduleUrgencyBadge
+        scheduleUrgency={scheduleUrgency}
+        className="right-1 top-1 z-10 px-1.5 py-0.5 text-[9px] shadow-sm"
+      />
+      <div className="space-y-0.5 p-1.5">
+        <p className="truncate text-xs font-medium leading-tight">{title}</p>
+        {timeLabel && (
+          <p className="text-[10px] text-muted-foreground">{timeLabel}</p>
+        )}
         <CalendarMetaRow post={post} />
       </div>
-      {scheduleUrgency && (
-        <span
-          className={cn(
-            'absolute right-1 top-1 rounded-full px-1 py-0.5 text-[8px] font-semibold leading-tight',
-            scheduleUrgency.badgeClass,
-          )}
-          title={scheduleUrgency.urgencyLabel}
-        >
-          {scheduleUrgency.shortLabel}
-        </span>
-      )}
     </button>
   );
 }

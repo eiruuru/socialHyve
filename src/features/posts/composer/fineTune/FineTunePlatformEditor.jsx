@@ -14,6 +14,9 @@ import { PublishModeToggle } from './PublishModeToggle';
 import { CaptionOverrideField } from './CaptionOverrideField';
 import { CarouselLinkField } from './CarouselLinkField';
 import { FineTuneMediaPanel } from './FineTuneMediaPanel';
+import { LocationSearchField } from './LocationSearchField';
+import { CollaboratorTagField } from './CollaboratorTagField';
+import { AiGeneratedCheckbox } from './AiGeneratedCheckbox';
 import { cn } from '@/lib/utils';
 
 function ScheduleOverrideField({ value, onChange, fallback, scheduleTimezone }) {
@@ -42,6 +45,8 @@ function FacebookEditor({
   scheduleTimezone,
   media,
   onMediaChange,
+  postId,
+  clientName,
 }) {
   const placement = getPlatformPlacement({ facebook: data }, 'facebook');
   const publishMode = getPublishMode({ facebook: data }, 'facebook');
@@ -65,6 +70,11 @@ function FacebookEditor({
         internalName={internalName}
         label={label}
         charLimit={FB_CAPTION_LIMIT}
+        shortenUrls={!!data.shorten_urls}
+        onShortenUrlsChange={(value) => onUpdate('shorten_urls', value)}
+        postId={postId}
+        clientName={clientName}
+        postLabel={label}
       />
       <ScheduleOverrideField
         value={data.scheduled_at ?? ''}
@@ -91,6 +101,7 @@ function FacebookEditor({
 function InstagramEditor({
   data,
   onUpdate,
+  onUpdatePlatform,
   caption,
   internalName,
   label,
@@ -100,6 +111,9 @@ function InstagramEditor({
   onMediaChange,
   firstComment,
   setFirstComment,
+  instagramAccountId,
+  postId,
+  clientName,
 }) {
   const placement = getPlatformPlacement({ instagram: data }, 'instagram');
   const publishMode = getPublishMode({ instagram: data }, 'instagram');
@@ -123,6 +137,9 @@ function InstagramEditor({
         internalName={internalName}
         label={label}
         charLimit={IG_CAPTION_LIMIT}
+        postId={postId}
+        clientName={clientName}
+        postLabel={label}
       />
       <ScheduleOverrideField
         value={data.scheduled_at ?? ''}
@@ -139,24 +156,22 @@ function InstagramEditor({
           rows={2}
         />
       </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <label className="block text-xs font-medium">Location</label>
-          <Input
-            placeholder="Optional — saved for future use"
-            value={data.location ?? ''}
-            onChange={(e) => onUpdate('location', e.target.value)}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <label className="block text-xs font-medium">Collaborators</label>
-          <Input
-            placeholder="Optional — saved for future use"
-            value={data.collaborators ?? ''}
-            onChange={(e) => onUpdate('collaborators', e.target.value)}
-          />
-        </div>
-      </div>
+      <LocationSearchField
+        locationId={data.location_id ?? ''}
+        locationName={data.location_name ?? data.location ?? ''}
+        instagramAccountId={instagramAccountId}
+        onChange={({ location_id, location_name }) => {
+          onUpdatePlatform({ location_id, location_name });
+        }}
+      />
+      <CollaboratorTagField
+        value={data.collaborators ?? []}
+        onChange={(value) => onUpdate('collaborators', value)}
+      />
+      <AiGeneratedCheckbox
+        checked={!!data.ai_generated}
+        onChange={(value) => onUpdate('ai_generated', value)}
+      />
       <FineTuneMediaPanel
         media={media}
         onMediaChange={onMediaChange}
@@ -181,6 +196,9 @@ export function FineTunePlatformEditor({
   onMediaChange,
   firstComment,
   setFirstComment,
+  instagramAccountId,
+  postId,
+  clientName,
 }) {
   const defaultTab = publishFacebook ? 'facebook' : 'instagram';
   const [tab, setTab] = useState(defaultTab);
@@ -194,6 +212,13 @@ export function FineTunePlatformEditor({
     setPlatformOverrides((prev) => ({
       ...prev,
       [platform]: { ...prev[platform], [field]: value },
+    }));
+  };
+
+  const updatePlatform = (platform, patch) => {
+    setPlatformOverrides((prev) => ({
+      ...prev,
+      [platform]: { ...prev[platform], ...patch },
     }));
   };
 
@@ -240,12 +265,15 @@ export function FineTunePlatformEditor({
             scheduleTimezone={scheduleTimezone}
             media={media}
             onMediaChange={onMediaChange}
+            postId={postId}
+            clientName={clientName}
           />
         )}
         {(tab === 'instagram' && publishInstagram) && (
           <InstagramEditor
             data={platformOverrides.instagram || {}}
             onUpdate={(field, value) => updateOverride('instagram', field, value)}
+            onUpdatePlatform={(patch) => updatePlatform('instagram', patch)}
             caption={caption}
             internalName={internalName}
             label={label}
@@ -255,6 +283,9 @@ export function FineTunePlatformEditor({
             onMediaChange={onMediaChange}
             firstComment={firstComment}
             setFirstComment={setFirstComment}
+            instagramAccountId={instagramAccountId}
+            postId={postId}
+            clientName={clientName}
           />
         )}
       </div>

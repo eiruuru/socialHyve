@@ -21,6 +21,9 @@ export function FineTunePanel({
   publishInstagram,
   media,
   onMediaChange,
+  instagramAccountId,
+  postId,
+  clientName,
 }) {
   const summary = getFineTuneSummary(platformOverrides, { publishFacebook, publishInstagram });
 
@@ -67,6 +70,9 @@ export function FineTunePanel({
               onMediaChange={onMediaChange}
               firstComment={firstComment}
               setFirstComment={setFirstComment}
+              instagramAccountId={instagramAccountId}
+              postId={postId}
+              clientName={clientName}
             />
           </div>
         </CardContent>

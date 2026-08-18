@@ -11,6 +11,7 @@ import { registerServiceWorker } from '@/lib/pushNotifications';
 const LandingPage = lazy(() => import('@/pages/LandingPage'));
 const FaqPage = lazy(() => import('@/pages/FaqPage'));
 const ReviewLinkPage = lazy(() => import('@/pages/ReviewLinkPage'));
+const ShortLinkRedirectPage = lazy(() => import('@/pages/ShortLinkRedirectPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -42,6 +43,7 @@ export default function App() {
               <Route path="/faq" element={<FaqPage />} />
               <Route path="/login" element={<LoginRedirect />} />
               <Route path="/review/:token" element={<ReviewLinkPage />} />
+              <Route path="/s/:slug" element={<ShortLinkRedirectPage />} />
               <Route path="/app/*" element={<AppRoutes />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

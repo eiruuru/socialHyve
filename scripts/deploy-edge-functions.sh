@@ -52,6 +52,10 @@ FUNCTIONS=(
   meta-interactions-webhook
   publish-post
   generate-caption
+  shorten-url
+  short-link-redirect
+  meta-search-locations
+  meta-resolve-ig-users
   cleanup-post-media
   refresh-tokens
   review-by-token

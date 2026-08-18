@@ -54,7 +54,12 @@ export function PlatformPreviewTabs({
     const captionText = facebookCaption ?? caption;
     if (facebookPlacement === 'reels') {
       return (
-        <PreviewFrame platform="facebook" scheduledAt={scheduledAt} scheduleTimezone={scheduleTimezone}>
+        <PreviewFrame
+          platform="facebook"
+          scheduledAt={scheduledAt}
+          scheduleTimezone={scheduleTimezone}
+          layout="vertical"
+        >
           <FacebookReelsPreview
             caption={captionText}
             media={media}
@@ -65,7 +70,12 @@ export function PlatformPreviewTabs({
     }
     if (facebookPlacement === 'stories') {
       return (
-        <PreviewFrame platform="facebook" scheduledAt={scheduledAt} scheduleTimezone={scheduleTimezone}>
+        <PreviewFrame
+          platform="facebook"
+          scheduledAt={scheduledAt}
+          scheduleTimezone={scheduleTimezone}
+          layout="vertical"
+        >
           <FacebookStoriesPreview
             caption={captionText}
             media={media}
@@ -102,6 +112,7 @@ export function PlatformPreviewTabs({
         publishInstagram={publishInstagram}
         instagramAccountId={instagramAccountId}
         placement={instagramPlacement}
+        locationName={platformOverrides?.instagram?.location_name || platformOverrides?.instagram?.location || ''}
       />
     );
   };

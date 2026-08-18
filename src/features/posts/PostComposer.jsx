@@ -642,6 +642,9 @@ export function PostComposer({ editPostId = null }) {
         publishInstagram={publishInstagram}
         media={media}
         onMediaChange={handleMediaChange}
+        instagramAccountId={instagramAccountId}
+        postId={draftPostId}
+        clientName={activeClient?.name}
       />
     </div>
   );

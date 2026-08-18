@@ -1,10 +1,16 @@
 import { useState } from 'react';
-import { Bookmark, Heart, MessageCircle, MoreHorizontal, Send } from 'lucide-react';
+import { Bookmark, Heart, MapPin, MessageCircle, MoreHorizontal, Send } from 'lucide-react';
 import { MediaCarousel } from './MediaCarousel';
 import { normalizeMediaList, truncateCaption } from './mediaUtils';
 import { ProfileAvatar, usePreviewAccounts } from '../hooks/usePreviewAccounts';
 
-export function InstagramFeedPreview({ caption, media = [], embedded = false, instagramAccountId = null }) {
+export function InstagramFeedPreview({
+  caption,
+  media = [],
+  embedded = false,
+  instagramAccountId = null,
+  locationName = '',
+}) {
   const { instagram } = usePreviewAccounts({ instagramAccountId });
   const [expanded, setExpanded] = useState(false);
   const items = normalizeMediaList(media);
@@ -17,7 +23,15 @@ export function InstagramFeedPreview({ caption, media = [], embedded = false, in
       <div className="flex items-center justify-between px-3 py-2.5">
         <div className="flex items-center gap-2.5">
           <ProfileAvatar account={instagram} platform="instagram" className="h-8 w-8" />
-          <span className="text-sm font-semibold text-gray-900">{username}</span>
+          <div>
+            <span className="text-sm font-semibold text-gray-900">{username}</span>
+            {locationName && (
+              <p className="flex items-center gap-1 text-xs text-gray-500">
+                <MapPin className="h-3 w-3" />
+                {locationName}
+              </p>
+            )}
+          </div>
         </div>
         <MoreHorizontal className="h-5 w-5 text-gray-900" />
       </div>

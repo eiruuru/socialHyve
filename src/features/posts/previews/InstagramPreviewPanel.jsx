@@ -42,6 +42,7 @@ export function InstagramPreviewPanel({
   publishInstagram = true,
   instagramAccountId = null,
   placement = 'feed',
+  locationName = '',
 }) {
   const [viewMode, setViewMode] = useState('post');
   const [contentFilter, setContentFilter] = useState(placementToContentFilter(placement));
@@ -116,7 +117,13 @@ export function InstagramPreviewPanel({
     ) : contentFilter === 'stories' ? (
       <InstagramStoriesPreview caption={caption} media={media} instagramAccountId={instagramAccountId} />
     ) : (
-      <InstagramFeedPreview caption={caption} media={media} embedded instagramAccountId={instagramAccountId} />
+      <InstagramFeedPreview
+        caption={caption}
+        media={media}
+        embedded
+        instagramAccountId={instagramAccountId}
+        locationName={locationName}
+      />
     )
   ) : contentFilter === 'reels' ? (
     <div className="flex aspect-[9/16] max-h-64 items-center justify-center text-sm text-muted-foreground">
@@ -133,6 +140,8 @@ export function InstagramPreviewPanel({
     />
   );
 
+  const isVertical = viewMode === 'post' && (contentFilter === 'reels' || contentFilter === 'stories');
+
   return (
     <PreviewFrame
       platform="instagram"
@@ -140,6 +149,7 @@ export function InstagramPreviewPanel({
       scheduleTimezone={scheduleTimezone}
       toolbar={toolbar}
       footer={footer}
+      layout={isVertical ? 'vertical' : 'feed'}
     >
       {content}
     </PreviewFrame>

@@ -5,6 +5,7 @@ import { notifyPublishFailed, notifyPublishSuccess } from '../_shared/workflowNo
 import { debugTokenInfo, isPageGrantedToUser, isValidPageTokenFor, resolvePageAccessToken } from '../_shared/metaPages.ts';
 import { getServiceClient, META_GRAPH } from '../_shared/supabase.ts';
 import { buildPostEntityLabel, logWorkspaceEvent } from '../_shared/workspaceEvents.ts';
+import { shortenCaptionUrls } from '../_shared/shortLinks.ts';
 
 const META_APP_ID = Deno.env.get('META_APP_ID') || '';
 const META_APP_SECRET = Deno.env.get('META_APP_SECRET') || '';
@@ -22,6 +23,11 @@ type PlatformOverride = {
   placement?: string;
   publish_mode?: string;
   carousel_link?: string;
+  shorten_urls?: boolean;
+  location_id?: string;
+  location_name?: string;
+  collaborators?: string[] | string;
+  ai_generated?: boolean;
 };
 
 type PlatformOverrides = {
@@ -78,6 +84,62 @@ function resolvePlatformSchedule(
 ): string | null {
   const overrides = (post.platform_overrides || {}) as PlatformOverrides;
   return overrides[platform]?.scheduled_at ?? (post.scheduled_at as string | null) ?? null;
+}
+
+function getInstagramOverrides(post: Record<string, unknown>) {
+  const overrides = (post.platform_overrides || {}) as PlatformOverrides;
+  const ig = overrides.instagram || {};
+  const collaborators = Array.isArray(ig.collaborators)
+    ? ig.collaborators
+    : typeof ig.collaborators === 'string' && ig.collaborators.trim()
+    ? ig.collaborators.split(',').map((value) => value.replace(/^@/, '').trim()).filter(Boolean)
+    : [];
+  return {
+    locationId: ig.location_id ? String(ig.location_id) : '',
+    collaborators,
+    aiGenerated: ig.ai_generated === true,
+    shortenUrls: ig.shorten_urls === true,
+  };
+}
+
+function getFacebookShortenUrls(post: Record<string, unknown>): boolean {
+  const overrides = (post.platform_overrides || {}) as PlatformOverrides;
+  return overrides.facebook?.shorten_urls === true;
+}
+
+async function resolveIgCollaboratorIds(
+  igUserId: string,
+  token: string,
+  usernames: string[],
+): Promise<string[]> {
+  const ids: string[] = [];
+  const failed: string[] = [];
+
+  for (const username of usernames) {
+    const fields = `business_discovery.username(${username}){id,username}`;
+    const url = new URL(`${META_GRAPH}/${igUserId}`);
+    url.searchParams.set('fields', fields);
+    url.searchParams.set('access_token', token);
+    const res = await fetch(url);
+    const data = await res.json();
+    const id = data.business_discovery?.id;
+    if (id) ids.push(String(id));
+    else failed.push(username);
+  }
+
+  if (failed.length) {
+    throw new Error(`Could not resolve Instagram collaborator(s): ${failed.map((u) => `@${u}`).join(', ')}`);
+  }
+  return ids;
+}
+
+function applyInstagramMediaOptions(
+  params: Record<string, string>,
+  options: { locationId?: string; collaboratorIds?: string[]; aiGenerated?: boolean },
+) {
+  if (options.locationId) params.location_id = options.locationId;
+  if (options.collaboratorIds?.length) params.collaborators = options.collaboratorIds.join(',');
+  if (options.aiGenerated) params.is_ai_generated = 'true';
 }
 
 async function publishInstagramFirstComment(
@@ -347,11 +409,19 @@ async function publishPost(service: ReturnType<typeof getServiceClient>, postId:
     (a: MediaItem, b: MediaItem) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
   );
 
-  const fbCaption = resolvePlatformCaption(post, 'facebook');
+  const fbCaptionRaw = resolvePlatformCaption(post, 'facebook');
   const fbSchedule = resolvePlatformSchedule(post, 'facebook');
-  const igCaption = resolvePlatformCaption(post, 'instagram');
+  const igCaptionRaw = resolvePlatformCaption(post, 'instagram');
   const igSchedule = resolvePlatformSchedule(post, 'instagram');
   const firstComment = (post.first_comment as string | undefined) || '';
+  const organizationId = post.workspace_id as string;
+
+  let fbCaption = fbCaptionRaw;
+  if (getFacebookShortenUrls(post)) {
+    fbCaption = await shortenCaptionUrls(service, fbCaptionRaw, organizationId, postId);
+  }
+  const igCaption = igCaptionRaw;
+  const igOverrides = getInstagramOverrides(post);
 
   let hasError = false;
   const errors: string[] = [];
@@ -404,9 +474,17 @@ async function publishPost(service: ReturnType<typeof getServiceClient>, postId:
       const { result: externalId, pageToken } = await publishWithPageToken(
         service,
         igAccount,
-        (token) => {
+        async (token) => {
           const igWithToken = { ...igAccount, page_access_token: token, access_token: token };
-          return publishToInstagram(igWithToken, igCaption, media, igSchedule);
+          const igUserId = String(igWithToken.ig_user_id || igWithToken.external_id || '');
+          const collaboratorIds = igOverrides.collaborators.length
+            ? await resolveIgCollaboratorIds(igUserId, token, igOverrides.collaborators)
+            : [];
+          return publishToInstagram(igWithToken, igCaption, media, igSchedule, {
+            locationId: igOverrides.locationId,
+            collaboratorIds,
+            aiGenerated: igOverrides.aiGenerated,
+          });
         },
       );
       const permalink = await fetchMetaPermalink(externalId, pageToken);
@@ -613,7 +691,8 @@ async function publishToInstagram(
   account: Record<string, unknown>,
   caption: string,
   media: MediaItem[] = [],
-  scheduledAt?: string | null
+  scheduledAt?: string | null,
+  options: { locationId?: string; collaboratorIds?: string[]; aiGenerated?: boolean } = {},
 ): Promise<string> {
   const token = account.page_access_token || account.access_token;
   const igUserId = account.ig_user_id || account.external_id;
@@ -633,6 +712,8 @@ async function publishToInstagram(
       [isVideo ? 'video_url' : 'image_url']: item.public_url,
     };
     if (isVideo) params.media_type = 'VIDEO';
+
+    applyInstagramMediaOptions(params, options);
 
     if (futureSchedule && scheduledAt) {
       params.published = 'false';
@@ -689,6 +770,7 @@ async function publishToInstagram(
     children: childIds.join(','),
     caption,
   };
+  applyInstagramMediaOptions(carouselParams, options);
   if (futureSchedule && scheduledAt) {
     carouselParams.published = 'false';
     carouselParams.scheduled_publish_time = String(Math.floor(new Date(scheduledAt).getTime() / 1000));

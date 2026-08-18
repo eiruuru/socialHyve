@@ -27,18 +27,35 @@ const DEFAULT_PLATFORM = {
 export const DEFAULT_FACEBOOK_OVERRIDE = {
   ...DEFAULT_PLATFORM,
   carousel_link: '',
+  shorten_urls: false,
 };
 
 export const DEFAULT_INSTAGRAM_OVERRIDE = {
   ...DEFAULT_PLATFORM,
-  location: '',
-  collaborators: '',
+  location_id: '',
+  location_name: '',
+  collaborators: [],
+  ai_generated: false,
 };
 
+function normalizeCollaborators(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item).replace(/^@/, '').trim().toLowerCase()).filter(Boolean);
+  }
+  if (typeof value === 'string' && value.trim()) {
+    return value.split(',').map((item) => item.replace(/^@/, '').trim().toLowerCase()).filter(Boolean);
+  }
+  return [];
+}
+
 export function normalizePlatformOverrides(overrides = {}) {
+  const instagram = { ...DEFAULT_INSTAGRAM_OVERRIDE, ...(overrides.instagram || {}) };
   return {
     facebook: { ...DEFAULT_FACEBOOK_OVERRIDE, ...(overrides.facebook || {}) },
-    instagram: { ...DEFAULT_INSTAGRAM_OVERRIDE, ...(overrides.instagram || {}) },
+    instagram: {
+      ...instagram,
+      collaborators: normalizeCollaborators(instagram.collaborators),
+    },
   };
 }
 
@@ -59,6 +76,10 @@ export function getEffectiveCaption(postCaption, overrides, platform) {
   return postCaption || '';
 }
 
+export function getInstagramLocationName(overrides = {}) {
+  return overrides?.instagram?.location_name || overrides?.instagram?.location || '';
+}
+
 export function hasFineTuneOverrides(overrides = {}, { publishFacebook, publishInstagram } = {}) {
   const normalized = normalizePlatformOverrides(overrides);
   const platforms = [];
@@ -72,6 +93,8 @@ export function hasFineTuneOverrides(overrides = {}, { publishFacebook, publishI
       const value = data[key];
       const defaultValue = defaults[key];
       if (value == null || value === '') return false;
+      if (Array.isArray(value) && value.length === 0) return false;
+      if (typeof value === 'boolean') return value !== defaultValue;
       return value !== defaultValue;
     });
   });
@@ -149,6 +172,17 @@ export function validateFineTune({
 
     if (platform === 'instagram' && mediaCount === 0) {
       platformErrors.push('Instagram requires at least one image or video.');
+    }
+
+    if (platform === 'instagram') {
+      if ((data.location_name || data.location) && !data.location_id) {
+        platformWarnings.push('Select a location from search results before publishing.');
+      }
+      for (const username of data.collaborators || []) {
+        if (!/^[a-z0-9._]+$/.test(username)) {
+          platformWarnings.push(`Collaborator "${username}" looks invalid.`);
+        }
+      }
     }
 
     if (publishMode === 'automatic' && (placement === 'reels' || placement === 'stories')) {

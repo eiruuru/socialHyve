@@ -9,7 +9,7 @@ export function InstagramStoriesPreview({ caption, media = [], instagramAccountI
   const username = instagram.username?.replace('@', '') || 'your_account';
 
   return (
-    <div className="relative mx-auto aspect-[9/16] w-full max-w-[280px] overflow-hidden rounded-xl bg-neutral-900">
+    <div className="relative mx-auto aspect-[9/16] w-full max-w-[300px] overflow-hidden rounded-xl bg-neutral-900">
       {first?.public_url ? (
         <img src={first.public_url} alt="" className="h-full w-full object-cover" />
       ) : (

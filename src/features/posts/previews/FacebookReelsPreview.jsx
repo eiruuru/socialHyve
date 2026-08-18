@@ -9,7 +9,7 @@ export function FacebookReelsPreview({ caption, media = [], facebookAccountId = 
   const videoItem = items.find((m) => isVideo(m.mime_type)) || first;
 
   return (
-    <div className="relative mx-auto aspect-[9/16] w-full max-w-[280px] overflow-hidden rounded-xl bg-black">
+    <div className="relative mx-auto aspect-[9/16] w-full max-w-[300px] overflow-hidden rounded-xl bg-black">
       {videoItem?.public_url ? (
         isVideo(videoItem.mime_type) ? (
           <video

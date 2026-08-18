@@ -69,13 +69,14 @@ function CalendarMetaRow({ post }) {
   );
 }
 
-function ScheduleUrgencyBadge({ scheduleUrgency, className }) {
+function ScheduleUrgencyBadge({ scheduleUrgency, className, inline = false }) {
   if (!scheduleUrgency) return null;
 
   return (
     <span
       className={cn(
-        'absolute rounded-full px-1 py-0.5 text-[8px] font-semibold leading-tight',
+        'rounded-full px-1 py-0.5 text-[8px] font-semibold leading-tight',
+        !inline && 'absolute',
         scheduleUrgency.badgeClass,
         className,
       )}
@@ -153,7 +154,7 @@ export function CalendarPostCard({
       >
         <PostThumbnail thumb={thumb} isCarousel={isCarousel} className="h-10 w-10 rounded-[6px]" />
         <div className="min-w-0 flex-1 space-y-0.5">
-          <div className="flex min-w-0 items-baseline gap-1 pr-8">
+          <div className="flex min-w-0 items-baseline gap-1">
             <p className="truncate text-[11px] font-medium leading-tight">{title}</p>
             {timeLabel && (
               <>
@@ -164,9 +165,11 @@ export function CalendarPostCard({
               </>
             )}
           </div>
-          <CalendarMetaRow post={post} />
+          <div className="flex min-w-0 items-center justify-between gap-1">
+            <CalendarMetaRow post={post} />
+            <ScheduleUrgencyBadge scheduleUrgency={scheduleUrgency} inline className="shrink-0" />
+          </div>
         </div>
-        <ScheduleUrgencyBadge scheduleUrgency={scheduleUrgency} className="right-1 top-1" />
       </button>
     );
   }

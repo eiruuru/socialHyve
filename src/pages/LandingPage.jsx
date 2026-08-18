@@ -230,7 +230,7 @@ export default function LandingPage() {
         <p className="mb-6 text-center font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">
           Approval queue
         </p>
-        <ChromeFrame url="app.socialhyve.com/queue">
+        <ChromeFrame url="socialhyve.app/queue">
           <div className="space-y-3 p-5">
             {DEMO_POSTS.map((post) => (
               <PostQueueCard key={post.id} post={post} authorEmail="mia@example.com" showActions={false} />
@@ -245,7 +245,7 @@ export default function LandingPage() {
             <Eye className="h-4 w-4" />
             <p className="font-mono text-xs font-semibold uppercase tracking-wider">Live previews</p>
           </div>
-          <ChromeFrame url="app.socialhyve.com/posts/new · instagram grid">
+          <ChromeFrame url="socialhyve.app/posts/new · instagram grid">
             <div className="grid grid-cols-3 gap-0.5 bg-neutral-100 p-4">
               {Array.from({ length: 9 }, (_, i) => (
                 <div

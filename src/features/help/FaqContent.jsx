@@ -86,7 +86,7 @@ const FAQ_SECTIONS = [
           pages to River Retail, then drafts a weekend promo and submits it for the café owner to approve.
         </Example>
 
-        <ChromeFrame url="app.socialhyve.com/settings/account?tab=clients">
+        <ChromeFrame url="socialhyve.app/settings/account?tab=clients">
           <div className="space-y-2 p-4">
             <div className="rounded-hyve-sm bg-honey px-3 py-2 text-sm font-semibold text-white shadow-hyve-sm">
               River Studio
@@ -247,7 +247,7 @@ const FAQ_SECTIONS = [
           <p>Edit existing drafts from post detail or Queue. Published posts cannot be edited in the composer — create a new post instead.</p>
         </HelpSubsection>
 
-        <ChromeFrame url="app.socialhyve.com/posts/new">
+        <ChromeFrame url="socialhyve.app/posts/new">
           <div className="grid gap-3 p-4 md:grid-cols-2">
             <div className="space-y-2">
               <div className="h-16 rounded-hyve-sm border border-neutral-200 bg-paper-alt px-3 py-2 text-xs text-neutral-500">
@@ -367,7 +367,7 @@ const FAQ_SECTIONS = [
           <p>Guest client members see a read-only calendar (no drag, no new post buttons). Creatives QA can drag to reschedule and open approved posts to schedule, but cannot create new posts or import CSV.</p>
         </HelpSubsection>
 
-        <ChromeFrame url="app.socialhyve.com/calendar">
+        <ChromeFrame url="socialhyve.app/calendar">
           <div className="grid grid-cols-7 gap-px bg-neutral-200 p-px">
             {Array.from({ length: 7 }, (_, i) => (
               <div key={i} className="aspect-square bg-white p-1">
@@ -461,7 +461,7 @@ const FAQ_SECTIONS = [
           <p>Vertical 9:16 preview for video content when Reels mode is selected in the preview toolbar.</p>
         </HelpSubsection>
 
-        <ChromeFrame url="app.socialhyve.com/posts/new · previews">
+        <ChromeFrame url="socialhyve.app/posts/new · previews">
           <div className="grid grid-cols-3 gap-0.5 p-3">
             {Array.from({ length: 9 }, (_, i) => (
               <div

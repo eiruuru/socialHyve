@@ -23,12 +23,12 @@ Or connect the GitHub repo in [vercel.com/new](https://vercel.com/new) → impor
 
 Apply to **Production**, **Preview**, and **Development**.
 
-## 3. Supabase Auth (after you have the Vercel URL)
+## 3. Supabase Auth
 
 → [URL Configuration](https://supabase.com/dashboard/project/hfbxonnowvfkxmmkgftz/auth/url-configuration)
 
-- **Site URL:** `https://your-app.vercel.app`
-- **Redirect URLs:** add `https://your-app.vercel.app/**`
+- **Site URL:** `https://socialhyve.app`
+- **Redirect URLs:** add `https://socialhyve.app/**`
 
 Keep `http://localhost:5173/**` for local dev.
 
@@ -38,14 +38,14 @@ Update `APP_URL` to your production URL and configure invite email:
 
 ```bash
 # In .env
-APP_URL=https://your-app.vercel.app
+APP_URL=https://socialhyve.app
 RESEND_API_KEY=re_...
-INVITE_FROM_EMAIL=invites@yourdomain.com
+INVITE_FROM_EMAIL=invites@hyvehq.xyz
 bash scripts/set-secrets.sh
 ```
 
 OAuth callbacks (Meta/Canva) stay on Supabase — no change needed.
 
-## 5. Custom domain (optional)
+## 5. Custom domain
 
-Vercel Dashboard → Project → Settings → Domains
+Production domain: **`https://socialhyve.app`** (apex). Configure in Vercel Dashboard → Project → Settings → Domains; redirect `www.socialhyve.app` → apex.

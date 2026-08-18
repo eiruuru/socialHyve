@@ -155,7 +155,7 @@ Open [http://localhost:5173](http://localhost:5173), sign up, then:
 
 ## Invite and email checklist (production)
 
-1. **`APP_URL`** — must match your live app (e.g. `https://your-app.vercel.app`). Used in invite emails.
+1. **`APP_URL`** — must match your live app (e.g. `https://socialhyve.app`). Used in invite emails.
 2. **`RESEND_API_KEY`** + **`INVITE_FROM_EMAIL`** — verified sender domain in Resend; run `bash scripts/set-secrets.sh`.
 3. **Supabase Auth → URL Configuration** — Site URL and Redirect URLs include production `/**`.
 4. **Email confirmation** — if enabled, invitees must confirm email then sign in; pending invite completes automatically.

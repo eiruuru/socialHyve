@@ -1,13 +1,20 @@
 import { cn } from '@/lib/utils';
 
-export function PlatformChip({ platform, className, iconOnly = false }) {
+const ICON_ONLY_SIZE = {
+  sm: 'h-5 w-5 text-[10px]',
+  md: 'h-7 w-7 text-xs',
+  lg: 'h-9 w-9 text-sm',
+};
+
+export function PlatformChip({ platform, className, iconOnly = false, iconSize = 'sm' }) {
   const isFb = platform === 'facebook';
 
   if (iconOnly) {
     return (
       <span
         className={cn(
-          'inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-white',
+          'inline-flex shrink-0 items-center justify-center rounded-full font-bold text-white',
+          ICON_ONLY_SIZE[iconSize] ?? ICON_ONLY_SIZE.sm,
           isFb ? 'bg-platform-fb' : 'bg-gradient-to-br from-[#F58529] via-[#DD2A7B] to-[#8134AF]',
           className
         )}

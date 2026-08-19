@@ -12,6 +12,7 @@ import { useMembership } from '@/lib/membershipContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PlatformChip } from '@/components/brand/PlatformChip';
+import { SocialPageAvatar } from '@/components/brand/SocialPageAvatar';
 import { RefreshCw, Unplug } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { IconTooltip } from '@/components/ui/IconTooltip';
@@ -260,21 +261,10 @@ export function MetaConnectionPanel() {
                         : page.name;
                       return (
                         <div key={page.id} className="flex gap-3 rounded-md border p-3">
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-neutral-100">
-                            {page.profile_picture_url ? (
-                              <img
-                                src={page.profile_picture_url}
-                                alt=""
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <PlatformChip
-                                platform={page.platform}
-                                iconOnly
-                                className="h-7 w-7 text-xs"
-                              />
-                            )}
-                          </div>
+                          <SocialPageAvatar
+                            platform={page.platform}
+                            profilePictureUrl={page.profile_picture_url}
+                          />
                           <div className="min-w-0 flex-1 space-y-1.5">
                             <PlatformChip platform={page.platform} className="w-fit" />
                             <p className="truncate font-medium">{label}</p>

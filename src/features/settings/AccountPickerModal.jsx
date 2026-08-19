@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { DialogRoot, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { PlatformChip } from '@/components/brand/PlatformChip';
+import { SocialPageAvatar } from '@/components/brand/SocialPageAvatar';
 import { setPrimarySocialAccount } from '@/lib/posts';
 import { findLinkedInstagram } from '@/lib/socialAccounts';
 import { showToast } from '@/lib/toast';
@@ -17,13 +18,11 @@ function AccountOption({ account, platform, selected, onSelect }) {
         onChange={() => onSelect(account.id)}
         className="accent-honey-dark"
       />
-      {account.profile_picture_url ? (
-        <img src={account.profile_picture_url} alt="" className="h-10 w-10 rounded-full object-cover" />
-      ) : (
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-sm font-semibold">
-          {label.slice(0, 1).toUpperCase()}
-        </div>
-      )}
+      <SocialPageAvatar
+        platform={platform}
+        profilePictureUrl={account.profile_picture_url}
+        size="md"
+      />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <PlatformChip platform={platform} />

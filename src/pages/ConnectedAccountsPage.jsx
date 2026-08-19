@@ -13,6 +13,7 @@ import { useClient } from '@/lib/clientContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PlatformChip } from '@/components/brand/PlatformChip';
+import { SocialPageAvatar } from '@/components/brand/SocialPageAvatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AccountPickerModal } from '@/features/settings/AccountPickerModal';
 import { AssignAccountsModal } from '@/features/settings/AssignAccountsModal';
@@ -99,13 +100,18 @@ export default function ConnectedAccountsPage() {
     const label = platform === 'instagram' ? `@${acc.username || acc.name}` : acc.name;
     return (
       <div key={acc.id} className="flex items-center justify-between gap-3 rounded-md border p-3">
-        <div className="flex min-w-0 items-center gap-3">
-          {acc.profile_picture_url ? (
-            <img src={acc.profile_picture_url} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
-          ) : null}
-          <PlatformChip platform={platform} />
-          <span className="truncate font-medium">{label}</span>
-          {acc.is_primary && <Badge variant="published">Default</Badge>}
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <SocialPageAvatar
+            platform={platform}
+            profilePictureUrl={acc.profile_picture_url}
+          />
+          <div className="min-w-0 flex-1 space-y-1">
+            <PlatformChip platform={platform} className="w-fit" />
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="truncate font-medium">{label}</span>
+              {acc.is_primary && <Badge variant="published">Default</Badge>}
+            </div>
+          </div>
         </div>
         <div className="flex shrink-0 items-center gap-1">
           {!acc.is_primary && (

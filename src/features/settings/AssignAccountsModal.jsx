@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { DialogRoot, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { PlatformChip } from '@/components/brand/PlatformChip';
+import { SocialPageAvatar } from '@/components/brand/SocialPageAvatar';
 import { assignSocialAccountToClient, listUnassignedMetaPages } from '@/lib/metaAccounts';
 import { showToast } from '@/lib/toast';
 
@@ -89,11 +90,14 @@ export function AssignAccountsModal({
                     onChange={() => toggle(page.id)}
                     className="accent-honey-dark"
                   />
-                  {page.profile_picture_url ? (
-                    <img src={page.profile_picture_url} alt="" className="h-8 w-8 rounded-full object-cover" />
-                  ) : null}
-                  <PlatformChip platform={page.platform} />
-                  <span className="truncate font-medium">{label}</span>
+                  <SocialPageAvatar
+                    platform={page.platform}
+                    profilePictureUrl={page.profile_picture_url}
+                  />
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <PlatformChip platform={page.platform} className="w-fit" />
+                    <span className="block truncate font-medium">{label}</span>
+                  </div>
                 </label>
               );
             })}

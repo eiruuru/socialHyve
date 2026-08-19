@@ -48,10 +48,20 @@ function PlanCard({ plan, cta }) {
       ) : null}
       <h2 className="font-display text-xl font-bold">{plan.name}</h2>
       <p className="mt-1 text-sm text-neutral-600">{plan.description}</p>
-      <p className="mt-4 font-display text-4xl font-bold text-ink">
-        {plan.priceLabel}
-        <span className="text-base font-normal text-neutral-500">/{plan.interval}</span>
-      </p>
+      <div className="mt-4">
+        {plan.compareAtPriceLabel ? (
+          <p className="text-sm text-neutral-500">
+            <span className="line-through">{plan.compareAtPriceLabel}</span>
+            <span className="ml-2 rounded-full bg-honey-light px-2 py-0.5 text-xs font-semibold text-honey-dark">
+              {plan.priceNote || 'Discounted'}
+            </span>
+          </p>
+        ) : null}
+        <p className="font-display text-4xl font-bold text-ink">
+          {plan.priceLabel}
+          <span className="text-base font-normal text-neutral-500">/{plan.interval}</span>
+        </p>
+      </div>
       <ul className="mt-6 flex-1 space-y-2 text-sm text-neutral-700">
         {plan.features.map((feature) => (
           <li key={feature} className="flex items-start gap-2">

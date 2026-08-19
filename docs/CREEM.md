@@ -13,8 +13,8 @@ Create two **recurring monthly** products in Test Mode:
 
 | Product | Price (must match website) | Notes |
 |---------|----------------------------|--------|
-| socialHyve Starter | €29/month | Manual upload, no team/client members/Canva |
-| socialHyve Pro | €79/month | Team, client members, Canva |
+| socialHyve Starter | $2/month (intro; regular $5) | Manual upload, no team/client members/Canva |
+| socialHyve Pro | $15/month | Team, client members, Canva |
 
 Copy each test `product_id` (`prod_…`).
 

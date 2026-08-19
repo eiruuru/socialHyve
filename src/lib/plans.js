@@ -18,7 +18,9 @@ export const PLANS = {
   [PLAN_IDS.STARTER]: {
     id: PLAN_IDS.STARTER,
     name: 'Starter',
-    priceLabel: '€29',
+    priceLabel: '$2',
+    compareAtPriceLabel: '$5',
+    priceNote: 'Intro pricing',
     interval: 'month',
     description: 'Schedule and approve posts for your clients with manual media uploads.',
     features: [
@@ -38,7 +40,7 @@ export const PLANS = {
   [PLAN_IDS.PRO]: {
     id: PLAN_IDS.PRO,
     name: 'Pro',
-    priceLabel: '€79',
+    priceLabel: '$15',
     interval: 'month',
     description: 'Everything in Starter, plus team collaboration and Canva import.',
     features: [

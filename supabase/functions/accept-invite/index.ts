@@ -1,3 +1,4 @@
+import { assertOrgHasProPlan } from '../_shared/billing.ts';
 import { handleOptions, jsonResponse } from '../_shared/cors.ts';
 import { getServiceClient, requireUser } from '../_shared/supabase.ts';
 
@@ -113,6 +114,8 @@ Deno.serve(async (req) => {
           return jsonResponse({ error: 'Invite email does not match your account' }, 403);
         }
 
+        await assertOrgHasProPlan(service, invite.organization_id as string, 'Team members');
+
         await service.from('organization_members').upsert(
           {
             organization_id: invite.organization_id,
@@ -135,6 +138,18 @@ Deno.serve(async (req) => {
       }
 
       const clientId = invite.clients?.id || invite.client_id;
+      const { data: clientRow } = await service
+        .from('clients')
+        .select('organization_id')
+        .eq('id', clientId)
+        .maybeSingle();
+      if (clientRow?.organization_id) {
+        await assertOrgHasProPlan(
+          service,
+          clientRow.organization_id as string,
+          'Client member invites',
+        );
+      }
       await service.from('client_members').upsert(
         {
           client_id: clientId,

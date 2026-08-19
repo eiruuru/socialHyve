@@ -1,3 +1,4 @@
+import { assertOrgHasProPlan } from '../_shared/billing.ts';
 import { handleOptions, jsonResponse } from '../_shared/cors.ts';
 import {
   CANVA_API,
@@ -31,6 +32,7 @@ Deno.serve(async (req) => {
     }
 
     const service = getServiceClient();
+    await assertOrgHasProPlan(service, org.id, 'Canva import');
     const connection = await getCanvaConnection(service, org.id, clientId);
 
     if (!connection) {

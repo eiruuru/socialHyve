@@ -5,7 +5,9 @@ import { useDocumentMeta } from '@/components/DocumentMeta';
 import { PAGE_DESCRIPTIONS } from '@/lib/pageMeta';
 import { invokeFunction } from '@/lib/supabaseFunctions';
 import { getCanvaConnection, disconnectCanva } from '@/lib/posts';
+import { UpgradeToProBanner } from '@/components/billing/UpgradeToProBanner';
 import { getActiveClientId, useClient } from '@/lib/clientContext';
+import { useMembership } from '@/lib/membershipContext';
 import { showToast } from '@/lib/toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +18,7 @@ export default function CanvaSettingsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { activeClient } = useClient();
+  const { canUseCanva } = useMembership();
   const clientId = activeClient?.id || getActiveClientId();
   const connected = searchParams.get('connected');
   const error = searchParams.get('error');
@@ -57,6 +60,19 @@ export default function CanvaSettingsPage() {
 
   const showConnected = !!connection;
   const showSuccessBanner = connected === 'canva' && showConnected;
+
+  if (!canUseCanva) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Settings</p>
+          <h2 className="font-display text-2xl font-bold">Canva Integration</h2>
+          <p className="text-muted-foreground">Import designs from Canva into your posts</p>
+        </div>
+        <UpgradeToProBanner feature="Canva import" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

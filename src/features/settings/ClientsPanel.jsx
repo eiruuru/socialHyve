@@ -24,6 +24,7 @@ function ClientCard({
   onDeleted,
   onOpenCalendar,
   canManage,
+  canUseClientMembers,
   workspaceTimezone,
 }) {
   const { confirm, dialog: confirmDialog } = useConfirm();
@@ -161,9 +162,11 @@ function ClientCard({
             <Calendar className="h-4 w-4" />
             Open calendar
           </Button>
-          <Button variant="outline" size="sm" asChild>
-            <Link to={`/app/clients/${client.id}/members`}>Members</Link>
-          </Button>
+          {canUseClientMembers ? (
+            <Button variant="outline" size="sm" asChild>
+              <Link to={`/app/clients/${client.id}/members`}>Members</Link>
+            </Button>
+          ) : null}
         </div>
       )}
 
@@ -177,7 +180,7 @@ export function ClientsPanel() {
   const tier = useDeviceTier();
   const queryClient = useQueryClient();
   const { refreshClients, setActiveClient, activeClient } = useClient();
-  const { canManageClients } = useMembership();
+  const { canManageClients, canUseClientMembers } = useMembership();
   const [name, setName] = useState('');
   const [creating, setCreating] = useState(false);
 
@@ -285,6 +288,7 @@ export function ClientsPanel() {
                 onDeleted={handleDeleted}
                 onOpenCalendar={handleOpenCalendar}
                 canManage={canManageClients}
+                canUseClientMembers={canUseClientMembers}
                 workspaceTimezone={org?.default_timezone}
               />
             ))}

@@ -82,7 +82,7 @@ export function PostComposer({ editPostId = null }) {
   const membership = useMembership();
   const tier = useDeviceTier();
   const simplifiedComposer = isSimplifiedComposerTier(tier);
-  const showCanvaImport = tier !== DEVICE_TIERS.MOBILE;
+  const showCanvaImport = membership.canUseCanva && tier !== DEVICE_TIERS.MOBILE;
   const { canManageTeam } = membership;
   const clientScheduleOnly = hasCreativesQaAccess(membership);
   const isEditMode = !!editPostId;

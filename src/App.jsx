@@ -13,6 +13,10 @@ const FaqPage = lazy(() => import('@/pages/FaqPage'));
 const ReviewLinkPage = lazy(() => import('@/pages/ReviewLinkPage'));
 const ShortLinkRedirectPage = lazy(() => import('@/pages/ShortLinkRedirectPage'));
 const WaitlistPage = lazy(() => import('@/pages/WaitlistPage'));
+const PricingPage = lazy(() => import('@/pages/PricingPage'));
+const PrivacyPage = lazy(() => import('@/pages/PrivacyPage'));
+const TermsPage = lazy(() => import('@/pages/TermsPage'));
+const AcceptableUsePage = lazy(() => import('@/pages/AcceptableUsePage'));
 const MarketingCapturePage = lazy(() => import('@/pages/MarketingCapturePage'));
 
 const queryClient = new QueryClient({
@@ -44,6 +48,10 @@ export default function App() {
               <Route path="/" element={<LandingPage />} />
               <Route path="/faq" element={<FaqPage />} />
               <Route path="/waitlist" element={<WaitlistPage />} />
+              <Route path="/pricing" element={<PricingPage />} />
+              <Route path="/privacy" element={<PrivacyPage />} />
+              <Route path="/terms" element={<TermsPage />} />
+              <Route path="/acceptable-use" element={<AcceptableUsePage />} />
               <Route path="/login" element={<LoginRedirect />} />
               <Route path="/review/:token" element={<ReviewLinkPage />} />
               <Route path="/s/:slug" element={<ShortLinkRedirectPage />} />

@@ -1,3 +1,4 @@
+import { assertOrgHasProPlan } from '../_shared/billing.ts';
 import { handleOptions, jsonResponse } from '../_shared/cors.ts';
 import { getOrganizationForUser, getServiceClient, requireUser } from '../_shared/supabase.ts';
 import { logWorkspaceEvent } from '../_shared/workspaceEvents.ts';
@@ -113,6 +114,7 @@ Deno.serve(async (req) => {
 
     if (type === 'organization') {
       await assertCanManageTeam(service, user.id, org.id);
+      await assertOrgHasProPlan(service, org.id, 'Team members');
 
       const { data: member, error: memberErr } = await service
         .from('organization_members')
@@ -146,7 +148,8 @@ Deno.serve(async (req) => {
 
     if (type === 'client') {
       if (!clientId) return jsonResponse({ error: 'clientId required' }, 400);
-      await assertCanManageClient(service, user.id, clientId);
+      const { organizationId } = await assertCanManageClient(service, user.id, clientId);
+      await assertOrgHasProPlan(service, organizationId, 'Client member invites');
 
       const { data: member, error: memberErr } = await service
         .from('client_members')
@@ -189,6 +192,8 @@ Deno.serve(async (req) => {
   } catch (err) {
     const message = (err as Error).message;
     const status = message === 'Forbidden'
+      ? 403
+      : message.includes('requires the Pro plan')
       ? 403
       : message === 'Unauthorized' || message === 'Missing authorization'
       ? 401

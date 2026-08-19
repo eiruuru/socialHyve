@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
+import { UpgradeToProBanner } from '@/components/billing/UpgradeToProBanner';
 import { useMembership } from '@/lib/membershipContext';
 import {
   addOrInviteOrganizationMember,
@@ -27,7 +28,7 @@ import { IconTooltip } from '@/components/ui/IconTooltip';
 
 export function TeamPanel() {
   const { user } = useAuth();
-  const { orgRole } = useMembership();
+  const { orgRole, canUseTeam } = useMembership();
   const queryClient = useQueryClient();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [email, setEmail] = useState('');
@@ -187,6 +188,10 @@ export function TeamPanel() {
 
   return (
     <div className="min-w-0 space-y-6 overflow-x-hidden">
+      {!canUseTeam ? (
+        <UpgradeToProBanner feature="Team invites" />
+      ) : (
+        <>
       {confirmDialog}
       <p className="text-sm text-muted-foreground">
         Add teammates who already use socialHyve instantly, or send an invite link for new users.
@@ -338,6 +343,8 @@ export function TeamPanel() {
           </CardContent>
         </Card>
       </div>
+        </>
+      )}
     </div>
   );
 }

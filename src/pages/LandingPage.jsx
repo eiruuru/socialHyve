@@ -234,6 +234,9 @@ export default function LandingPage() {
             <div className="mt-8 flex flex-wrap gap-3">
               <MarketingPrimaryCta size="lg" />
               <Button size="lg" variant="outline" asChild>
+                <Link to="/pricing">View pricing</Link>
+              </Button>
+              <Button size="lg" variant="outline" asChild>
                 <Link to="/faq">Read the FAQ</Link>
               </Button>
             </div>

@@ -28,6 +28,8 @@ const FUNCTION_MAP = {
   sendWorkflowEmail: 'send-workflow-email',
   createNotifications: 'create-notifications',
   sendPushNotification: 'send-push-notification',
+  creemCreateCheckout: 'creem-create-checkout',
+  creemWebhook: 'creem-webhook',
 };
 
 async function functionErrorMessage(error) {

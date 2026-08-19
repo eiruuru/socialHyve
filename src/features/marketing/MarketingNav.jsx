@@ -5,6 +5,7 @@ import { Logo } from '@/components/brand/Logo';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/AuthContext';
 import { getDefaultAppPath, useDeviceTier } from '@/lib/deviceTier';
+import { SUPPORT_EMAIL } from '@/lib/plans';
 import { cn } from '@/lib/utils';
 
 const WAITLIST_PATH = '/waitlist';
@@ -49,9 +50,14 @@ export function MarketingHeader({ backToHome = false }) {
 
         <div className="hidden items-center gap-2 sm:flex sm:gap-3">
           {!backToHome ? (
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/faq">FAQ</Link>
-            </Button>
+            <>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/pricing">Pricing</Link>
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/faq">FAQ</Link>
+              </Button>
+            </>
           ) : null}
           {isLoadingAuth ? (
             <span className="text-sm text-neutral-400">…</span>
@@ -103,11 +109,18 @@ export function MarketingHeader({ backToHome = false }) {
                 </Link>
               </Button>
             ) : (
-              <Button variant="outline" className="w-full justify-center" asChild>
-                <Link to="/faq" onClick={closeMenu}>
-                  FAQ
-                </Link>
-              </Button>
+              <>
+                <Button variant="outline" className="w-full justify-center" asChild>
+                  <Link to="/pricing" onClick={closeMenu}>
+                    Pricing
+                  </Link>
+                </Button>
+                <Button variant="outline" className="w-full justify-center" asChild>
+                  <Link to="/faq" onClick={closeMenu}>
+                    FAQ
+                  </Link>
+                </Button>
+              </>
             )}
             {isLoadingAuth ? null : isAuthenticated ? (
               <>
@@ -151,9 +164,24 @@ export function MarketingFooter() {
           <Logo variant="dark" />
         </Link>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+          <Link to="/pricing" className="transition-colors hover:text-white">
+            Pricing
+          </Link>
           <Link to="/faq" className="transition-colors hover:text-white">
             FAQ
           </Link>
+          <Link to="/privacy" className="transition-colors hover:text-white">
+            Privacy
+          </Link>
+          <Link to="/terms" className="transition-colors hover:text-white">
+            Terms
+          </Link>
+          <Link to="/acceptable-use" className="transition-colors hover:text-white">
+            Acceptable use
+          </Link>
+          <a href={`mailto:${SUPPORT_EMAIL}`} className="transition-colors hover:text-white">
+            Support
+          </a>
           {isAuthenticated ? (
             <Link to={appPath} className="transition-colors hover:text-white">
               Open app

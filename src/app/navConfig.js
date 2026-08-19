@@ -102,7 +102,7 @@ const orgNavGroups = [
         label: 'Canva',
         icon: Palette,
         minTier: DEVICE_TIERS.TABLET,
-        show: (m, c) => m.isOrgTeam && !m.isClientOnly && c.clients.length > 0,
+        show: (m, c) => m.isOrgTeam && !m.isClientOnly && c.clients.length > 0 && m.canUseCanva,
       },
     ],
   },

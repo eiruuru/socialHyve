@@ -1,3 +1,4 @@
+import { assertOrgHasProPlan } from '../_shared/billing.ts';
 import { handleOptions, jsonResponse } from '../_shared/cors.ts';
 import {
   getOrganizationForUser,
@@ -42,6 +43,7 @@ Deno.serve(async (req) => {
     const codeChallenge = await sha256Base64Url(codeVerifier);
 
     const service = getServiceClient();
+    await assertOrgHasProPlan(service, org.id, 'Canva import');
     await service.from('oauth_states').insert({
       workspace_id: org.id,
       client_id: clientId || null,

@@ -69,6 +69,26 @@ if [ -n "${INVITE_FROM_EMAIL:-}" ]; then
   args+=("INVITE_FROM_EMAIL=${INVITE_FROM_EMAIL}")
 fi
 
+if [ -n "${CREEM_API_KEY:-}" ]; then
+  args+=("CREEM_API_KEY=${CREEM_API_KEY}")
+fi
+
+if [ -n "${CREEM_WEBHOOK_SECRET:-}" ]; then
+  args+=("CREEM_WEBHOOK_SECRET=${CREEM_WEBHOOK_SECRET}")
+fi
+
+if [ -n "${CREEM_TEST_MODE:-}" ]; then
+  args+=("CREEM_TEST_MODE=${CREEM_TEST_MODE}")
+fi
+
+if [ -n "${CREEM_PRODUCT_STARTER:-}" ]; then
+  args+=("CREEM_PRODUCT_STARTER=${CREEM_PRODUCT_STARTER}")
+fi
+
+if [ -n "${CREEM_PRODUCT_PRO:-}" ]; then
+  args+=("CREEM_PRODUCT_PRO=${CREEM_PRODUCT_PRO}")
+fi
+
 echo "Setting secrets on project $PROJECT_REF..."
 npx -y supabase secrets set "${args[@]}" --project-ref "$PROJECT_REF"
 

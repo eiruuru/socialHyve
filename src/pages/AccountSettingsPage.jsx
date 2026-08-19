@@ -17,6 +17,7 @@ import { MetaConnectionPanel } from '@/features/settings/MetaConnectionPanel';
 import { ClientsPanel } from '@/features/settings/ClientsPanel';
 import { TeamPanel } from '@/features/settings/TeamPanel';
 import { ActivityLogPanel } from '@/features/settings/ActivityLogPanel';
+import { BillingPanel } from '@/features/settings/BillingPanel';
 import { WorkspacePanel } from '@/features/settings/WorkspacePanel';
 
 function Field({ label, htmlFor, children, hint }) {
@@ -45,17 +46,19 @@ function StatusBanner({ message, tone = 'success' }) {
 
 export default function AccountSettingsPage() {
   const { user } = useAuth();
-  const { isOwnerOrAdmin, isOrgTeam, isClientOnly, canManageTeam } = useMembership();
+  const { isOwnerOrAdmin, isOrgTeam, isClientOnly, canUseTeam } = useMembership();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
-  const showWorkspaceTab = canManageTeam;
+  const showBillingTab = isOwnerOrAdmin;
+  const showWorkspaceTab = isOwnerOrAdmin;
   const showClientsTab = isOrgTeam && !isClientOnly;
-  const showTeamTab = canManageTeam;
+  const showTeamTab = isOwnerOrAdmin && canUseTeam;
   const showActivityTab = isOwnerOrAdmin;
   const showMetaTab = isOwnerOrAdmin;
 
   const activeTab = (() => {
     const tab = searchParams.get('tab');
+    if (tab === 'billing' && showBillingTab) return 'billing';
     if (tab === 'workspace' && showWorkspaceTab) return 'workspace';
     if (
       (tab === 'meta' || searchParams.get('connected') === 'meta' || searchParams.get('error'))
@@ -72,15 +75,17 @@ export default function AccountSettingsPage() {
   const settingsTabs = useMemo(() => {
     const tabs = [{ id: 'profile', label: 'Profile' }];
     if (showWorkspaceTab) tabs.unshift({ id: 'workspace', label: 'Workspace' });
+    if (showBillingTab) tabs.push({ id: 'billing', label: 'Billing' });
     if (showClientsTab) tabs.push({ id: 'clients', label: 'Clients' });
     if (showTeamTab) tabs.push({ id: 'team', label: 'Team' });
     if (showActivityTab) tabs.push({ id: 'activity', label: 'Activity' });
     if (showMetaTab) tabs.push({ id: 'meta', label: 'Meta Accounts' });
     return tabs;
-  }, [showWorkspaceTab, showClientsTab, showTeamTab, showActivityTab, showMetaTab]);
+  }, [showBillingTab, showWorkspaceTab, showClientsTab, showTeamTab, showActivityTab, showMetaTab]);
 
   const settingsMeta = useMemo(() => {
     const tabMeta = {
+      billing: { title: 'Billing', description: 'Manage your socialHyve subscription and plan.' },
       workspace: { title: 'Workspace', description: PAGE_DESCRIPTIONS.workspace },
       profile: { title: 'Profile', description: PAGE_DESCRIPTIONS.profile },
       clients: { title: 'Clients', description: PAGE_DESCRIPTIONS.clients },
@@ -511,6 +516,12 @@ export default function AccountSettingsPage() {
         </CardContent>
       </Card>
         </TabsContent>
+
+        {showBillingTab && (
+          <TabsContent value="billing">
+            <BillingPanel />
+          </TabsContent>
+        )}
 
         {showClientsTab && (
           <TabsContent value="clients">

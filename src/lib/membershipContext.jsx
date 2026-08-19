@@ -1,5 +1,12 @@
 import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from './supabase';
+import {
+  canUseCanva as planCanUseCanva,
+  canUseClientMembers as planCanUseClientMembers,
+  canUseTeamFeatures as planCanUseTeamFeatures,
+  isProPlan,
+  isActiveSubscription,
+} from './plans';
 
 const MembershipContext = createContext(null);
 
@@ -46,14 +53,23 @@ export function clearPendingInvite() {
   window.sessionStorage.removeItem(PENDING_INVITE_KEY);
 }
 
-function deriveCapabilities(orgRole, clientMemberships) {
+function deriveCapabilities(orgRole, clientMemberships, billing = {}) {
   const isClientOnly = !orgRole && clientMemberships.length > 0;
   const isOwnerOrAdmin = orgRole === 'owner' || orgRole === 'admin';
   const isManager = orgRole === 'manager';
   const isOrgTeam = !!orgRole;
 
+  const plan = billing.plan ?? null;
+  const subscriptionStatus = billing.subscription_status ?? 'none';
+  const hasActivePlan = isActiveSubscription(subscriptionStatus);
+  const isPro = isProPlan(plan, subscriptionStatus);
+  const canUseTeam = planCanUseTeamFeatures(plan, subscriptionStatus);
+  const canUseClientMembers = planCanUseClientMembers(plan, subscriptionStatus);
+  const canUseCanva = planCanUseCanva(plan, subscriptionStatus);
+
   return {
     orgRole,
+    organizationId: billing.organizationId ?? null,
     clientMemberships,
     isClientOnly,
     isOrgTeam,
@@ -61,7 +77,14 @@ function deriveCapabilities(orgRole, clientMemberships) {
     isOwnerOrAdmin,
     canManageTeam: isOwnerOrAdmin,
     canManageClients: isOwnerOrAdmin || orgRole === 'editor',
-    canAssignManagers: isOwnerOrAdmin,
+    canAssignManagers: isOwnerOrAdmin && canUseTeam,
+    plan,
+    subscriptionStatus,
+    hasActivePlan,
+    isPro,
+    canUseTeam,
+    canUseClientMembers,
+    canUseCanva,
     roleLabel: isClientOnly
       ? clientMemberships[0]?.role || 'client'
       : orgRole || null,
@@ -101,7 +124,31 @@ export function MembershipProvider({ children }) {
     let orgRole = orgMembers?.find((m) => m.role === 'owner')?.role
       || orgMembers?.[0]?.role
       || null;
-    if (!orgRole && ownedOrgs?.length) orgRole = 'owner';
+    let organizationId = orgMembers?.find((m) => m.role === 'owner')?.organization_id
+      || orgMembers?.[0]?.organization_id
+      || null;
+
+    if (!orgRole && ownedOrgs?.length) {
+      orgRole = 'owner';
+      organizationId = ownedOrgs[0].id;
+    }
+
+    let billing = { organizationId };
+    if (organizationId) {
+      const { data: orgBilling } = await supabase
+        .from('organizations')
+        .select('id, plan, subscription_status, subscription_current_period_end')
+        .eq('id', organizationId)
+        .maybeSingle();
+      if (orgBilling) {
+        billing = {
+          organizationId: orgBilling.id,
+          plan: orgBilling.plan,
+          subscription_status: orgBilling.subscription_status,
+          subscription_current_period_end: orgBilling.subscription_current_period_end,
+        };
+      }
+    }
 
     const clientMemberships = (clientMembers || []).map((m) => ({
       clientId: m.client_id,
@@ -109,7 +156,7 @@ export function MembershipProvider({ children }) {
       name: m.clients?.name,
     }));
 
-    setMembership(deriveCapabilities(orgRole, clientMemberships));
+    setMembership(deriveCapabilities(orgRole, clientMemberships, billing));
     setLoading(false);
   }, []);
 
@@ -119,7 +166,7 @@ export function MembershipProvider({ children }) {
 
   const value = useMemo(
     () => ({ ...membership, loading, refreshMembership: refresh }),
-    [membership, loading, refresh]
+    [membership, loading, refresh],
   );
 
   return (
@@ -134,6 +181,7 @@ export function useMembership() {
   if (!ctx) {
     return {
       orgRole: null,
+      organizationId: null,
       clientMemberships: [],
       isClientOnly: false,
       isOrgTeam: false,
@@ -141,6 +189,14 @@ export function useMembership() {
       canManageTeam: false,
       canManageClients: false,
       canAssignManagers: false,
+      isOwnerOrAdmin: false,
+      plan: null,
+      subscriptionStatus: 'none',
+      hasActivePlan: false,
+      isPro: false,
+      canUseTeam: false,
+      canUseClientMembers: false,
+      canUseCanva: false,
       roleLabel: null,
       loading: false,
       refreshMembership: async () => {},

@@ -14,6 +14,10 @@ export const PAGE_DESCRIPTIONS = {
   landing:
     'Draft, review, and publish Instagram and Facebook for every client — Fine-Tune overrides, approval queue, calendar, Interactions inbox, and URL shortener in one hive.',
   faq: 'Answers about workspace Meta pool, Fine-Tune, approvals, calendar, Interactions, URL shortener, team roles, and client review links.',
+  pricing: 'Starter and Pro plans for socialHyve — schedule, approve, and publish Instagram and Facebook for every client.',
+  privacy: 'How socialHyve collects, uses, and protects your data.',
+  terms: 'Terms of Service for using socialHyve, including subscriptions billed through Creem.',
+  acceptableUse: 'Acceptable use rules for socialHyve workspaces and connected social accounts.',
   waitlist:
     'socialHyve is invite-only during early access. Join the waitlist and we will email you when a spot opens up.',
   login: 'Sign in to your socialHyve workspace to manage clients, approvals, and scheduled posts.',

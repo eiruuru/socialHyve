@@ -65,6 +65,8 @@ FUNCTIONS=(
   send-workflow-email
   create-notifications
   send-push-notification
+  creem-create-checkout
+  creem-webhook
 )
 
 for fn in "${FUNCTIONS[@]}"; do

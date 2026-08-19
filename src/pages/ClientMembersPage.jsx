@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDocumentMeta } from '@/components/DocumentMeta';
 import { PAGE_DESCRIPTIONS } from '@/lib/pageMeta';
+import { UpgradeToProBanner } from '@/components/billing/UpgradeToProBanner';
 import { useAuth } from '@/lib/AuthContext';
 import { useMembership } from '@/lib/membershipContext';
 import {
@@ -40,7 +41,7 @@ const memberQueryOptions = {
 export default function ClientMembersPage() {
   const { clientId } = useParams();
   const { user } = useAuth();
-  const { canAssignManagers, orgRole } = useMembership();
+  const { canAssignManagers, orgRole, canUseClientMembers } = useMembership();
   const queryClient = useQueryClient();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [email, setEmail] = useState('');
@@ -244,6 +245,17 @@ export default function ClientMembersPage() {
       showToast({ title: 'Could not remove manager', description: err.message, variant: 'error' });
     }
   };
+
+  if (!canUseClientMembers) {
+    return (
+      <div className="min-w-0 space-y-6 overflow-x-hidden">
+        <Button variant="ghost" size="sm" asChild className="mb-2 -ml-2">
+          <Link to="/app/settings/account?tab=clients">← Clients</Link>
+        </Button>
+        <UpgradeToProBanner feature="Client member invites" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-w-0 space-y-6 overflow-x-hidden">

@@ -59,6 +59,15 @@ export function getDefaultAppPath(tier) {
   return '/app/calendar';
 }
 
+/** On phone, calendar routes are unavailable — send users to the queue instead. */
+export function resolveTierAppPath(path, tier = DEVICE_TIERS.DESKTOP) {
+  if (tier !== DEVICE_TIERS.MOBILE) return path;
+  if (path === '/app/calendar' || path.startsWith('/app/calendar/') || path.startsWith('/app/calendar?')) {
+    return '/app/queue';
+  }
+  return path;
+}
+
 export function isSimplifiedComposerTier(tier) {
   return tier === DEVICE_TIERS.MOBILE || tier === DEVICE_TIERS.TABLET;
 }

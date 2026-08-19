@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyHiveState } from '@/components/EmptyHiveState';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
+import { resolveTierAppPath, useDeviceTier } from '@/lib/deviceTier';
 import { showToast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 
@@ -173,6 +174,7 @@ function ClientCard({
 
 export function ClientsPanel() {
   const navigate = useNavigate();
+  const tier = useDeviceTier();
   const queryClient = useQueryClient();
   const { refreshClients, setActiveClient, activeClient } = useClient();
   const { canManageClients } = useMembership();
@@ -223,7 +225,7 @@ export function ClientsPanel() {
 
   const handleOpenCalendar = (client) => {
     setActiveClient(client);
-    navigate('/app/calendar');
+    navigate(resolveTierAppPath('/app/calendar', tier));
   };
 
   return (

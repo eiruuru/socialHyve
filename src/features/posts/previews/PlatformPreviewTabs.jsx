@@ -118,13 +118,13 @@ export function PlatformPreviewTabs({
   };
 
   const tabButton = (platform, Icon, label, description) => (
-    <IconTooltip title={label} description={description} className="flex-1">
+    <IconTooltip title={label} description={description} className="min-w-0 flex-1">
       <button
         type="button"
         onClick={() => setTab(platform)}
         aria-label={`${label} preview`}
         className={cn(
-          'flex w-full items-center justify-center border-b-2 pb-2 transition-colors',
+          'flex w-full min-w-0 items-center justify-center border-b-2 pb-2 transition-colors',
           tab === platform
             ? 'border-honey text-ink'
             : 'border-transparent text-muted-foreground hover:text-ink'
@@ -140,8 +140,8 @@ export function PlatformPreviewTabs({
   }
 
   return (
-    <div>
-      <div className="mb-3 flex gap-4">
+    <div className="min-w-0">
+      <div className="mb-3 flex min-w-0 gap-2">
         {showFacebook && tabButton('facebook', Facebook, 'Facebook', 'Preview as a Facebook post')}
         {showInstagram && tabButton('instagram', Instagram, 'Instagram', 'Preview as an Instagram post')}
       </div>

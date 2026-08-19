@@ -4,7 +4,7 @@ import { PAGE_DESCRIPTIONS } from '@/lib/pageMeta';
 
 export default function PostComposerPage() {
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6 overflow-x-hidden">
       <DocumentMeta title="New post" description={PAGE_DESCRIPTIONS.newPost} />
       <div>
         <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Create</p>

@@ -186,7 +186,7 @@ export function TeamPanel() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6 overflow-x-hidden">
       {confirmDialog}
       <p className="text-sm text-muted-foreground">
         Add teammates who already use socialHyve instantly, or send an invite link for new users.
@@ -200,30 +200,30 @@ export function TeamPanel() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleInvite} className="flex flex-wrap items-end gap-2">
-            <div>
+          <form onSubmit={handleInvite} className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+            <div className="min-w-0 flex-1 sm:flex-none">
               <label className="mb-1 block text-xs font-medium">Email</label>
               <Input
                 type="email"
                 placeholder="colleague@agency.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-64"
+                className="w-full sm:w-64"
               />
             </div>
-            <div>
+            <div className="w-full sm:w-auto">
               <label className="mb-1 block text-xs font-medium">Role</label>
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className="h-10 rounded-hyve-sm border border-input bg-background px-3 text-sm"
+                className="h-10 w-full rounded-hyve-sm border border-input bg-background px-3 text-sm sm:w-auto"
               >
                 <option value="editor">Editor</option>
                 <option value="manager">Manager</option>
                 <option value="admin">Admin</option>
               </select>
             </div>
-            <Button type="submit" disabled={inviting || !email.trim()}>
+            <Button type="submit" className="w-full sm:w-auto" disabled={inviting || !email.trim()}>
               {inviting ? 'Adding…' : 'Invite or add'}
             </Button>
           </form>
@@ -253,22 +253,22 @@ export function TeamPanel() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
+      <div className="grid min-w-0 gap-6 md:grid-cols-2">
+        <Card className="min-w-0">
           <CardHeader>
             <CardTitle>Members</CardTitle>
           </CardHeader>
           <CardContent>
             <ul className="space-y-2">
               {members.map((m) => (
-                <li key={m.id} className="flex items-center justify-between gap-2 rounded-hyve-sm border px-3 py-2 text-sm">
-                  <div>
-                    <p className="font-medium">{displayMember(m)}</p>
+                <li key={m.id} className="flex flex-col gap-3 rounded-hyve-sm border px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{displayMember(m)}</p>
                     {m.profiles?.email && m.profiles.full_name && (
-                      <p className="text-xs text-muted-foreground">{m.profiles.email}</p>
+                      <p className="truncate text-xs text-muted-foreground">{m.profiles.email}</p>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
                     {canChangeOrganizationMemberRole({
                       actorOrgRole: orgRole,
                       actorUserId: user?.id,
@@ -278,7 +278,7 @@ export function TeamPanel() {
                         value={m.role}
                         disabled={updatingRoleUserId === m.user_id}
                         onChange={(e) => handleRoleChange(m, e.target.value)}
-                        className="h-8 rounded-hyve-sm border border-input bg-background px-2 text-sm capitalize"
+                        className="h-8 max-w-full rounded-hyve-sm border border-input bg-background px-2 text-sm capitalize"
                       >
                         {orgRoleOptions.map(({ value, label }) => (
                           <option key={value} value={value}>{label}</option>
@@ -299,7 +299,7 @@ export function TeamPanel() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-w-0">
           <CardHeader>
             <CardTitle>Pending invites</CardTitle>
           </CardHeader>
@@ -309,9 +309,9 @@ export function TeamPanel() {
             ) : (
               <ul className="space-y-2">
                 {invites.map((inv) => (
-                  <li key={inv.id} className="flex items-center justify-between gap-3 rounded-hyve-sm border px-3 py-2 text-sm">
+                  <li key={inv.id} className="flex flex-col gap-3 rounded-hyve-sm border px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium">{inv.email}</p>
+                      <p className="truncate font-medium">{inv.email}</p>
                       <p className="text-xs text-muted-foreground capitalize">{inv.role} · expires {new Date(inv.expires_at).toLocaleDateString()}</p>
                     </div>
                     <div className="flex shrink-0 items-center gap-1">

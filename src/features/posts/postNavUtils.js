@@ -1,6 +1,8 @@
 import { compareAsc, endOfMonth, format, isValid, parse, startOfMonth } from 'date-fns';
 import { filterQueuePosts } from '@/features/queue/postStatus';
 
+import { DEVICE_TIERS } from '@/lib/deviceTier';
+
 /** Day bucket for calendar cells and post navigation. */
 export function getPostCalendarDate(post) {
   if (!post) return null;
@@ -16,8 +18,8 @@ export function parseCalendarMonthParam(month) {
   return isValid(parsed) ? parsed : null;
 }
 
-export function buildScheduleReturnPath({ scheduledAtUtc, nav, tab, month } = {}) {
-  if (nav === 'queue') {
+export function buildScheduleReturnPath({ scheduledAtUtc, nav, tab, month, tier } = {}) {
+  if (nav === 'queue' || tier === DEVICE_TIERS.MOBILE) {
     return `/app/queue${buildPostNavSearch({ nav: 'queue', tab })}`;
   }
   const scheduledMonth = scheduledAtUtc

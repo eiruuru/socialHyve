@@ -2,6 +2,7 @@ import { Calendar, ClipboardCheck, Save, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { useIsMobileLayout } from '@/lib/deviceTier';
 import { formatScheduledLabel, zonedLocalToUtc } from '@/lib/scheduleTime';
 
 export function ComposerActionBar({
@@ -22,6 +23,7 @@ export function ComposerActionBar({
   onSchedule,
   onPublishNow,
 }) {
+  const isMobile = useIsMobileLayout();
   const isApproved = approvalStatus === 'approved';
   const publishBlocked = !isApproved && !canBypassApproval;
   const approvalHint = publishBlocked
@@ -35,7 +37,13 @@ export function ComposerActionBar({
   const fineTuneHint = fineTuneHints.length ? fineTuneHints.join(' · ') : null;
   const statusHint = fineTuneHint || approvalHint;
 
-  const actionButtonClass = 'h-11 w-full justify-center sm:h-10 sm:w-auto';
+  const actionButtonClass = cn(
+    'h-11 w-full min-w-0 justify-center px-2 text-xs sm:h-10 sm:w-auto sm:px-4 sm:text-sm',
+  );
+
+  const renderIcon = (Icon) => (
+    !isMobile ? <Icon className="mr-2 h-4 w-4 shrink-0" aria-hidden /> : null
+  );
 
   return (
     <Card className="border-honey/30 bg-paper shadow-sm">
@@ -67,26 +75,22 @@ export function ComposerActionBar({
             <span>Set a schedule time to publish later, or publish now.</span>
           )}
         </div>
-        <div
-          className={cn(
-            'grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end',
-          )}
-        >
+        <div className="grid w-full min-w-0 grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
           {isEditMode ? (
-            <Button onClick={onSaveChanges} disabled={saving} className={actionButtonClass}>
-              <Save className="mr-2 h-4 w-4" />
+            <Button onClick={onSaveChanges} disabled={saving} className={cn(actionButtonClass, 'col-span-2 sm:col-span-1')}>
+              {renderIcon(Save)}
               {saving ? 'Saving…' : 'Save changes'}
             </Button>
           ) : (
             <Button variant="outline" onClick={onSaveDraft} disabled={saving} className={actionButtonClass}>
-              <Save className="mr-2 h-4 w-4" />
+              {renderIcon(Save)}
               Save draft
             </Button>
           )}
           {!isApproved && canSubmitForReview && (
             <Button variant="secondary" onClick={onSubmitForReview} disabled={saving} className={actionButtonClass}>
-              <ClipboardCheck className="mr-2 h-4 w-4" />
-              Submit for review
+              {renderIcon(ClipboardCheck)}
+              {isMobile ? 'Submit' : 'Submit for review'}
             </Button>
           )}
           <Button
@@ -96,7 +100,7 @@ export function ComposerActionBar({
             title={publishBlocked ? approvalHint : undefined}
             className={actionButtonClass}
           >
-            <Calendar className="mr-2 h-4 w-4" />
+            {renderIcon(Calendar)}
             {isQueued ? 'Reschedule' : 'Schedule'}
           </Button>
           {canPublishNow && (
@@ -110,7 +114,7 @@ export function ComposerActionBar({
                 !isEditMode && 'col-span-2 sm:col-span-1',
               )}
             >
-              <Send className="mr-2 h-4 w-4" />
+              {renderIcon(Send)}
               {publishing ? 'Publishing…' : 'Publish now'}
             </Button>
           )}

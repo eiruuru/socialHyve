@@ -90,31 +90,27 @@ export function MarketingHeader({ backToHome = false }) {
       {menuOpen ? (
         <nav
           aria-label="Site menu"
-          className="border-t border-neutral-200 bg-paper px-4 py-3 pb-safe sm:hidden"
+          className="border-t border-neutral-200 bg-paper px-4 py-4 pb-safe sm:hidden"
         >
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-3">
             {backToHome ? (
-              <Link
-                to="/"
-                className="inline-flex items-center gap-1.5 rounded-hyve-sm px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
-                onClick={closeMenu}
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Back to home
-              </Link>
+              <Button variant="outline" className="w-full justify-center" asChild>
+                <Link to="/" onClick={closeMenu}>
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to home
+                </Link>
+              </Button>
             ) : (
-              <Link
-                to="/faq"
-                className="rounded-hyve-sm px-3 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
-                onClick={closeMenu}
-              >
-                FAQ
-              </Link>
+              <Button variant="outline" className="w-full justify-center" asChild>
+                <Link to="/faq" onClick={closeMenu}>
+                  FAQ
+                </Link>
+              </Button>
             )}
             {isLoadingAuth ? null : isAuthenticated ? (
               <>
                 {user?.email ? (
-                  <p className="px-3 py-1 text-xs text-neutral-500">{user.email}</p>
+                  <p className="text-center text-xs text-neutral-500">{user.email}</p>
                 ) : null}
                 <Button className="w-full justify-center" asChild>
                   <Link to={appPath} onClick={closeMenu}>

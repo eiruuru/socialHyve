@@ -12,7 +12,9 @@ import { useMembership } from '@/lib/membershipContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PlatformChip } from '@/components/brand/PlatformChip';
+import { RefreshCw, Unplug } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { IconTooltip } from '@/components/ui/IconTooltip';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { showToast } from '@/lib/toast';
 import { sessionsNeedInteractionsReconnect } from '@/lib/metaScopes';
@@ -93,7 +95,7 @@ export function MetaConnectionPanel() {
   const needsInteractionsReconnect = sessionsNeedInteractionsReconnect(sessions);
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6 overflow-x-hidden">
       <p className="text-muted-foreground">
         Connect Facebook accounts at the organization level, then assign pages to each client under{' '}
         <Link to="/app/settings/accounts" className="underline">Social Links</Link>.
@@ -116,17 +118,17 @@ export function MetaConnectionPanel() {
 
       <div className="rounded-hyve-md border border-neutral-200 bg-paper-alt p-4 text-sm text-neutral-700">
         <p className="font-medium">Facebook login shows an error?</p>
-        <p className="mt-1">
+        <p className="mt-1 break-words">
           Business-type Meta apps require a valid Login for Business configuration (
-          <code className="text-xs">config_id</code>). A 500 error usually means the current config is
-          invalid after adding permissions like <code className="text-xs">pages_messaging</code>.
+          <code className="break-all text-xs">config_id</code>). A 500 error usually means the current config is
+          invalid after adding permissions like <code className="break-all text-xs">pages_messaging</code>.
         </p>
-        <ol className="mt-2 list-decimal space-y-1 pl-5">
+        <ol className="mt-2 list-decimal space-y-1 break-words pl-5">
           <li>Config type must be <strong>User access token</strong> (not System User).</li>
-          <li>Include at least: <code className="text-xs">business_management</code>, <code className="text-xs">pages_show_list</code>, <code className="text-xs">pages_manage_posts</code>, <code className="text-xs">instagram_basic</code>.</li>
-          <li>Add interaction permissions after base connect works: <code className="text-xs">pages_manage_engagement</code>, <code className="text-xs">pages_manage_metadata</code>, <code className="text-xs">instagram_manage_comments</code>, <code className="text-xs">instagram_manage_messages</code>, <code className="text-xs">pages_messaging</code>.</li>
-          <li>Redirect URI (Facebook Login for Business → Settings): <code className="text-xs">https://hfbxonnowvfkxmmkgftz.supabase.co/functions/v1/meta-oauth-callback</code></li>
-          <li>Update <code className="text-xs">META_CONFIG_ID</code>, run <code className="text-xs">bash scripts/set-secrets.sh</code>, reconnect — toast should show config ending in <strong>1332</strong>.</li>
+          <li>Include at least: <code className="break-all text-xs">business_management</code>, <code className="break-all text-xs">pages_show_list</code>, <code className="break-all text-xs">pages_manage_posts</code>, <code className="break-all text-xs">instagram_basic</code>.</li>
+          <li>Add interaction permissions after base connect works: <code className="break-all text-xs">pages_manage_engagement</code>, <code className="break-all text-xs">pages_manage_metadata</code>, <code className="break-all text-xs">instagram_manage_comments</code>, <code className="break-all text-xs">instagram_manage_messages</code>, <code className="break-all text-xs">pages_messaging</code>.</li>
+          <li>Redirect URI (Facebook Login for Business → Settings): <code className="break-all text-xs">https://hfbxonnowvfkxmmkgftz.supabase.co/functions/v1/meta-oauth-callback</code></li>
+          <li>Update <code className="break-all text-xs">META_CONFIG_ID</code>, run <code className="break-all text-xs">bash scripts/set-secrets.sh</code>, reconnect — toast should show config ending in <strong>1332</strong>.</li>
         </ol>
       </div>
 
@@ -140,7 +142,7 @@ export function MetaConnectionPanel() {
 
       {error && (
         <div className="rounded-md bg-red-50 p-4 text-sm text-red-700">
-          Connection error: {decodeURIComponent(error)}
+          <p className="break-words">Connection error: {decodeURIComponent(error)}</p>
           <div className="mt-2">
             <Button size="sm" variant="outline" onClick={() => startMetaOAuth()} disabled={busy}>
               Try again
@@ -176,20 +178,50 @@ export function MetaConnectionPanel() {
             <div className="space-y-3">
               {sessions.map((session) => (
                 <div key={session.id} className="flex items-center justify-between gap-3 rounded-md border p-3">
-                  <div>
-                    <p className="font-medium">{session.meta_user_name}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">{session.meta_user_name}</p>
                     <p className="text-xs text-muted-foreground">
                       Connected {new Date(session.updated_at).toLocaleDateString()}
                     </p>
                   </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => startMetaOAuth()} disabled={busy}>
-                      Reconnect
-                    </Button>
+                  <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+                    <IconTooltip title="Reconnect" description="Refresh this Facebook account connection">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="sm:hidden"
+                        onClick={() => startMetaOAuth()}
+                        disabled={busy}
+                        aria-label="Reconnect"
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                      </Button>
+                    </IconTooltip>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="text-red-700 hover:bg-red-50"
+                      className="hidden sm:inline-flex"
+                      onClick={() => startMetaOAuth()}
+                      disabled={busy}
+                    >
+                      Reconnect
+                    </Button>
+                    <IconTooltip title="Disconnect" description="Remove this Facebook account and unassign its pages">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="text-red-700 hover:bg-red-50 sm:hidden"
+                        onClick={() => disconnectSession(session)}
+                        disabled={busy}
+                        aria-label="Disconnect"
+                      >
+                        <Unplug className="h-4 w-4" />
+                      </Button>
+                    </IconTooltip>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="hidden text-red-700 hover:bg-red-50 sm:inline-flex"
                       onClick={() => disconnectSession(session)}
                       disabled={busy}
                     >
@@ -219,7 +251,7 @@ export function MetaConnectionPanel() {
             <div className="space-y-6">
               {pagesBySession.map(({ session, pages: sessionPages }) => (
                 <div key={session.id} className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">{session.meta_user_name}</p>
+                  <p className="truncate text-sm font-medium text-muted-foreground">{session.meta_user_name}</p>
                   <div className="space-y-2">
                     {sessionPages.map((page) => {
                       const clientName = getPageAssignmentClientName(page);
@@ -227,16 +259,18 @@ export function MetaConnectionPanel() {
                         ? `@${page.username || page.name}`
                         : page.name;
                       return (
-                        <div key={page.id} className="flex items-center justify-between gap-3 rounded-md border p-3">
+                        <div key={page.id} className="space-y-2 rounded-md border p-3">
                           <div className="flex min-w-0 items-center gap-3">
                             {page.profile_picture_url ? (
-                              <img src={page.profile_picture_url} alt="" className="h-8 w-8 rounded-full object-cover" />
+                              <img src={page.profile_picture_url} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
                             ) : null}
-                            <PlatformChip platform={page.platform} />
-                            <span className="truncate font-medium">{label}</span>
+                            <PlatformChip platform={page.platform} className="shrink-0" />
+                            <span className="min-w-0 truncate font-medium">{label}</span>
                           </div>
                           {clientName ? (
-                            <Badge variant="secondary">Assigned to {clientName}</Badge>
+                            <Badge variant="secondary" className="max-w-full truncate">
+                              Assigned to {clientName}
+                            </Badge>
                           ) : (
                             <Badge variant="outline">Unassigned</Badge>
                           )}

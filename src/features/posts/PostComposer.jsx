@@ -436,6 +436,7 @@ export function PostComposer({ editPostId = null }) {
         nav: navFrom,
         tab: navTab,
         month: navMonth,
+        tier,
       }));
     });
 
@@ -559,7 +560,7 @@ export function PostComposer({ editPostId = null }) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4 overflow-x-hidden">
       <div className="grid gap-6 lg:grid-cols-2">
         <GenericContentStep
           internalName={internalName}

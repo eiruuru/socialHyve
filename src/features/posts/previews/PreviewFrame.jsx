@@ -17,15 +17,19 @@ export function PreviewFrame({
   const isVertical = layout === 'vertical';
 
   return (
-    <div className="rounded-hyve-lg bg-neutral-100 p-3">
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <div className="text-center sm:text-left">
+    <div className="min-w-0 overflow-x-hidden rounded-hyve-lg bg-neutral-100 p-3">
+      <div className="mb-2 flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="min-w-0 text-center sm:text-left">
           <p className="text-sm font-semibold text-ink">{platformLabel}</p>
           {dateLabel && (
             <p className="text-xs text-muted-foreground">{dateLabel}</p>
           )}
         </div>
-        {toolbar && <div className="flex items-center gap-1">{toolbar}</div>}
+        {toolbar && (
+          <div className="flex min-w-0 flex-wrap items-center justify-center gap-1 sm:justify-end">
+            {toolbar}
+          </div>
+        )}
       </div>
       {footer && <div className="mb-2">{footer}</div>}
       <div

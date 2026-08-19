@@ -5,6 +5,7 @@ import {
   getDefaultAppPath,
   getDeviceTier,
   isRouteAllowed,
+  resolveTierAppPath,
   tierAtLeast,
 } from '../src/lib/deviceTier.js';
 
@@ -19,6 +20,13 @@ describe('deviceTier', () => {
     assert.equal(getDefaultAppPath(DEVICE_TIERS.MOBILE), '/app/queue');
     assert.equal(getDefaultAppPath(DEVICE_TIERS.TABLET), '/app/calendar');
     assert.equal(getDefaultAppPath(DEVICE_TIERS.DESKTOP), '/app/calendar');
+  });
+
+  it('maps calendar paths to queue on mobile', () => {
+    assert.equal(resolveTierAppPath('/app/calendar', DEVICE_TIERS.MOBILE), '/app/queue');
+    assert.equal(resolveTierAppPath('/app/calendar?month=2026-08', DEVICE_TIERS.MOBILE), '/app/queue');
+    assert.equal(resolveTierAppPath('/app/calendar', DEVICE_TIERS.TABLET), '/app/calendar');
+    assert.equal(resolveTierAppPath('/app/queue', DEVICE_TIERS.MOBILE), '/app/queue');
   });
 
   it('gates routes by tier', () => {

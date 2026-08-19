@@ -41,6 +41,7 @@ import { useWorkspace } from '@/lib/WorkspaceContext';
 import { hasCreativesQaAccess } from '@/lib/clientRoles';
 import { getEffectivePublishStatus } from '@/lib/publishStatus';
 import { PostSchedulePanel } from '@/features/review/PostSchedulePanel';
+import { DEVICE_TIERS, resolveTierAppPath, useDeviceTier } from '@/lib/deviceTier';
 
 const APPROVAL_OPTIONS = [
   { value: 'draft', label: 'Draft' },
@@ -71,6 +72,10 @@ const PUBLISH_STATE_HINTS = {
 export default function PostDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const tier = useDeviceTier();
+  const listPath = resolveTierAppPath('/app/calendar', tier);
+  const backLabel = tier === DEVICE_TIERS.MOBILE ? 'Back to queue' : 'Back to calendar';
+  const backDescription = tier === DEVICE_TIERS.MOBILE ? 'Return to the approval queue' : 'Return to the content calendar';
   const queryClient = useQueryClient();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const membership = useMembership();
@@ -146,7 +151,7 @@ export default function PostDetailPage() {
     await deletePost(id);
     queryClient.invalidateQueries({ queryKey: ['posts'] });
     showToast({ title: 'Post deleted', variant: 'success' });
-    navigate('/app/calendar');
+    navigate(listPath);
   };
 
   const handleDuplicate = async () => {
@@ -321,9 +326,9 @@ export default function PostDetailPage() {
               </Button>
             </IconTooltip>
           )}
-          <IconTooltip title="Back to calendar" description="Return to the content calendar">
-            <Button size="icon" variant="outline" asChild aria-label="Back to calendar">
-              <Link to="/app/calendar">
+          <IconTooltip title={backLabel} description={backDescription}>
+            <Button size="icon" variant="outline" asChild aria-label={backLabel}>
+              <Link to={listPath}>
                 <ArrowLeft className="h-4 w-4" />
               </Link>
             </Button>

@@ -12,7 +12,7 @@ import { showToast } from '@/lib/toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { TabsRoot, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { TabsRoot, TabsContent } from '@/components/ui/tabs';
 import { MetaConnectionPanel } from '@/features/settings/MetaConnectionPanel';
 import { ClientsPanel } from '@/features/settings/ClientsPanel';
 import { TeamPanel } from '@/features/settings/TeamPanel';
@@ -68,6 +68,16 @@ export default function AccountSettingsPage() {
     if (tab === 'activity' && showActivityTab) return 'activity';
     return 'profile';
   })();
+
+  const settingsTabs = useMemo(() => {
+    const tabs = [{ id: 'profile', label: 'Profile' }];
+    if (showWorkspaceTab) tabs.unshift({ id: 'workspace', label: 'Workspace' });
+    if (showClientsTab) tabs.push({ id: 'clients', label: 'Clients' });
+    if (showTeamTab) tabs.push({ id: 'team', label: 'Team' });
+    if (showActivityTab) tabs.push({ id: 'activity', label: 'Activity' });
+    if (showMetaTab) tabs.push({ id: 'meta', label: 'Meta Accounts' });
+    return tabs;
+  }, [showWorkspaceTab, showClientsTab, showTeamTab, showActivityTab, showMetaTab]);
 
   const settingsMeta = useMemo(() => {
     const tabMeta = {
@@ -275,14 +285,23 @@ export default function AccountSettingsPage() {
       </div>
 
       <TabsRoot value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="h-auto w-full max-w-full justify-start overflow-x-auto">
-          {showWorkspaceTab && <TabsTrigger value="workspace" className="shrink-0">Workspace</TabsTrigger>}
-          <TabsTrigger value="profile" className="shrink-0">Profile</TabsTrigger>
-          {showClientsTab && <TabsTrigger value="clients" className="shrink-0">Clients</TabsTrigger>}
-          {showTeamTab && <TabsTrigger value="team" className="shrink-0">Team</TabsTrigger>}
-          {showActivityTab && <TabsTrigger value="activity" className="shrink-0">Activity</TabsTrigger>}
-          {showMetaTab && <TabsTrigger value="meta" className="shrink-0">Meta Accounts</TabsTrigger>}
-        </TabsList>
+        <div className="max-w-md">
+          <label htmlFor="settings-section" className="mb-1.5 block text-sm font-medium">
+            Section
+          </label>
+          <select
+            id="settings-section"
+            value={activeTab}
+            onChange={(e) => setActiveTab(e.target.value)}
+            className="flex h-11 w-full appearance-none rounded-hyve-sm border border-neutral-200 bg-white px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-honey"
+          >
+            {settingsTabs.map((tab) => (
+              <option key={tab.id} value={tab.id}>
+                {tab.label}
+              </option>
+            ))}
+          </select>
+        </div>
 
         {showWorkspaceTab && (
           <TabsContent value="workspace">

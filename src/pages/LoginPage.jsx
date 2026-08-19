@@ -5,7 +5,7 @@ import { acceptInvite, previewInvite } from '@/lib/organization';
 import { formatClientRole, formatRoleLabel, isClientRole } from '@/lib/clientRoles';
 import { savePendingInvite, clearPendingInvite } from '@/lib/membershipContext';
 import { useAuth } from '@/lib/AuthContext';
-import { getDefaultAppPath, useDeviceTier } from '@/lib/deviceTier';
+import { getDefaultAppPath, resolveTierAppPath, useDeviceTier } from '@/lib/deviceTier';
 import { DocumentMeta } from '@/components/DocumentMeta';
 import { PAGE_DESCRIPTIONS } from '@/lib/pageMeta';
 import { Logo } from '@/components/brand/Logo';
@@ -61,7 +61,7 @@ export default function LoginPage() {
       .then((result) => {
         if (cancelled) return;
         clearPendingInvite();
-        navigate(result.redirectTo || '/app/calendar', { replace: true });
+        navigate(resolveTierAppPath(result.redirectTo || getDefaultAppPath(tier), tier), { replace: true });
       })
       .catch((err) => {
         if (cancelled) return;
@@ -91,7 +91,7 @@ export default function LoginPage() {
         if (session) {
           const result = await acceptInvite(inviteToken, inviteType);
           clearPendingInvite();
-          navigate(result.redirectTo || '/app/calendar');
+          navigate(resolveTierAppPath(result.redirectTo || getDefaultAppPath(tier), tier));
           return;
         }
         savePendingInvite(inviteType, inviteToken);
@@ -99,7 +99,7 @@ export default function LoginPage() {
         return;
       }
 
-      navigate('/app/calendar');
+      navigate(getDefaultAppPath(tier));
     } catch (err) {
       setError(err.message);
     } finally {

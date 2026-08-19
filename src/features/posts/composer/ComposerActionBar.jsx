@@ -1,6 +1,7 @@
 import { Calendar, ClipboardCheck, Save, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import { formatScheduledLabel, zonedLocalToUtc } from '@/lib/scheduleTime';
 
 export function ComposerActionBar({
@@ -34,9 +35,11 @@ export function ComposerActionBar({
   const fineTuneHint = fineTuneHints.length ? fineTuneHints.join(' · ') : null;
   const statusHint = fineTuneHint || approvalHint;
 
+  const actionButtonClass = 'h-11 w-full justify-center sm:h-10 sm:w-auto';
+
   return (
     <Card className="border-honey/30 bg-paper shadow-sm">
-      <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
+      <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
         <div className="min-w-0 text-sm text-muted-foreground">
           {statusHint ? (
             <span className={fineTuneHint ? 'text-red-700' : undefined}>{statusHint}</span>
@@ -64,20 +67,24 @@ export function ComposerActionBar({
             <span>Set a schedule time to publish later, or publish now.</span>
           )}
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <div
+          className={cn(
+            'grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end',
+          )}
+        >
           {isEditMode ? (
-            <Button onClick={onSaveChanges} disabled={saving}>
+            <Button onClick={onSaveChanges} disabled={saving} className={actionButtonClass}>
               <Save className="mr-2 h-4 w-4" />
               {saving ? 'Saving…' : 'Save changes'}
             </Button>
           ) : (
-            <Button variant="outline" onClick={onSaveDraft} disabled={saving}>
+            <Button variant="outline" onClick={onSaveDraft} disabled={saving} className={actionButtonClass}>
               <Save className="mr-2 h-4 w-4" />
               Save draft
             </Button>
           )}
           {!isApproved && canSubmitForReview && (
-            <Button variant="secondary" onClick={onSubmitForReview} disabled={saving}>
+            <Button variant="secondary" onClick={onSubmitForReview} disabled={saving} className={actionButtonClass}>
               <ClipboardCheck className="mr-2 h-4 w-4" />
               Submit for review
             </Button>
@@ -87,20 +94,25 @@ export function ComposerActionBar({
             onClick={onSchedule}
             disabled={saving || publishBlocked}
             title={publishBlocked ? approvalHint : undefined}
+            className={actionButtonClass}
           >
             <Calendar className="mr-2 h-4 w-4" />
             {isQueued ? 'Reschedule' : 'Schedule'}
           </Button>
           {canPublishNow && (
-          <Button
-            variant={isEditMode ? 'secondary' : 'default'}
-            onClick={onPublishNow}
-            disabled={saving || publishing || publishBlocked}
-            title={publishBlocked ? approvalHint : undefined}
-          >
-            <Send className="mr-2 h-4 w-4" />
-            {publishing ? 'Publishing…' : 'Publish now'}
-          </Button>
+            <Button
+              variant={isEditMode ? 'secondary' : 'default'}
+              onClick={onPublishNow}
+              disabled={saving || publishing || publishBlocked}
+              title={publishBlocked ? approvalHint : undefined}
+              className={cn(
+                actionButtonClass,
+                !isEditMode && 'col-span-2 sm:col-span-1',
+              )}
+            >
+              <Send className="mr-2 h-4 w-4" />
+              {publishing ? 'Publishing…' : 'Publish now'}
+            </Button>
           )}
         </div>
       </CardContent>

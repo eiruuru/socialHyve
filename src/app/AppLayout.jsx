@@ -11,6 +11,7 @@ import { ClientSwitcher } from '@/components/ClientSwitcher';
 import { useNavigateOnClientSwitch } from '@/app/useNavigateOnClientSwitch';
 import { cn } from '@/lib/utils';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { HeaderClientSwitcher } from '@/components/HeaderClientSwitcher';
 import { formatRoleLabel } from '@/lib/clientRoles';
 import { NotificationsProvider } from '@/lib/notifications/NotificationsProvider';
 import { PendingClientInviteNotifier } from '@/lib/PendingClientInviteNotifier';
@@ -148,7 +149,7 @@ export function AppLayout() {
         className={cn(
           'flex min-h-[100dvh] flex-col bg-paper',
           standalone && 'standalone-app',
-          isMobile && 'pb-16',
+          isMobile && 'pb-[calc(4rem+env(safe-area-inset-bottom,0px))]',
         )}
       >
         <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-sidebar-border bg-sidebar px-4 pt-safe sm:px-5">
@@ -165,7 +166,8 @@ export function AppLayout() {
             )}
             <Logo variant="dark" />
           </div>
-          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <div className="flex min-w-0 items-center gap-1 sm:gap-2">
+            {showClientSwitcher && !isDesktop ? <HeaderClientSwitcher /> : null}
             <NotificationBell variant="icon" />
             <button
               type="button"

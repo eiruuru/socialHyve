@@ -170,7 +170,7 @@ export default function QueuePage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6 overflow-x-hidden">
       <div>
         <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Review</p>
         <h2 className="font-display text-2xl font-bold">Approval queue</h2>
@@ -179,12 +179,12 @@ export default function QueuePage() {
 
       <QueueLegend />
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search caption, name, or label…"
-          className="max-w-sm"
+          className="w-full sm:max-w-sm"
         />
         {selectedIds.length > 0 && tab === 'review' && (
           <Button size="sm" onClick={handleBulkApprove}>
@@ -193,10 +193,12 @@ export default function QueuePage() {
         )}
       </div>
 
-      <TabsRoot value={tab} onValueChange={setTab}>
-        <TabsList>
+      <TabsRoot value={tab} onValueChange={setTab} className="min-w-0">
+        <TabsList className="h-auto w-full max-w-full justify-start overflow-x-auto">
           {TABS.map((t) => (
-            <TabsTrigger key={t.id} value={t.id}>{t.label}</TabsTrigger>
+            <TabsTrigger key={t.id} value={t.id} className="shrink-0 px-3 text-xs sm:px-4 sm:text-sm">
+              {t.label}
+            </TabsTrigger>
           ))}
         </TabsList>
 

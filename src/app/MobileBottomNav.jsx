@@ -19,7 +19,7 @@ export function MobileBottomNav({ items }) {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 border-t border-sidebar-border bg-sidebar pb-safe md:hidden"
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-sidebar-border bg-sidebar/95 pb-safe backdrop-blur-md supports-[backdrop-filter]:bg-sidebar/90 md:hidden"
       aria-label="Main navigation"
     >
       <div className="flex h-16 items-stretch justify-around">

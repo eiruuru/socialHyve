@@ -250,7 +250,7 @@ export function AppLayout() {
   const isWide = location.pathname.includes('/calendar')
     || location.pathname.includes('/interactions');
   const isMobile = tier === DEVICE_TIERS.MOBILE;
-  const isTablet = tier === DEVICE_TIERS.TABLET;
+  const showHeaderUtilityNav = !isMobile;
   const showSidebar = !isMobile;
 
   const navGroups = buildNavGroups(membership, clientCtx, tier);
@@ -277,7 +277,7 @@ export function AppLayout() {
             <Logo variant="dark" />
           </div>
           <div className="flex min-w-0 items-center gap-1 sm:gap-2">
-            {isTablet ? (
+            {showHeaderUtilityNav ? (
               <>
                 <div className="flex items-center gap-0.5">
                   {showClientSwitcher ? <HeaderClientSwitcher iconOnly /> : null}
@@ -325,7 +325,7 @@ export function AppLayout() {
                 workspace={workspace}
                 user={user}
                 roleDisplay={roleDisplay}
-                showClientSwitcher={showClientSwitcher && !isTablet}
+                showClientSwitcher={showClientSwitcher && isMobile}
                 navGroups={navGroups}
                 collapsed={sidebarCollapsed}
                 onToggleCollapse={toggleSidebarCollapsed}

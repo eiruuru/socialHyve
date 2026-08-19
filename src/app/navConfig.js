@@ -29,8 +29,8 @@ export const helpNavItem = {
   show: () => true,
 };
 
-/** Shown in the tablet top bar instead of the sidebar */
-export const TABLET_HEADER_NAV_PATHS = new Set([
+/** Shown in the top bar (tablet/desktop) instead of the sidebar */
+export const HEADER_UTILITY_NAV_PATHS = new Set([
   settingsNavItem.to,
   helpNavItem.to,
 ]);
@@ -185,7 +185,7 @@ export function buildNavGroups(membership, clientCtx, tier = DEVICE_TIERS.DESKTO
       ...group,
       items: group.items.filter((item) => {
         const minTier = item.minTier ?? DEVICE_TIERS.MOBILE;
-        if (tier === DEVICE_TIERS.TABLET && TABLET_HEADER_NAV_PATHS.has(item.to)) {
+        if (tier !== DEVICE_TIERS.MOBILE && HEADER_UTILITY_NAV_PATHS.has(item.to)) {
           return false;
         }
         return tierAtLeast(tier, minTier) && isRouteAllowed(item.to, tier);

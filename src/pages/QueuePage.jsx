@@ -46,16 +46,19 @@ const EMPTY_COPY = {
 
 function QueueLegend() {
   return (
-    <div className="flex flex-nowrap items-center gap-2 overflow-x-auto text-[11px] text-muted-foreground sm:gap-3 sm:text-xs">
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground sm:gap-x-3 sm:text-xs">
       <span className="shrink-0 font-medium text-ink">Schedule urgency:</span>
-      <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap">
-        <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-red-600 sm:h-3 sm:w-3" /> Less than 2 days
+      <span className="inline-flex shrink-0 items-center gap-1">
+        <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-red-600 sm:h-3 sm:w-3" aria-hidden />
+        {'<2 days'}
       </span>
-      <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap">
-        <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-amber-500 sm:h-3 sm:w-3" /> Less than 5 days
+      <span className="inline-flex shrink-0 items-center gap-1">
+        <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-amber-500 sm:h-3 sm:w-3" aria-hidden />
+        {'<5 days'}
       </span>
-      <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap">
-        <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-600 sm:h-3 sm:w-3" /> 5+ days
+      <span className="inline-flex shrink-0 items-center gap-1">
+        <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-600 sm:h-3 sm:w-3" aria-hidden />
+        5+ days
       </span>
     </div>
   );

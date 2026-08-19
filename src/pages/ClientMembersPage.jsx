@@ -246,7 +246,7 @@ export default function ClientMembersPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6 overflow-x-hidden">
       {confirmDialog}
       <div>
         <Button variant="ghost" size="sm" asChild className="mb-2 -ml-2">
@@ -267,30 +267,30 @@ export default function ClientMembersPage() {
             or clipboard. Each client has its own members — open another client&apos;s Members page to
             add the same person with a different role.
           </p>
-          <form onSubmit={handleInvite} className="flex flex-wrap items-end gap-2">
-            <div>
+          <form onSubmit={handleInvite} className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+            <div className="min-w-0 flex-1 sm:flex-none">
               <label className="mb-1 block text-xs font-medium">Email</label>
               <Input
                 type="email"
                 placeholder="client@brand.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-64"
+                className="w-full sm:w-64"
               />
             </div>
-            <div>
+            <div className="w-full sm:w-auto">
               <label className="mb-1 block text-xs font-medium">Role</label>
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className="h-10 rounded-hyve-sm border border-input bg-background px-3 text-sm"
+                className="h-10 w-full rounded-hyve-sm border border-input bg-background px-3 text-sm sm:w-auto"
               >
                 {CLIENT_ROLE_OPTIONS.map(({ value, label }) => (
                   <option key={value} value={value}>{label}</option>
                 ))}
               </select>
             </div>
-            <Button type="submit" disabled={inviting || !email.trim()}>
+            <Button type="submit" className="w-full sm:w-auto" disabled={inviting || !email.trim()}>
               {inviting ? 'Adding…' : 'Invite or add'}
             </Button>
           </form>
@@ -307,13 +307,13 @@ export default function ClientMembersPage() {
             Team managers can work on this client&apos;s calendar, posts, and integrations after you assign them here.
           </p>
           {availableManagers.length > 0 ? (
-            <form onSubmit={handleAssignManager} className="flex flex-wrap items-end gap-2">
-              <div>
+            <form onSubmit={handleAssignManager} className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+              <div className="w-full sm:w-auto">
                 <label className="mb-1 block text-xs font-medium">Manager</label>
                 <select
                   value={managerUserId}
                   onChange={(e) => setManagerUserId(e.target.value)}
-                  className="h-10 rounded-hyve-sm border border-input bg-background px-3 text-sm"
+                  className="h-10 w-full rounded-hyve-sm border border-input bg-background px-3 text-sm sm:min-w-[12rem]"
                 >
                   <option value="">Select manager…</option>
                   {availableManagers.map((m) => (
@@ -323,7 +323,7 @@ export default function ClientMembersPage() {
                   ))}
                 </select>
               </div>
-              <Button type="submit" disabled={assigning || !managerUserId}>
+              <Button type="submit" className="w-full sm:w-auto" disabled={assigning || !managerUserId}>
                 {assigning ? 'Assigning…' : 'Assign manager'}
               </Button>
             </form>
@@ -335,17 +335,18 @@ export default function ClientMembersPage() {
           {clientManagers.length > 0 ? (
             <ul className="space-y-2">
               {clientManagers.map((m) => (
-                <li key={m.id} className="flex items-center justify-between rounded-hyve-sm border px-3 py-2 text-sm">
-                  <div>
-                    <p className="font-medium">{displayMember(m)}</p>
+                <li key={m.id} className="flex flex-col gap-3 rounded-hyve-sm border px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{displayMember(m)}</p>
                     {m.profiles?.email && m.profiles.full_name && (
-                      <p className="text-xs text-muted-foreground">{m.profiles.email}</p>
+                      <p className="truncate text-xs text-muted-foreground">{m.profiles.email}</p>
                     )}
                   </div>
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
+                    className="w-full sm:w-auto"
                     onClick={() => handleRemoveManager(m.user_id)}
                   >
                     Remove
@@ -360,8 +361,8 @@ export default function ClientMembersPage() {
       </Card>
       )}
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
+      <div className="grid min-w-0 gap-6 md:grid-cols-2">
+        <Card className="min-w-0">
           <CardHeader>
             <CardTitle>Members</CardTitle>
           </CardHeader>
@@ -374,20 +375,20 @@ export default function ClientMembersPage() {
             ) : (
               <ul className="space-y-2">
                 {members.map((m) => (
-                  <li key={m.id} className="flex items-center justify-between gap-2 rounded-hyve-sm border px-3 py-2 text-sm">
-                    <div>
-                      <p className="font-medium">{displayMember(m)}</p>
+                  <li key={m.id} className="flex flex-col gap-3 rounded-hyve-sm border px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{displayMember(m)}</p>
                       {m.profiles?.email && (
-                        <p className="text-xs text-muted-foreground">{m.profiles.email}</p>
+                        <p className="truncate text-xs text-muted-foreground">{m.profiles.email}</p>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex shrink-0 flex-wrap items-center gap-2">
                       {canChangeRoles ? (
                         <select
                           value={m.role}
                           disabled={updatingRoleUserId === m.user_id}
                           onChange={(e) => handleRoleChange(m, e.target.value)}
-                          className="h-8 rounded-hyve-sm border border-input bg-background px-2 text-sm"
+                          className="h-8 max-w-full rounded-hyve-sm border border-input bg-background px-2 text-sm"
                         >
                           {CLIENT_ROLE_OPTIONS.map(({ value, label }) => (
                             <option key={value} value={value}>{label}</option>
@@ -414,7 +415,7 @@ export default function ClientMembersPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-w-0">
           <CardHeader>
             <CardTitle>Pending invites</CardTitle>
           </CardHeader>
@@ -424,9 +425,9 @@ export default function ClientMembersPage() {
             ) : (
               <ul className="space-y-2">
                 {invites.map((inv) => (
-                  <li key={inv.id} className="flex items-center justify-between gap-3 rounded-hyve-sm border px-3 py-2 text-sm">
+                  <li key={inv.id} className="flex flex-col gap-3 rounded-hyve-sm border px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium">{inv.email}</p>
+                      <p className="truncate font-medium">{inv.email}</p>
                       <p className="text-xs text-muted-foreground">
                         {formatClientRole(inv.role)} · expires {new Date(inv.expires_at).toLocaleDateString()}
                       </p>

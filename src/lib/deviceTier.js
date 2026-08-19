@@ -41,7 +41,6 @@ const ROUTE_MIN_TIER = [
   { pattern: /^\/app\/help(\/|$)/, minTier: DEVICE_TIERS.TABLET },
   { pattern: /^\/app\/clients(\/|$)/, minTier: DEVICE_TIERS.DESKTOP },
   { pattern: /^\/app\/team(\/|$)/, minTier: DEVICE_TIERS.DESKTOP },
-  { pattern: /^\/app\/clients\/[^/]+\/members(\/|$)/, minTier: DEVICE_TIERS.DESKTOP },
 ];
 
 export function isRouteAllowed(pathname, tier = DEVICE_TIERS.DESKTOP) {

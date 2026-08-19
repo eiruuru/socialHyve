@@ -115,6 +115,13 @@
   .pr-safe {
     padding-right: env(safe-area-inset-right, 0px);
   }
+
+  .app-chrome-panel {
+    @apply rounded-hyve-lg border border-sidebar-border bg-sidebar text-sidebar-foreground;
+    box-shadow:
+      0 12px 40px rgba(0, 0, 0, 0.28),
+      0 2px 8px rgba(0, 0, 0, 0.16);
+  }
 }
 
 @media (display-mode: standalone) {

@@ -269,54 +269,63 @@ export function AppLayout() {
         className={cn(
           'flex min-h-[100dvh] flex-col bg-paper',
           standalone && 'standalone-app',
-          isMobile && 'pb-[calc(4rem+env(safe-area-inset-bottom,0px))]',
+          showSidebar
+            ? 'box-border h-dvh gap-3 p-3 pt-safe'
+            : isMobile && 'pb-[calc(4rem+env(safe-area-inset-bottom,0px))]',
         )}
       >
-        <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-sidebar-border bg-sidebar px-4 pt-safe sm:px-5">
-          <div className="flex min-w-0 items-center gap-2">
-            <Logo variant="dark" />
-          </div>
-          <div className="flex min-w-0 items-center gap-1 sm:gap-2">
-            {showHeaderUtilityNav ? (
-              <>
-                <div className="flex items-center gap-0.5">
-                  {showClientSwitcher ? <HeaderClientSwitcher iconOnly /> : null}
-                  <HeaderNavIcon
-                    to={settingsNavItem.to}
-                    label={settingsNavItem.label}
-                    icon={settingsNavItem.icon}
+        <div className={cn('shrink-0', !showSidebar && 'px-3 pt-safe pt-3')}>
+          <header
+            className={cn(
+              'app-chrome-panel flex h-14 shrink-0 items-center justify-between gap-3 px-4 sm:px-5',
+              !showSidebar && 'sticky top-3 z-40',
+            )}
+          >
+            <div className="flex min-w-0 items-center gap-2">
+              <Logo variant="dark" />
+            </div>
+            <div className="flex min-w-0 items-center gap-1 sm:gap-2">
+              {showHeaderUtilityNav ? (
+                <>
+                  <div className="flex items-center gap-0.5">
+                    {showClientSwitcher ? <HeaderClientSwitcher iconOnly /> : null}
+                    <HeaderNavIcon
+                      to={settingsNavItem.to}
+                      label={settingsNavItem.label}
+                      icon={settingsNavItem.icon}
+                    />
+                    <HeaderNavIcon
+                      to={helpNavItem.to}
+                      label={helpNavItem.label}
+                      icon={helpNavItem.icon}
+                    />
+                  </div>
+                  <div
+                    className="mx-1 h-6 w-px shrink-0 bg-sidebar-border/80"
+                    role="separator"
+                    aria-orientation="vertical"
                   />
-                  <HeaderNavIcon
-                    to={helpNavItem.to}
-                    label={helpNavItem.label}
-                    icon={helpNavItem.icon}
-                  />
-                </div>
-                <div
-                  className="mx-1 h-6 w-px shrink-0 bg-sidebar-border/80"
-                  role="separator"
-                  aria-orientation="vertical"
-                />
-              </>
-            ) : null}
-            {showClientSwitcher && isMobile ? <HeaderClientSwitcher /> : null}
-            <NotificationBell variant="icon" />
-            <button
-              type="button"
-              onClick={logout}
-              className="flex min-h-11 shrink-0 items-center gap-2 rounded-hyve-sm px-3 py-2 text-sm text-neutral-200 transition-colors hover:bg-sidebar-accent hover:text-white"
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="hidden sm:inline">Sign out</span>
-            </button>
-          </div>
-        </header>
+                </>
+              ) : null}
+              {showClientSwitcher && isMobile ? <HeaderClientSwitcher /> : null}
+              <NotificationBell variant="icon" />
+              <button
+                type="button"
+                onClick={logout}
+                className="flex min-h-11 shrink-0 items-center gap-2 rounded-hyve-sm px-3 py-2 text-sm text-neutral-200 transition-colors hover:bg-sidebar-accent hover:text-white"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline">Sign out</span>
+              </button>
+            </div>
+          </header>
+        </div>
 
-        <div className="flex min-h-0 flex-1 items-start">
+        <div className={cn('flex min-h-0 flex-1', showSidebar && 'gap-3')}>
           {showSidebar ? (
             <aside
               className={cn(
-                'sticky top-14 z-40 flex h-[calc(100dvh-3.5rem)] shrink-0 flex-col overflow-hidden bg-sidebar text-sidebar-foreground transition-[width] duration-200 ease-out',
+                'app-chrome-panel flex min-h-0 shrink-0 flex-col overflow-hidden transition-[width] duration-200 ease-out',
                 sidebarCollapsed ? 'w-16' : 'w-60',
               )}
             >
@@ -333,7 +342,7 @@ export function AppLayout() {
             </aside>
           ) : null}
 
-          <main className="min-w-0 flex-1 bg-paper">
+          <main className={cn('min-w-0 flex-1 bg-paper', showSidebar && 'min-h-0 overflow-y-auto')}>
             <div
               className={cn(
                 'mx-auto',

@@ -6,6 +6,7 @@ import { formatClientRole, formatRoleLabel, isClientRole } from '@/lib/clientRol
 import { savePendingInvite, clearPendingInvite } from '@/lib/membershipContext';
 import { useAuth } from '@/lib/AuthContext';
 import { getDefaultAppPath, resolveTierAppPath, useDeviceTier } from '@/lib/deviceTier';
+import { INVITE_ONLY } from '@/lib/siteConfig';
 import { DocumentMeta } from '@/components/DocumentMeta';
 import { PAGE_DESCRIPTIONS } from '@/lib/pageMeta';
 import { Logo } from '@/components/brand/Logo';
@@ -23,14 +24,22 @@ export default function LoginPage() {
   const inviteToken = orgToken || clientToken;
   const inviteType = orgToken ? 'organization' : clientToken ? 'client' : null;
 
+  const wantsSignup = searchParams.get('signup') === '1';
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isSignUp, setIsSignUp] = useState(searchParams.get('signup') === '1');
+  const [isSignUp, setIsSignUp] = useState(() => !!inviteToken || (wantsSignup && !INVITE_ONLY));
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [invitePreview, setInvitePreview] = useState(null);
   const [inviteLoading, setInviteLoading] = useState(!!inviteToken);
+
+  useEffect(() => {
+    if (INVITE_ONLY && wantsSignup && !inviteToken) {
+      navigate('/waitlist', { replace: true });
+    }
+  }, [wantsSignup, inviteToken, navigate]);
 
   useEffect(() => {
     if (isLoadingAuth || !isAuthenticated || inviteToken) return;
@@ -78,6 +87,10 @@ export default function LoginPage() {
     setLoading(true);
     try {
       if (isSignUp) {
+        if (INVITE_ONLY && !inviteToken) {
+          navigate('/waitlist');
+          return;
+        }
         const { error: signUpErr } = await supabase.auth.signUp({ email, password });
         if (signUpErr) throw signUpErr;
       } else {
@@ -219,7 +232,7 @@ export default function LoginPage() {
                   Forgot password?
                 </button>
               )}
-              {!invitePreview && (
+              {!invitePreview && !INVITE_ONLY && (
                 <button
                   type="button"
                   className="w-full text-sm text-muted-foreground hover:text-foreground"
@@ -227,6 +240,14 @@ export default function LoginPage() {
                 >
                   {isSignUp ? 'Already have an account? Sign in' : 'Need an account? Sign up'}
                 </button>
+              )}
+              {INVITE_ONLY && !invitePreview && (
+                <p className="text-center text-sm text-muted-foreground">
+                  socialHyve is invite-only.{' '}
+                  <Link to="/waitlist" className="font-medium text-honey-dark hover:underline">
+                    Join the waitlist
+                  </Link>
+                </p>
               )}
             </form>
           )}

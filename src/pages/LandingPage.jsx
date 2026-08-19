@@ -222,7 +222,7 @@ export default function LandingPage() {
           <div className="min-w-0">
             <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-neutral-600">
               <HexMark size={16} />
-              Social scheduling &amp; approval
+              Invite-only early access
             </span>
             <h1 className="font-display text-4xl font-bold leading-tight text-ink sm:text-5xl md:text-6xl">
               The hive for every <span className="text-honey-dark">post</span>, from draft to published.
@@ -334,9 +334,9 @@ export default function LandingPage() {
       <section className="border-t border-neutral-200 px-4 py-12 sm:px-6 sm:py-14">
         <div className="mx-auto max-w-3xl text-center">
           <Eye className="mx-auto h-8 w-8 text-honey-dark" />
-          <h2 className="mt-4 font-display text-xl font-bold sm:text-2xl">Ready to fill the hive?</h2>
+          <h2 className="mt-4 font-display text-xl font-bold sm:text-2xl">Want early access?</h2>
           <p className="mt-2 text-neutral-600">
-            Free to start — set up your workspace, connect Meta, and ship your first approved post at socialhyve.app.
+            socialHyve is invite-only while we onboard teams. Join the waitlist and we&apos;ll reach out when a spot opens.
           </p>
           <div className="mt-6 flex justify-center">
             <MarketingPrimaryCta size="lg" />

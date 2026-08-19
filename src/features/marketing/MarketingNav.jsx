@@ -7,6 +7,8 @@ import { useAuth } from '@/lib/AuthContext';
 import { getDefaultAppPath, useDeviceTier } from '@/lib/deviceTier';
 import { cn } from '@/lib/utils';
 
+const WAITLIST_PATH = '/waitlist';
+
 const HEADER_BG = `
   radial-gradient(circle at 15% 18%, rgba(246,166,0,.12), transparent 55%),
   var(--paper)
@@ -70,7 +72,7 @@ export function MarketingHeader({ backToHome = false }) {
                 <Link to="/app/login">Sign in</Link>
               </Button>
               <Button size="sm" asChild>
-                <Link to="/app/login?signup=1">Get started free</Link>
+                <Link to={WAITLIST_PATH}>Join waitlist</Link>
               </Button>
             </>
           )}
@@ -126,8 +128,8 @@ export function MarketingHeader({ backToHome = false }) {
                   </Link>
                 </Button>
                 <Button className="w-full justify-center" asChild>
-                  <Link to="/app/login?signup=1" onClick={closeMenu}>
-                    Get started free
+                  <Link to={WAITLIST_PATH} onClick={closeMenu}>
+                    Join waitlist
                   </Link>
                 </Button>
               </>
@@ -157,9 +159,14 @@ export function MarketingFooter() {
               Open app
             </Link>
           ) : (
-            <Link to="/app/login" className="transition-colors hover:text-white">
-              Sign in
-            </Link>
+            <>
+              <Link to={WAITLIST_PATH} className="transition-colors hover:text-white">
+                Join waitlist
+              </Link>
+              <Link to="/app/login" className="transition-colors hover:text-white">
+                Sign in
+              </Link>
+            </>
           )}
           <span className="text-neutral-500">socialHyve · Schedule smarter, approve faster.</span>
         </div>
@@ -168,7 +175,12 @@ export function MarketingFooter() {
   );
 }
 
-export function MarketingPrimaryCta({ size = 'default', className, children, signupLabel = 'Get started free →' }) {
+export function MarketingPrimaryCta({
+  size = 'default',
+  className,
+  children,
+  waitlistLabel = 'Join the waitlist →',
+}) {
   const { isAuthenticated, isLoadingAuth, appPath } = useMarketingCta();
 
   if (isLoadingAuth) {
@@ -189,7 +201,7 @@ export function MarketingPrimaryCta({ size = 'default', className, children, sig
 
   return (
     <Button size={size} className={className} asChild>
-      <Link to="/app/login?signup=1">{children ?? signupLabel}</Link>
+      <Link to={WAITLIST_PATH}>{children ?? waitlistLabel}</Link>
     </Button>
   );
 }

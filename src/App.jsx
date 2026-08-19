@@ -12,6 +12,7 @@ const LandingPage = lazy(() => import('@/pages/LandingPage'));
 const FaqPage = lazy(() => import('@/pages/FaqPage'));
 const ReviewLinkPage = lazy(() => import('@/pages/ReviewLinkPage'));
 const ShortLinkRedirectPage = lazy(() => import('@/pages/ShortLinkRedirectPage'));
+const WaitlistPage = lazy(() => import('@/pages/WaitlistPage'));
 const MarketingCapturePage = lazy(() => import('@/pages/MarketingCapturePage'));
 
 const queryClient = new QueryClient({
@@ -42,6 +43,7 @@ export default function App() {
             <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/faq" element={<FaqPage />} />
+              <Route path="/waitlist" element={<WaitlistPage />} />
               <Route path="/login" element={<LoginRedirect />} />
               <Route path="/review/:token" element={<ReviewLinkPage />} />
               <Route path="/s/:slug" element={<ShortLinkRedirectPage />} />

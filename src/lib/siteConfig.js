@@ -18,3 +18,8 @@ export const TWITTER_HANDLE = null;
 
 /** Meta (Facebook) app id — public; used for fb:app_id Open Graph tag. */
 export const FB_APP_ID = import.meta.env.VITE_META_APP_ID || null;
+
+/** Public signup is disabled; new users need an invite link. */
+export const INVITE_ONLY = true;
+
+export const WAITLIST_EMAIL = 'work@hivem.nl';

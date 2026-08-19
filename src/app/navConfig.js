@@ -9,6 +9,7 @@ import {
   Upload,
   HelpCircle,
   MessageCircle,
+  Shield,
 } from 'lucide-react';
 import { hasCreativesQaAccess, hasGuestAccess, isCreativesQaRole } from '@/lib/clientRoles';
 import { DEVICE_TIERS, isRouteAllowed, tierAtLeast } from '@/lib/deviceTier';
@@ -111,6 +112,13 @@ const orgNavGroups = [
     items: [
       settingsNavItem,
       helpNavItem,
+      {
+        to: '/app/admin',
+        label: 'Admin',
+        icon: Shield,
+        minTier: DEVICE_TIERS.TABLET,
+        show: (m) => m.isPlatformAdmin,
+      },
     ],
   },
 ];

@@ -30,6 +30,15 @@ const FUNCTION_MAP = {
   sendPushNotification: 'send-push-notification',
   creemCreateCheckout: 'creem-create-checkout',
   creemWebhook: 'creem-webhook',
+  platformAdminBootstrap: 'platform-admin-bootstrap',
+  waitlistSubmit: 'waitlist-submit',
+  adminListWaitlist: 'admin-list-waitlist',
+  adminReviewWaitlist: 'admin-review-waitlist',
+  adminListOrganizations: 'admin-list-organizations',
+  adminGetOrganization: 'admin-get-organization',
+  adminUpdateOrganizationPlan: 'admin-update-organization-plan',
+  adminListUsers: 'admin-list-users',
+  adminGetUserPreview: 'admin-get-user-preview',
 };
 
 async function functionErrorMessage(error) {

@@ -9,6 +9,7 @@ import { ClientProvider } from '@/lib/clientContext';
 import { MembershipProvider } from '@/lib/membershipContext';
 import { ClientOnlyRedirect } from './ClientOnlyRedirect';
 import { EmptyHiveState } from '@/components/EmptyHiveState';
+import { RequirePlatformAdmin } from './RequirePlatformAdmin';
 import { lazyWithRetry } from './lazyWithRetry';
 
 const LoginPage = lazyWithRetry(() => import('@/pages/LoginPage'));
@@ -28,6 +29,13 @@ const TeamPage = lazyWithRetry(() => import('@/pages/TeamPage'));
 const ClientMembersPage = lazyWithRetry(() => import('@/pages/ClientMembersPage'));
 const ClientReviewPage = lazyWithRetry(() => import('@/pages/ClientReviewPage'));
 const HelpPage = lazyWithRetry(() => import('@/pages/HelpPage'));
+const AdminLayout = lazyWithRetry(() => import('@/pages/admin/AdminLayout').then((m) => ({ default: m.AdminLayout })));
+const AdminDashboardPage = lazyWithRetry(() => import('@/pages/admin/AdminDashboardPage'));
+const AdminWaitlistPage = lazyWithRetry(() => import('@/pages/admin/AdminWaitlistPage'));
+const AdminOrganizationsPage = lazyWithRetry(() => import('@/pages/admin/AdminOrganizationsPage'));
+const AdminOrganizationDetailPage = lazyWithRetry(() => import('@/pages/admin/AdminOrganizationDetailPage'));
+const AdminUsersPage = lazyWithRetry(() => import('@/pages/admin/AdminUsersPage'));
+const AdminUserPreviewPage = lazyWithRetry(() => import('@/pages/admin/AdminUserPreviewPage'));
 
 function Lazy({ children }) {
   return (
@@ -75,6 +83,16 @@ export function AppRoutes() {
           <Route path="settings/accounts" element={<Lazy><Guarded><ConnectedAccountsPage /></Guarded></Lazy>} />
           <Route path="settings/canva" element={<Lazy><Guarded><CanvaSettingsPage /></Guarded></Lazy>} />
           <Route path="help" element={<Lazy><Guarded><HelpPage /></Guarded></Lazy>} />
+          <Route path="admin" element={<RequirePlatformAdmin />}>
+            <Route element={<Lazy><AdminLayout /></Lazy>}>
+              <Route index element={<Lazy><AdminDashboardPage /></Lazy>} />
+              <Route path="waitlist" element={<Lazy><AdminWaitlistPage /></Lazy>} />
+              <Route path="organizations" element={<Lazy><AdminOrganizationsPage /></Lazy>} />
+              <Route path="organizations/:orgId" element={<Lazy><AdminOrganizationDetailPage /></Lazy>} />
+              <Route path="users" element={<Lazy><AdminUsersPage /></Lazy>} />
+              <Route path="users/:userId/preview" element={<Lazy><AdminUserPreviewPage /></Lazy>} />
+            </Route>
+          </Route>
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/app/queue" replace />} />

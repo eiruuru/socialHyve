@@ -67,6 +67,15 @@ FUNCTIONS=(
   send-push-notification
   creem-create-checkout
   creem-webhook
+  platform-admin-bootstrap
+  waitlist-submit
+  admin-list-waitlist
+  admin-review-waitlist
+  admin-list-organizations
+  admin-get-organization
+  admin-update-organization-plan
+  admin-list-users
+  admin-get-user-preview
 )
 
 for fn in "${FUNCTIONS[@]}"; do

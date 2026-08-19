@@ -89,6 +89,10 @@ if [ -n "${CREEM_PRODUCT_PRO:-}" ]; then
   args+=("CREEM_PRODUCT_PRO=${CREEM_PRODUCT_PRO}")
 fi
 
+if [ -n "${PLATFORM_ADMIN_EMAILS:-}" ]; then
+  args+=("PLATFORM_ADMIN_EMAILS=${PLATFORM_ADMIN_EMAILS}")
+fi
+
 echo "Setting secrets on project $PROJECT_REF..."
 npx -y supabase secrets set "${args[@]}" --project-ref "$PROJECT_REF"
 

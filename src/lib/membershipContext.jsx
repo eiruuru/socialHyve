@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from './supabase';
+import { bootstrapPlatformAdmin } from './admin';
 import {
   canUseCanva as planCanUseCanva,
   canUseClientMembers as planCanUseClientMembers,
@@ -85,6 +86,7 @@ function deriveCapabilities(orgRole, clientMemberships, billing = {}) {
     canUseTeam,
     canUseClientMembers,
     canUseCanva,
+    isPlatformAdmin: billing.isPlatformAdmin ?? false,
     roleLabel: isClientOnly
       ? clientMemberships[0]?.role || 'client'
       : orgRole || null,
@@ -133,7 +135,7 @@ export function MembershipProvider({ children }) {
       organizationId = ownedOrgs[0].id;
     }
 
-    let billing = { organizationId };
+    let billing = { organizationId, isPlatformAdmin: false };
     if (organizationId) {
       const { data: orgBilling } = await supabase
         .from('organizations')
@@ -146,9 +148,24 @@ export function MembershipProvider({ children }) {
           plan: orgBilling.plan,
           subscription_status: orgBilling.subscription_status,
           subscription_current_period_end: orgBilling.subscription_current_period_end,
+          isPlatformAdmin: false,
         };
       }
     }
+
+    try {
+      await bootstrapPlatformAdmin();
+    } catch {
+      // ignore bootstrap errors
+    }
+
+    const { data: adminRow } = await supabase
+      .from('platform_admins')
+      .select('user_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    billing.isPlatformAdmin = !!adminRow;
 
     const clientMemberships = (clientMembers || []).map((m) => ({
       clientId: m.client_id,
@@ -197,6 +214,7 @@ export function useMembership() {
       canUseTeam: false,
       canUseClientMembers: false,
       canUseCanva: false,
+      isPlatformAdmin: false,
       roleLabel: null,
       loading: false,
       refreshMembership: async () => {},

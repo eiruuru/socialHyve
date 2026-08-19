@@ -102,7 +102,7 @@ export default function AdminOrganizationDetailPage() {
                     onChange={(e) => setPlan(e.target.value)}
                   >
                     <option value="">None</option>
-                    {PLAN_IDS.map((id) => (
+                    {Object.values(PLAN_IDS).map((id) => (
                       <option key={id} value={id}>{id}</option>
                     ))}
                   </select>

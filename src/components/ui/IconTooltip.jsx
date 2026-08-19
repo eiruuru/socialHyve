@@ -17,6 +17,16 @@ export const IconTooltip = forwardRef(function IconTooltip(
     const rect = el.getBoundingClientRect();
     const gap = 8;
     const estimatedHeight = description ? 52 : 28;
+
+    if (side === 'right') {
+      setPosition({
+        left: rect.right + gap,
+        top: rect.top + rect.height / 2,
+        transform: 'translate(0, -50%)',
+      });
+      return;
+    }
+
     const preferTop = side === 'top' && rect.top - gap - estimatedHeight > 8;
     const placeAbove = side === 'top' ? preferTop : false;
 

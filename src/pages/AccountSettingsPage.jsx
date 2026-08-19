@@ -285,15 +285,15 @@ export default function AccountSettingsPage() {
       </div>
 
       <TabsRoot value={activeTab} onValueChange={setActiveTab}>
-        <div className="max-w-md">
-          <label htmlFor="settings-section" className="mb-1.5 block text-sm font-medium">
-            Section
+        <div className="sticky top-14 z-20 -mx-4 mb-4 border-b border-neutral-200 bg-paper/95 px-4 py-3 backdrop-blur-md supports-[backdrop-filter]:bg-paper/90 sm:-mx-5 sm:px-5 lg:-mx-8 lg:px-8">
+          <label htmlFor="settings-section" className="sr-only">
+            Settings section
           </label>
           <select
             id="settings-section"
             value={activeTab}
             onChange={(e) => setActiveTab(e.target.value)}
-            className="flex h-11 w-full appearance-none rounded-hyve-sm border border-neutral-200 bg-white px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-honey"
+            className="flex h-11 w-full max-w-md appearance-none rounded-hyve-sm border border-neutral-200 bg-white px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-honey"
           >
             {settingsTabs.map((tab) => (
               <option key={tab.id} value={tab.id}>

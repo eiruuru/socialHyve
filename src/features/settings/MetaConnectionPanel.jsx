@@ -159,12 +159,12 @@ export function MetaConnectionPanel() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-wrap gap-2">
-            <Button onClick={() => startMetaOAuth()} disabled={busy}>
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <Button className="w-full sm:w-auto" onClick={() => startMetaOAuth()} disabled={busy}>
               Connect Facebook account
             </Button>
             {sessions.length > 0 && (
-              <Button variant="outline" onClick={() => startMetaOAuth()} disabled={busy}>
+              <Button variant="outline" className="w-full sm:w-auto" onClick={() => startMetaOAuth()} disabled={busy}>
                 Reconnect latest account
               </Button>
             )}
@@ -259,21 +259,31 @@ export function MetaConnectionPanel() {
                         ? `@${page.username || page.name}`
                         : page.name;
                       return (
-                        <div key={page.id} className="space-y-2 rounded-md border p-3">
-                          <div className="flex min-w-0 items-center gap-3">
+                        <div key={page.id} className="flex gap-3 rounded-md border p-3">
+                          <div className="shrink-0">
                             {page.profile_picture_url ? (
-                              <img src={page.profile_picture_url} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
-                            ) : null}
-                            <PlatformChip platform={page.platform} className="shrink-0" />
-                            <span className="min-w-0 truncate font-medium">{label}</span>
+                              <img
+                                src={page.profile_picture_url}
+                                alt=""
+                                className="h-10 w-10 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-neutral-100">
+                                <PlatformChip platform={page.platform} iconOnly />
+                              </div>
+                            )}
                           </div>
-                          {clientName ? (
-                            <Badge variant="secondary" className="max-w-full truncate">
-                              Assigned to {clientName}
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline">Unassigned</Badge>
-                          )}
+                          <div className="min-w-0 flex-1 space-y-1.5">
+                            <PlatformChip platform={page.platform} className="w-fit" />
+                            <p className="truncate font-medium">{label}</p>
+                            {clientName ? (
+                              <Badge variant="secondary" className="max-w-full truncate">
+                                Assigned to {clientName}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="w-fit">Unassigned</Badge>
+                            )}
+                          </div>
                         </div>
                       );
                     })}

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { clearModalLocks } from '@/lib/clearModalLocks';
-import { LogOut, Menu, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useMembership } from '@/lib/membershipContext';
 import { useClient } from '@/lib/clientContext';
@@ -12,6 +12,7 @@ import { useNavigateOnClientSwitch } from '@/app/useNavigateOnClientSwitch';
 import { cn } from '@/lib/utils';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { HeaderClientSwitcher } from '@/components/HeaderClientSwitcher';
+import { IconTooltip } from '@/components/ui/IconTooltip';
 import { formatRoleLabel } from '@/lib/clientRoles';
 import { NotificationsProvider } from '@/lib/notifications/NotificationsProvider';
 import { PendingClientInviteNotifier } from '@/lib/PendingClientInviteNotifier';
@@ -23,14 +24,41 @@ import {
   useStandaloneDisplay,
 } from '@/lib/deviceTier';
 
-function SidebarLink({ to, label, icon: Icon, highlight = false, onNavigate }) {
-  return (
+const SIDEBAR_COLLAPSED_KEY = 'socialhyve_sidebar_collapsed';
+
+function useSidebarCollapsed() {
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleCollapsed = () => {
+    setCollapsed((current) => {
+      const next = !current;
+      try {
+        window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? '1' : '0');
+      } catch {
+        // ignore storage errors
+      }
+      return next;
+    });
+  };
+
+  return { collapsed, toggleCollapsed };
+}
+
+function SidebarLink({ to, label, icon: Icon, highlight = false, onNavigate, collapsed }) {
+  const link = (
     <NavLink
       to={to}
       onClick={onNavigate}
       className={({ isActive }) =>
         cn(
-          'flex min-h-11 items-center gap-3 rounded-hyve-sm px-3 py-2 text-sm font-medium transition-colors',
+          'flex min-h-11 items-center rounded-hyve-sm py-2 text-sm font-medium transition-colors',
+          collapsed ? 'justify-center px-2' : 'gap-3 px-3',
           highlight
             ? cn(
                 'mb-1 bg-honey text-white shadow-hyve-sm',
@@ -43,67 +71,142 @@ function SidebarLink({ to, label, icon: Icon, highlight = false, onNavigate }) {
       }
     >
       <Icon className="h-4 w-4 shrink-0" />
-      <span className="truncate">{label}</span>
+      {!collapsed ? <span className="truncate">{label}</span> : null}
     </NavLink>
   );
+
+  if (collapsed) {
+    return (
+      <IconTooltip title={label} side="right" className="block w-full">
+        {link}
+      </IconTooltip>
+    );
+  }
+
+  return link;
 }
 
-function NavGroup({ label, items, onNavigate }) {
+function NavGroup({ label, items, onNavigate, collapsed, showDivider = false }) {
   return (
-    <div className="space-y-0.5">
-      {label && (
+    <div className={cn(showDivider && 'border-t border-sidebar-border pt-2')}>
+      {label && !collapsed ? (
         <p className="px-3 pb-1.5 pt-5 text-[10px] font-semibold uppercase tracking-wider text-neutral-500 first:pt-1">
           {label}
         </p>
-      )}
-      {items.map(({ to, label: itemLabel, icon, highlight }) => (
-        <SidebarLink
-          key={to}
-          to={to}
-          label={itemLabel}
-          icon={icon}
-          highlight={highlight}
-          onNavigate={onNavigate}
-        />
-      ))}
+      ) : null}
+      <div className="space-y-0.5">
+        {items.map(({ to, label: itemLabel, icon, highlight }) => (
+          <SidebarLink
+            key={to}
+            to={to}
+            label={itemLabel}
+            icon={icon}
+            highlight={highlight}
+            onNavigate={onNavigate}
+            collapsed={collapsed}
+          />
+        ))}
+      </div>
     </div>
   );
 }
 
-function SidebarPanel({ membership, workspace, user, roleDisplay, showClientSwitcher, navGroups, onNavigate }) {
+function SidebarPanel({
+  membership,
+  workspace,
+  user,
+  roleDisplay,
+  showClientSwitcher,
+  navGroups,
+  onNavigate,
+  collapsed,
+  onToggleCollapse,
+}) {
+  const { activeClient } = useClient();
+  const workspaceInitial = workspace?.name?.trim()?.charAt(0)?.toUpperCase() || 'W';
+
   return (
     <>
-      <div className="border-b border-sidebar-border px-5 py-4">
-        {workspace?.name && !membership.isClientOnly && (
-          <div
-            className="mb-3 truncate rounded-hyve-sm bg-honey px-3 py-2 text-sm font-semibold text-white shadow-hyve-sm"
-            title={workspace.name}
-          >
-            {workspace.name}
-          </div>
-        )}
-        {showClientSwitcher && (
-          <div>
+      <div className={cn('border-b border-sidebar-border py-4', collapsed ? 'px-2' : 'px-5')}>
+        {workspace?.name && !membership.isClientOnly ? (
+          collapsed ? (
+            <IconTooltip title={workspace.name} side="right" className="mx-auto block w-fit">
+              <div
+                className="mx-auto flex h-10 w-10 items-center justify-center rounded-hyve-sm bg-honey text-sm font-bold text-white shadow-hyve-sm"
+                aria-hidden
+              >
+                {workspaceInitial}
+              </div>
+            </IconTooltip>
+          ) : (
+            <div
+              className="mb-3 truncate rounded-hyve-sm bg-honey px-3 py-2 text-sm font-semibold text-white shadow-hyve-sm"
+              title={workspace.name}
+            >
+              {workspace.name}
+            </div>
+          )
+        ) : null}
+        {showClientSwitcher ? (
+          collapsed ? (
+            <div className={workspace?.name && !membership.isClientOnly ? 'mt-3' : undefined}>
+              <IconTooltip title={activeClient?.name || 'Switch client'} side="right" className="block w-full">
+                <HeaderClientSwitcher iconOnly menuPlacement="right" className="w-full" />
+              </IconTooltip>
+            </div>
+          ) : (
             <ClientSwitcher />
-          </div>
-        )}
-        <p className={cn('truncate text-xs text-neutral-400', showClientSwitcher && 'mt-3')}>
-          Signed in as {user?.email}
-        </p>
-        {roleDisplay && (
-          <p className="mt-0.5 text-xs capitalize text-neutral-500">{roleDisplay}</p>
-        )}
+          )
+        ) : null}
+        {!collapsed ? (
+          <>
+            <p className={cn('truncate text-xs text-neutral-400', showClientSwitcher && 'mt-3')}>
+              Signed in as {user?.email}
+            </p>
+            {roleDisplay ? (
+              <p className="mt-0.5 text-xs capitalize text-neutral-500">{roleDisplay}</p>
+            ) : null}
+          </>
+        ) : null}
       </div>
-      <nav className="flex-1 space-y-2 overflow-y-auto px-3 py-4">
-        {navGroups.map((group) => (
+
+      <nav className={cn('flex-1 space-y-2 overflow-y-auto py-4', collapsed ? 'px-2' : 'px-3')}>
+        {navGroups.map((group, index) => (
           <NavGroup
             key={group.label ?? 'primary'}
             label={group.label}
             items={group.items}
             onNavigate={onNavigate}
+            collapsed={collapsed}
+            showDivider={collapsed && index > 0}
           />
         ))}
       </nav>
+
+      <div className={cn('border-t border-sidebar-border p-2', collapsed ? 'px-2' : 'px-3')}>
+        {collapsed ? (
+          <IconTooltip title="Expand sidebar" side="right" className="block w-full">
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              className="flex min-h-10 w-full items-center justify-center rounded-hyve-sm text-neutral-400 transition-colors hover:bg-sidebar-accent hover:text-white"
+              aria-label="Expand sidebar"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </IconTooltip>
+        ) : (
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            className="flex min-h-10 w-full items-center gap-2 rounded-hyve-sm px-3 text-sm text-neutral-400 transition-colors hover:bg-sidebar-accent hover:text-white"
+            aria-label="Collapse sidebar"
+          >
+            <ChevronLeft className="h-4 w-4 shrink-0" />
+            <span>Collapse</span>
+          </button>
+        )}
+      </div>
     </>
   );
 }
@@ -116,22 +219,17 @@ export function AppLayout() {
   const location = useLocation();
   const tier = useDeviceTier();
   const standalone = useStandaloneDisplay();
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const { collapsed: sidebarCollapsed, toggleCollapsed: toggleSidebarCollapsed } = useSidebarCollapsed();
   useNavigateOnClientSwitch();
 
   useEffect(() => {
     clearModalLocks();
   }, [location.pathname]);
 
-  useEffect(() => {
-    setDrawerOpen(false);
-  }, [location.pathname]);
-
   const isWide = location.pathname.includes('/calendar')
     || location.pathname.includes('/interactions');
   const isMobile = tier === DEVICE_TIERS.MOBILE;
-  const isTablet = tier === DEVICE_TIERS.TABLET;
-  const isDesktop = tier === DEVICE_TIERS.DESKTOP;
+  const showSidebar = !isMobile;
 
   const navGroups = buildNavGroups(membership, clientCtx, tier);
   const bottomNavItems = isMobile ? getBottomNavItems(membership, clientCtx, tier) : [];
@@ -154,20 +252,10 @@ export function AppLayout() {
       >
         <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-sidebar-border bg-sidebar px-4 pt-safe sm:px-5">
           <div className="flex min-w-0 items-center gap-2">
-            {isTablet && (
-              <button
-                type="button"
-                onClick={() => setDrawerOpen(true)}
-                className="flex min-h-11 min-w-11 items-center justify-center rounded-hyve-sm text-neutral-200 hover:bg-sidebar-accent hover:text-white lg:hidden"
-                aria-label="Open menu"
-              >
-                <Menu className="h-5 w-5" />
-              </button>
-            )}
             <Logo variant="dark" />
           </div>
           <div className="flex min-w-0 items-center gap-1 sm:gap-2">
-            {showClientSwitcher && !isDesktop ? <HeaderClientSwitcher /> : null}
+            {showClientSwitcher && isMobile ? <HeaderClientSwitcher /> : null}
             <NotificationBell variant="icon" />
             <button
               type="button"
@@ -181,8 +269,13 @@ export function AppLayout() {
         </header>
 
         <div className="flex min-h-0 flex-1 items-start">
-          {isDesktop && (
-            <aside className="sticky top-14 z-40 flex h-[calc(100dvh-3.5rem)] w-60 shrink-0 flex-col overflow-hidden bg-sidebar text-sidebar-foreground">
+          {showSidebar ? (
+            <aside
+              className={cn(
+                'sticky top-14 z-40 flex h-[calc(100dvh-3.5rem)] shrink-0 flex-col overflow-hidden bg-sidebar text-sidebar-foreground transition-[width] duration-200 ease-out',
+                sidebarCollapsed ? 'w-16' : 'w-60',
+              )}
+            >
               <SidebarPanel
                 membership={membership}
                 workspace={workspace}
@@ -190,48 +283,18 @@ export function AppLayout() {
                 roleDisplay={roleDisplay}
                 showClientSwitcher={showClientSwitcher}
                 navGroups={navGroups}
+                collapsed={sidebarCollapsed}
+                onToggleCollapse={toggleSidebarCollapsed}
               />
             </aside>
-          )}
-
-          {isTablet && drawerOpen && (
-            <>
-              <button
-                type="button"
-                className="fixed inset-0 z-50 bg-ink/50 lg:hidden"
-                aria-label="Close menu"
-                onClick={() => setDrawerOpen(false)}
-              />
-              <aside className="fixed left-0 top-14 z-50 flex h-[calc(100dvh-3.5rem)] w-72 flex-col overflow-hidden bg-sidebar text-sidebar-foreground shadow-hyve-lg lg:hidden">
-                <div className="flex items-center justify-end border-b border-sidebar-border px-3 py-2">
-                  <button
-                    type="button"
-                    onClick={() => setDrawerOpen(false)}
-                    className="flex min-h-11 min-w-11 items-center justify-center rounded-hyve-sm text-neutral-200 hover:bg-sidebar-accent"
-                    aria-label="Close menu"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-                <SidebarPanel
-                  membership={membership}
-                  workspace={workspace}
-                  user={user}
-                  roleDisplay={roleDisplay}
-                  showClientSwitcher={showClientSwitcher}
-                  navGroups={navGroups}
-                  onNavigate={() => setDrawerOpen(false)}
-                />
-              </aside>
-            </>
-          )}
+          ) : null}
 
           <main className="min-w-0 flex-1 bg-paper">
             <div
               className={cn(
                 'mx-auto',
-                isMobile ? 'max-w-none p-4' : isTablet ? 'max-w-none p-5' : 'p-8',
-                isWide && !isMobile ? 'max-w-none' : !isMobile && !isWide && 'max-w-6xl',
+                isMobile ? 'max-w-none p-4' : 'max-w-none p-5 lg:p-8',
+                isWide && !isMobile ? 'max-w-none' : !isMobile && !isWide && 'lg:max-w-6xl',
               )}
             >
               <Outlet />

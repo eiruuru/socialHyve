@@ -46,16 +46,16 @@ const EMPTY_COPY = {
 
 function QueueLegend() {
   return (
-    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-      <span className="font-medium text-ink">Schedule urgency:</span>
-      <span className="inline-flex items-center gap-1.5">
-        <span className="h-3 w-3 rounded-full bg-red-600" /> Less than 2 days
+    <div className="flex flex-nowrap items-center gap-2 overflow-x-auto text-[11px] text-muted-foreground sm:gap-3 sm:text-xs">
+      <span className="shrink-0 font-medium text-ink">Schedule urgency:</span>
+      <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap">
+        <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-red-600 sm:h-3 sm:w-3" /> Less than 2 days
       </span>
-      <span className="inline-flex items-center gap-1.5">
-        <span className="h-3 w-3 rounded-full bg-amber-500" /> Less than 5 days
+      <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap">
+        <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-amber-500 sm:h-3 sm:w-3" /> Less than 5 days
       </span>
-      <span className="inline-flex items-center gap-1.5">
-        <span className="h-3 w-3 rounded-full bg-emerald-600" /> 5+ days
+      <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap">
+        <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-600 sm:h-3 sm:w-3" /> 5+ days
       </span>
     </div>
   );

@@ -1,11 +1,17 @@
 import { Link } from 'react-router-dom';
 import { DocumentMeta } from '@/components/DocumentMeta';
 import { PAGE_DESCRIPTIONS } from '@/lib/pageMeta';
-import { Logo } from '@/components/brand/Logo';
 import { HexMark } from '@/components/brand/HexMark';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { MarketingChromeFrame } from '@/features/marketing/MarketingChromeFrame';
 import { MARKETING_SCREENSHOTS } from '@/features/marketing/marketingAssets';
+import {
+  MarketingFooter,
+  MarketingHeader,
+  MarketingPage,
+  MarketingPrimaryCta,
+} from '@/features/marketing/MarketingNav';
 import {
   CalendarDemo,
   ComposerDemo,
@@ -172,23 +178,23 @@ function ShowcaseSection({ label, title, desc, asset, Demo, altBg = false, prior
   );
 
   return (
-    <section className={altBg ? 'border-t border-neutral-200 bg-paper-alt px-6 py-16' : 'mx-auto max-w-6xl px-6 py-16'}>
-      <div className={altBg ? 'mx-auto max-w-6xl' : undefined}>
+    <section className={altBg ? 'border-t border-neutral-200 bg-paper-alt px-4 py-12 sm:px-6 sm:py-16' : 'mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16'}>
+      <div className={cn(altBg ? 'mx-auto max-w-6xl' : undefined, 'min-w-0')}>
         {splitLayout ? (
-          <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-12">
-            <div>
+          <div className="grid min-w-0 items-center gap-6 sm:gap-8 lg:grid-cols-2 lg:gap-12">
+            <div className="min-w-0">
               <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">{label}</p>
-              <h2 className="mt-2 font-display text-3xl font-bold">{title}</h2>
+              <h2 className="mt-2 font-display text-2xl font-bold sm:text-3xl">{title}</h2>
               <p className="mt-2 text-neutral-600">{desc}</p>
             </div>
-            {frame}
+            <div className="min-w-0">{frame}</div>
           </div>
         ) : (
           <>
             <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">{label}</p>
-            <h2 className="mt-2 font-display text-3xl font-bold">{title}</h2>
+            <h2 className="mt-2 font-display text-2xl font-bold sm:text-3xl">{title}</h2>
             <p className="mt-2 max-w-2xl text-neutral-600">{desc}</p>
-            <div className="mt-8">{frame}</div>
+            <div className="mt-6 min-w-0 sm:mt-8">{frame}</div>
           </>
         )}
       </div>
@@ -198,35 +204,12 @@ function ShowcaseSection({ label, title, desc, asset, Demo, altBg = false, prior
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-paper">
+    <MarketingPage>
       <DocumentMeta title="Social scheduling & approval" description={PAGE_DESCRIPTIONS.landing} />
-      <header
-        className="border-b border-neutral-200 px-6 py-4"
-        style={{
-          background: `
-            radial-gradient(circle at 15% 18%, rgba(246,166,0,.12), transparent 55%),
-            var(--paper)
-          `,
-        }}
-      >
-        <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <Logo />
-          <div className="flex gap-3">
-            <Button variant="outline" asChild>
-              <Link to="/faq">FAQ</Link>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link to="/app/login">Sign in</Link>
-            </Button>
-            <Button asChild>
-              <Link to="/app/login?signup=1">Get started free</Link>
-            </Button>
-          </div>
-        </div>
-      </header>
+      <MarketingHeader />
 
       <section
-        className="border-b border-neutral-200 px-6 py-16 md:py-20"
+        className="border-b border-neutral-200 px-4 py-12 sm:px-6 sm:py-16 md:py-20"
         style={{
           background: `
             radial-gradient(circle at 15% 18%, rgba(246,166,0,.22), transparent 55%),
@@ -235,44 +218,43 @@ export default function LandingPage() {
           `,
         }}
       >
-        <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-2">
-          <div>
+        <div className="mx-auto grid min-w-0 max-w-6xl items-center gap-8 sm:gap-12 lg:grid-cols-2">
+          <div className="min-w-0">
             <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-neutral-600">
               <HexMark size={16} />
               Social scheduling &amp; approval
             </span>
-            <h1 className="font-display text-5xl font-bold leading-tight text-ink md:text-6xl">
-              The hive for every <span className="text-honey-dark">post</span>,<br />
-              from draft to published.
+            <h1 className="font-display text-4xl font-bold leading-tight text-ink sm:text-5xl md:text-6xl">
+              The hive for every <span className="text-honey-dark">post</span>, from draft to published.
             </h1>
-            <p className="mt-5 max-w-xl text-lg text-neutral-600">
+            <p className="mt-5 max-w-xl text-base text-neutral-600 sm:text-lg">
               Draft, review, and publish Instagram and Facebook for every client — with Fine-Tune overrides, a shared Meta
               pool, approval queue, calendar, and Interactions inbox in one hive.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Button size="lg" asChild>
-                <Link to="/app/login?signup=1">Get started free →</Link>
-              </Button>
+              <MarketingPrimaryCta size="lg" />
               <Button size="lg" variant="outline" asChild>
                 <Link to="/faq">Read the FAQ</Link>
               </Button>
             </div>
           </div>
-          <MarketingChromeFrame
-            url={MARKETING_SCREENSHOTS.composer.url}
-            screenshot={MARKETING_SCREENSHOTS.composer.src}
-            screenshotAlt={MARKETING_SCREENSHOTS.composer.alt}
-            priority
-          >
-            <ComposerDemo />
-          </MarketingChromeFrame>
+          <div className="min-w-0">
+            <MarketingChromeFrame
+              url={MARKETING_SCREENSHOTS.composer.url}
+              screenshot={MARKETING_SCREENSHOTS.composer.src}
+              screenshotAlt={MARKETING_SCREENSHOTS.composer.alt}
+              priority
+            >
+              <ComposerDemo />
+            </MarketingChromeFrame>
+          </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-6 py-16">
+      <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
         <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Workflow</p>
-        <h2 className="mt-2 font-display text-3xl font-bold">Draft → Review → Publish</h2>
-        <div className="mt-10 grid gap-6 md:grid-cols-3">
+        <h2 className="mt-2 font-display text-2xl font-bold sm:text-3xl">Draft → Review → Publish</h2>
+        <div className="mt-8 grid gap-5 sm:mt-10 sm:gap-6 md:grid-cols-3">
           {[
             {
               title: 'Draft',
@@ -295,11 +277,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="border-t border-neutral-200 bg-paper-alt px-6 py-16">
+      <section className="border-t border-neutral-200 bg-paper-alt px-4 py-12 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-6xl">
           <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Features</p>
-          <h2 className="mt-2 font-display text-3xl font-bold">Built for agencies and in-house teams</h2>
-          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <h2 className="mt-2 font-display text-2xl font-bold sm:text-3xl">Built for agencies and in-house teams</h2>
+          <div className="mt-8 grid gap-4 sm:mt-10 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-5">
             {FEATURES.map(({ icon: Icon, title, desc }) => (
               <div
                 key={title}
@@ -320,12 +302,12 @@ export default function LandingPage() {
         <ShowcaseSection key={showcase.key} {...showcase} priority={index === 0} />
       ))}
 
-      <section className="mx-auto max-w-6xl px-6 py-16">
-        <div className="rounded-hyve-lg border border-neutral-200 bg-white p-8 shadow-hyve-sm md:p-10">
+      <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
+        <div className="rounded-hyve-lg border border-neutral-200 bg-white p-6 shadow-hyve-sm sm:p-8 md:p-10">
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">FAQ</p>
-              <h2 className="mt-2 font-display text-2xl font-bold">Questions? We wrote it down.</h2>
+              <h2 className="mt-2 font-display text-xl font-bold sm:text-2xl">Questions? We wrote it down.</h2>
               <p className="mt-2 max-w-md text-sm text-neutral-600">
                 Step-by-step help for workspace setup, Meta pool, Fine-Tune, approvals, calendar, Interactions, and more.
               </p>
@@ -349,33 +331,20 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="border-t border-neutral-200 px-6 py-14">
+      <section className="border-t border-neutral-200 px-4 py-12 sm:px-6 sm:py-14">
         <div className="mx-auto max-w-3xl text-center">
           <Eye className="mx-auto h-8 w-8 text-honey-dark" />
-          <h2 className="mt-4 font-display text-2xl font-bold">Ready to fill the hive?</h2>
+          <h2 className="mt-4 font-display text-xl font-bold sm:text-2xl">Ready to fill the hive?</h2>
           <p className="mt-2 text-neutral-600">
             Free to start — set up your workspace, connect Meta, and ship your first approved post at socialhyve.app.
           </p>
-          <Button size="lg" className="mt-6" asChild>
-            <Link to="/app/login?signup=1">Get started free →</Link>
-          </Button>
+          <div className="mt-6 flex justify-center">
+            <MarketingPrimaryCta size="lg" />
+          </div>
         </div>
       </section>
 
-      <footer className="bg-ink px-6 py-10 text-neutral-400">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4">
-          <Logo variant="dark" />
-          <div className="flex flex-wrap items-center gap-4 text-sm">
-            <Link to="/faq" className="transition-colors hover:text-white">
-              FAQ
-            </Link>
-            <Link to="/app/login" className="transition-colors hover:text-white">
-              Sign in
-            </Link>
-            <span>socialHyve · Schedule smarter, approve faster.</span>
-          </div>
-        </div>
-      </footer>
-    </div>
+      <MarketingFooter />
+    </MarketingPage>
   );
 }

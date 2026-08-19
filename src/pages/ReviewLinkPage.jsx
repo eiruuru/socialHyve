@@ -64,11 +64,11 @@ export default function ReviewLinkPage() {
   };
 
   return (
-    <div className="min-h-screen bg-paper">
-      <header className="border-b bg-white px-6 py-4">
+    <div className="min-h-screen overflow-x-hidden bg-paper">
+      <header className="border-b bg-white px-4 py-4 pt-safe sm:px-6">
         <Logo />
       </header>
-      <main className="mx-auto max-w-4xl p-8">
+      <main className="mx-auto max-w-4xl px-4 py-6 sm:p-8">
         {isLoading && <p className="text-muted-foreground">Loading review…</p>}
         {error && (
           <Card>
@@ -111,7 +111,7 @@ export default function ReviewLinkPage() {
                   onChange={(e) => setComment(e.target.value)}
                   rows={3}
                 />
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button onClick={() => handleSubmit('approve')} disabled={submitting}>
                     Approve
                   </Button>

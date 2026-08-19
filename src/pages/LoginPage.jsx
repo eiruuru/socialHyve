@@ -5,6 +5,7 @@ import { acceptInvite, previewInvite } from '@/lib/organization';
 import { formatClientRole, formatRoleLabel, isClientRole } from '@/lib/clientRoles';
 import { savePendingInvite, clearPendingInvite } from '@/lib/membershipContext';
 import { useAuth } from '@/lib/AuthContext';
+import { getDefaultAppPath, useDeviceTier } from '@/lib/deviceTier';
 import { DocumentMeta } from '@/components/DocumentMeta';
 import { PAGE_DESCRIPTIONS } from '@/lib/pageMeta';
 import { Logo } from '@/components/brand/Logo';
@@ -15,6 +16,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 export default function LoginPage() {
   const navigate = useNavigate();
   const { isAuthenticated, isLoadingAuth } = useAuth();
+  const tier = useDeviceTier();
   const [searchParams] = useSearchParams();
   const orgToken = searchParams.get('invite');
   const clientToken = searchParams.get('clientInvite');
@@ -29,6 +31,11 @@ export default function LoginPage() {
   const [resetSent, setResetSent] = useState(false);
   const [invitePreview, setInvitePreview] = useState(null);
   const [inviteLoading, setInviteLoading] = useState(!!inviteToken);
+
+  useEffect(() => {
+    if (isLoadingAuth || !isAuthenticated || inviteToken) return;
+    navigate(getDefaultAppPath(tier), { replace: true });
+  }, [isAuthenticated, isLoadingAuth, inviteToken, navigate, tier]);
 
   useEffect(() => {
     if (!inviteToken || !inviteType) return;

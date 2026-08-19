@@ -758,8 +758,9 @@ export function FaqContent({ className, defaultSectionIndex = 0 }) {
     <div className={cn('flex flex-col gap-6 lg:flex-row lg:items-start', className)}>
       <nav
         aria-label="Help topics"
-        className="shrink-0 space-y-1 lg:sticky lg:top-8 lg:w-56 xl:w-64"
+        className="shrink-0 lg:sticky lg:top-8 lg:w-56 xl:w-64"
       >
+        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-2 lg:mx-0 lg:flex-col lg:overflow-visible lg:space-y-1 lg:pb-0">
         {FAQ_SECTIONS.map((item, index) => {
           const isActive = index === activeIndex;
           return (
@@ -769,16 +770,16 @@ export function FaqContent({ className, defaultSectionIndex = 0 }) {
               onClick={() => selectSection(index)}
               aria-current={isActive ? 'true' : undefined}
               className={cn(
-                'w-full rounded-hyve-sm px-3 py-2.5 text-left transition-colors',
+                'shrink-0 rounded-hyve-sm px-3 py-2.5 text-left transition-colors lg:w-full lg:shrink',
                 isActive
                   ? 'bg-honey text-white shadow-hyve-sm'
-                  : 'text-neutral-700 hover:bg-neutral-100',
+                  : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200 lg:bg-transparent lg:hover:bg-neutral-100',
               )}
             >
               <span className="block text-sm font-semibold">{item.title}</span>
               <span
                 className={cn(
-                  'mt-0.5 block text-xs leading-snug',
+                  'mt-0.5 hidden text-xs leading-snug lg:block',
                   isActive ? 'text-white/85' : 'text-muted-foreground',
                 )}
               >
@@ -787,6 +788,7 @@ export function FaqContent({ className, defaultSectionIndex = 0 }) {
             </button>
           );
         })}
+        </div>
       </nav>
 
       <article

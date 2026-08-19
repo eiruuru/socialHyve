@@ -1,7 +1,12 @@
-export const SITE_NAME = 'socialHyve';
+import {
+  DEFAULT_DESCRIPTION,
+  OG_IMAGE,
+  SITE_NAME,
+  SITE_URL,
+  TWITTER_HANDLE,
+} from './siteConfig';
 
-export const DEFAULT_DESCRIPTION =
-  'Draft, review, and publish Instagram and Facebook for every client — with a shared Meta pool, approval queue, and calendar in one hive.';
+export { DEFAULT_DESCRIPTION, SITE_NAME, SITE_URL, OG_IMAGE };
 
 /** @type {Record<string, string>} */
 export const PAGE_DESCRIPTIONS = {
@@ -53,13 +58,61 @@ function upsertMeta(attr, key, content) {
   el.setAttribute('content', content);
 }
 
-export function upsertDocumentMeta({ title, description, noIndex = false }) {
+function upsertLink(rel, href) {
+  if (!href) return;
+  let el = document.querySelector(`link[rel="${rel}"]`);
+  if (!el) {
+    el = document.createElement('link');
+    el.setAttribute('rel', rel);
+    document.head.appendChild(el);
+  }
+  el.setAttribute('href', href);
+}
+
+export function resolvePageUrl(pathname = '/') {
+  const path = pathname.startsWith('/') ? pathname : `/${pathname}`;
+  return path === '/' ? `${SITE_URL}/` : `${SITE_URL}${path}`;
+}
+
+export function upsertDocumentMeta({
+  title,
+  description,
+  noIndex = false,
+  url,
+  image = OG_IMAGE.url,
+  imageAlt = OG_IMAGE.alt,
+  imageWidth = OG_IMAGE.width,
+  imageHeight = OG_IMAGE.height,
+}) {
+  const pageUrl = url || (typeof window !== 'undefined'
+    ? resolvePageUrl(window.location.pathname)
+    : SITE_URL);
+
   document.title = title;
+  upsertLink('canonical', pageUrl);
+
   upsertMeta('name', 'description', description);
+  upsertMeta('name', 'robots', noIndex ? 'noindex, nofollow' : 'index, follow');
+
+  upsertMeta('property', 'og:type', 'website');
+  upsertMeta('property', 'og:site_name', SITE_NAME);
+  upsertMeta('property', 'og:url', pageUrl);
   upsertMeta('property', 'og:title', title);
   upsertMeta('property', 'og:description', description);
-  upsertMeta('name', 'twitter:card', 'summary');
+  upsertMeta('property', 'og:image', image);
+  upsertMeta('property', 'og:image:secure_url', image);
+  upsertMeta('property', 'og:image:width', String(imageWidth));
+  upsertMeta('property', 'og:image:height', String(imageHeight));
+  upsertMeta('property', 'og:image:alt', imageAlt);
+  upsertMeta('property', 'og:locale', 'en_US');
+
+  upsertMeta('name', 'twitter:card', 'summary_large_image');
   upsertMeta('name', 'twitter:title', title);
   upsertMeta('name', 'twitter:description', description);
-  upsertMeta('name', 'robots', noIndex ? 'noindex, nofollow' : 'index, follow');
+  upsertMeta('name', 'twitter:image', image);
+  upsertMeta('name', 'twitter:image:alt', imageAlt);
+  if (TWITTER_HANDLE) {
+    upsertMeta('name', 'twitter:site', TWITTER_HANDLE);
+    upsertMeta('name', 'twitter:creator', TWITTER_HANDLE);
+  }
 }

@@ -262,14 +262,19 @@ export function AppLayout() {
     ? formatRoleLabel(membership.roleLabel)
     : null;
 
-  const shellPadding = 'px-3 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top,0px))]';
+  const shellPadding = cn(
+    'px-2 pb-2 pt-[calc(0.5rem+env(safe-area-inset-top,0px))]',
+    'sm:px-3 sm:pb-3 sm:pt-[calc(0.75rem+env(safe-area-inset-top,0px))]',
+    'pl-[max(0.5rem,env(safe-area-inset-left,0px))] pr-[max(0.5rem,env(safe-area-inset-right,0px))]',
+    'sm:pl-[max(0.75rem,env(safe-area-inset-left,0px))] sm:pr-[max(0.75rem,env(safe-area-inset-right,0px))]',
+  );
 
   return (
     <NotificationsProvider>
       <PendingClientInviteNotifier />
       <div
         className={cn(
-          'flex min-h-[100dvh] flex-col gap-3 bg-paper',
+          'flex min-h-[100dvh] flex-col gap-2 bg-paper sm:gap-3',
           standalone && 'standalone-app',
           showSidebar
             ? cn('box-border h-dvh', shellPadding)
@@ -319,7 +324,7 @@ export function AppLayout() {
           </div>
         </header>
 
-        <div className={cn('flex min-h-0 flex-1 gap-3')}>
+        <div className={cn('flex min-h-0 flex-1 gap-2 sm:gap-3')}>
           {showSidebar ? (
             <aside
               className={cn(
@@ -343,8 +348,8 @@ export function AppLayout() {
           <main className="app-content-panel min-h-0 min-w-0 flex-1 overflow-y-auto">
             <div
               className={cn(
-                'mx-auto',
-                isMobile ? 'max-w-none p-4' : 'max-w-none p-5 lg:p-8',
+                'mx-auto w-full',
+                'p-3 sm:p-4 md:p-5 lg:p-8',
                 isWide && !isMobile ? 'max-w-none' : !isMobile && !isWide && 'lg:max-w-6xl',
               )}
             >

@@ -15,3 +15,6 @@ export const OG_IMAGE = {
 };
 
 export const TWITTER_HANDLE = null;
+
+/** Meta (Facebook) app id — public; used for fb:app_id Open Graph tag. */
+export const FB_APP_ID = import.meta.env.VITE_META_APP_ID || null;

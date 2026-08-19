@@ -1,5 +1,6 @@
 import {
   DEFAULT_DESCRIPTION,
+  FB_APP_ID,
   OG_IMAGE,
   SITE_NAME,
   SITE_URL,
@@ -105,6 +106,9 @@ export function upsertDocumentMeta({
   upsertMeta('property', 'og:image:height', String(imageHeight));
   upsertMeta('property', 'og:image:alt', imageAlt);
   upsertMeta('property', 'og:locale', 'en_US');
+  if (FB_APP_ID) {
+    upsertMeta('property', 'fb:app_id', FB_APP_ID);
+  }
 
   upsertMeta('name', 'twitter:card', 'summary_large_image');
   upsertMeta('name', 'twitter:title', title);

@@ -46,7 +46,11 @@ export async function listAdminUsers({
 }
 
 export async function getAdminUser(userId) {
-  return invokeFunction('adminGetUser', { userId });
+  try {
+    return await invokeFunction('adminGetUser', { userId });
+  } catch {
+    return invokeFunction('adminGetUserPreview', { userId });
+  }
 }
 
 export async function getAdminUserPreview(userId) {

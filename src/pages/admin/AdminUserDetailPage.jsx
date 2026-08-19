@@ -12,7 +12,7 @@ export default function AdminUserDetailPage() {
   const { userId } = useParams();
   const queryClient = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ['admin-user', userId],
     queryFn: () => getAdminUser(userId),
     enabled: !!userId,
@@ -35,6 +35,8 @@ export default function AdminUserDetailPage() {
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
+      ) : isError ? (
+        <p className="text-sm text-destructive">{error?.message || 'Could not load user.'}</p>
       ) : !profile ? (
         <p className="text-sm text-muted-foreground">User not found.</p>
       ) : (

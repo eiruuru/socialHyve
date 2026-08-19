@@ -18,6 +18,22 @@ const FILTERS = [
 
 const PAGE_SIZE = 50;
 
+function formatUserOrganizations(user) {
+  const seen = new Set();
+  const names = [];
+  for (const entry of [...(user.ownedOrganizations ?? []), ...(user.organizationMemberships ?? [])]) {
+    const id = entry.id || entry.organization_id;
+    const name = entry.name || entry.organizations?.name;
+    if (!name) continue;
+    if (id) {
+      if (seen.has(id)) continue;
+      seen.add(id);
+    }
+    names.push(name);
+  }
+  return names.length ? names.join(', ') : '—';
+}
+
 function accountBadges(user) {
   const badges = [];
   if (user.must_change_password) badges.push('Pending password');
@@ -41,7 +57,7 @@ export default function AdminUsersPage() {
   });
 
   const users = data?.users ?? [];
-  const totalCount = data?.totalCount ?? 0;
+  const totalCount = data?.totalCount ?? users.length;
   const hasPrev = offset > 0;
   const hasNext = offset + PAGE_SIZE < totalCount;
 
@@ -125,10 +141,7 @@ export default function AdminUsersPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">
-                        {[...(user.ownedOrganizations ?? []), ...(user.organizationMemberships ?? [])]
-                          .map((entry) => entry.name || entry.organizations?.name)
-                          .filter(Boolean)
-                          .join(', ') || '—'}
+                        {formatUserOrganizations(user)}
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">
                         {(user.clientMemberships ?? [])

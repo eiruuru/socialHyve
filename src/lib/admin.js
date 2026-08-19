@@ -29,12 +29,125 @@ export async function updateAdminOrganizationPlan(payload) {
   return invokeFunction('adminUpdateOrganizationPlan', payload);
 }
 
-export async function listAdminUsers() {
-  return invokeFunction('adminListUsers');
+export async function listAdminUsers({
+  search = '',
+  filter = 'all',
+  organizationId,
+  limit = 50,
+  offset = 0,
+} = {}) {
+  return invokeFunction('adminListUsers', {
+    search: search || undefined,
+    filter,
+    organizationId,
+    limit,
+    offset,
+  });
+}
+
+export async function getAdminUser(userId) {
+  return invokeFunction('adminGetUser', { userId });
 }
 
 export async function getAdminUserPreview(userId) {
   return invokeFunction('adminGetUserPreview', { userId });
+}
+
+export async function provisionAdminUser({ email, fullName, assignments = [] }) {
+  return invokeFunction('adminManageUser', {
+    action: 'provision',
+    email,
+    fullName,
+    assignments,
+  });
+}
+
+export async function updateAdminUserProfile({ userId, fullName }) {
+  return invokeFunction('adminManageUser', {
+    action: 'update_profile',
+    userId,
+    fullName,
+  });
+}
+
+export async function resetAdminUserPassword(userId) {
+  return invokeFunction('adminManageUser', { action: 'reset_password', userId });
+}
+
+export async function setAdminUserMustChangePassword(userId, value) {
+  return invokeFunction('adminManageUser', {
+    action: 'set_must_change_password',
+    userId,
+    value,
+  });
+}
+
+export async function adminAddOrgMember({
+  organizationId,
+  email,
+  fullName,
+  role,
+  provisionIfMissing = true,
+}) {
+  return invokeFunction('adminManageMembers', {
+    action: 'add_org_member',
+    organizationId,
+    email,
+    fullName,
+    role,
+    provisionIfMissing,
+  });
+}
+
+export async function adminAddClientMember({
+  clientId,
+  email,
+  fullName,
+  role,
+  provisionIfMissing = true,
+}) {
+  return invokeFunction('adminManageMembers', {
+    action: 'add_client_member',
+    clientId,
+    email,
+    fullName,
+    role,
+    provisionIfMissing,
+  });
+}
+
+export async function adminUpdateOrgMemberRole({ organizationId, userId, role }) {
+  return invokeFunction('adminManageMembers', {
+    action: 'update_org_member_role',
+    organizationId,
+    userId,
+    role,
+  });
+}
+
+export async function adminUpdateClientMemberRole({ clientId, userId, role }) {
+  return invokeFunction('adminManageMembers', {
+    action: 'update_client_member_role',
+    clientId,
+    userId,
+    role,
+  });
+}
+
+export async function adminRemoveOrgMember({ organizationId, userId }) {
+  return invokeFunction('adminManageMembers', {
+    action: 'remove_org_member',
+    organizationId,
+    userId,
+  });
+}
+
+export async function adminRemoveClientMember({ clientId, userId }) {
+  return invokeFunction('adminManageMembers', {
+    action: 'remove_client_member',
+    clientId,
+    userId,
+  });
 }
 
 export async function getProfileMustChangePassword() {

@@ -75,7 +75,10 @@ FUNCTIONS=(
   admin-get-organization
   admin-update-organization-plan
   admin-list-users
+  admin-get-user
   admin-get-user-preview
+  admin-manage-user
+  admin-manage-members
 )
 
 for fn in "${FUNCTIONS[@]}"; do

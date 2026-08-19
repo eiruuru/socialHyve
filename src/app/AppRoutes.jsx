@@ -35,7 +35,9 @@ const AdminWaitlistPage = lazyWithRetry(() => import('@/pages/admin/AdminWaitlis
 const AdminOrganizationsPage = lazyWithRetry(() => import('@/pages/admin/AdminOrganizationsPage'));
 const AdminOrganizationDetailPage = lazyWithRetry(() => import('@/pages/admin/AdminOrganizationDetailPage'));
 const AdminUsersPage = lazyWithRetry(() => import('@/pages/admin/AdminUsersPage'));
-const AdminUserPreviewPage = lazyWithRetry(() => import('@/pages/admin/AdminUserPreviewPage'));
+const AdminUserDetailPage = lazyWithRetry(() => import('@/pages/admin/AdminUserDetailPage'));
+const AdminClientMembersPage = lazyWithRetry(() => import('@/pages/admin/AdminClientMembersPage'));
+const AdminUserPreviewRedirect = lazyWithRetry(() => import('@/pages/admin/AdminUserPreviewRedirect'));
 
 function Lazy({ children }) {
   return (
@@ -89,8 +91,10 @@ export function AppRoutes() {
               <Route path="waitlist" element={<Lazy><AdminWaitlistPage /></Lazy>} />
               <Route path="organizations" element={<Lazy><AdminOrganizationsPage /></Lazy>} />
               <Route path="organizations/:orgId" element={<Lazy><AdminOrganizationDetailPage /></Lazy>} />
+              <Route path="organizations/:orgId/clients/:clientId/members" element={<Lazy><AdminClientMembersPage /></Lazy>} />
               <Route path="users" element={<Lazy><AdminUsersPage /></Lazy>} />
-              <Route path="users/:userId/preview" element={<Lazy><AdminUserPreviewPage /></Lazy>} />
+              <Route path="users/:userId" element={<Lazy><AdminUserDetailPage /></Lazy>} />
+              <Route path="users/:userId/preview" element={<Lazy><AdminUserPreviewRedirect /></Lazy>} />
             </Route>
           </Route>
         </Route>

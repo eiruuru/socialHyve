@@ -1,9 +1,6 @@
 import { handleOptions, jsonResponse } from '../_shared/cors.ts';
-import {
-  assertPlatformAdmin,
-  generateTempPassword,
-  logAdminEvent,
-} from '../_shared/platformAdmin.ts';
+import { assertPlatformAdmin, logAdminEvent } from '../_shared/platformAdmin.ts';
+import { provisionUserAccount } from '../_shared/provisionUser.ts';
 import { getServiceClient, requireUser } from '../_shared/supabase.ts';
 
 Deno.serve(async (req) => {
@@ -62,44 +59,10 @@ Deno.serve(async (req) => {
     }
 
     const email = String(row.email).trim().toLowerCase();
-    const tempPassword = generateTempPassword();
-
-    const { data: existingProfile } = await service
-      .from('profiles')
-      .select('id')
-      .ilike('email', email)
-      .maybeSingle();
-
-    let provisionedUserId: string;
-    let existingAccount = false;
-
-    if (existingProfile?.id) {
-      existingAccount = true;
-      provisionedUserId = existingProfile.id as string;
-      const { error: updateErr } = await service.auth.admin.updateUserById(provisionedUserId, {
-        password: tempPassword,
-        email_confirm: true,
-      });
-      if (updateErr) throw updateErr;
-    } else {
-      const { data: created, error: createErr } = await service.auth.admin.createUser({
-        email,
-        password: tempPassword,
-        email_confirm: true,
-        user_metadata: { full_name: row.name || null },
-      });
-      if (createErr) throw createErr;
-      if (!created.user) throw new Error('Failed to create user');
-      provisionedUserId = created.user.id;
-    }
-
-    await service.from('profiles').upsert({
-      id: provisionedUserId,
-      email,
-      full_name: row.name || null,
-      must_change_password: true,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'id' });
+    const { userId: provisionedUserId, tempPassword, existingAccount } = await provisionUserAccount(
+      service,
+      { email, fullName: row.name || null, resetPasswordIfExists: true, mustChangePassword: true },
+    );
 
     const { error: waitlistErr } = await service
       .from('waitlist_requests')

@@ -24,6 +24,8 @@ Deno.serve(async (req) => {
     if (orgErr) throw orgErr;
     if (!org) return jsonResponse({ error: 'Organization not found' }, 404);
 
+    const clientIds: string[] = [];
+
     const [{ data: owner }, { data: members }, { data: clients }] = await Promise.all([
       service.from('profiles').select('id, email, full_name').eq('id', org.owner_id).maybeSingle(),
       service
@@ -38,11 +40,24 @@ Deno.serve(async (req) => {
         .order('name', { ascending: true }),
     ]);
 
+    for (const client of clients ?? []) {
+      clientIds.push(client.id as string);
+    }
+
+    const { data: clientMembers } = clientIds.length
+      ? await service
+        .from('client_members')
+        .select('client_id, user_id, role, created_at, profiles(id, email, full_name)')
+        .in('client_id', clientIds)
+        .order('created_at', { ascending: true })
+      : { data: [] };
+
     return jsonResponse({
       organization: org,
       owner,
       members: members ?? [],
       clients: clients ?? [],
+      clientMembers: clientMembers ?? [],
     });
   } catch (err) {
     const message = (err as Error).message;

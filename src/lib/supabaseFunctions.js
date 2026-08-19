@@ -38,7 +38,10 @@ const FUNCTION_MAP = {
   adminGetOrganization: 'admin-get-organization',
   adminUpdateOrganizationPlan: 'admin-update-organization-plan',
   adminListUsers: 'admin-list-users',
+  adminGetUser: 'admin-get-user',
   adminGetUserPreview: 'admin-get-user-preview',
+  adminManageUser: 'admin-manage-user',
+  adminManageMembers: 'admin-manage-members',
 };
 
 async function functionErrorMessage(error) {

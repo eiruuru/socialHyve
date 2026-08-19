@@ -15,7 +15,7 @@ export function AdminLayout() {
         <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Platform</p>
         <h1 className="font-display text-2xl font-bold">Admin console</h1>
         <p className="text-sm text-muted-foreground">
-          Cross-tenant waitlist, billing overrides, and read-only user previews.
+          User management, waitlist, billing overrides, and cross-tenant support.
         </p>
       </div>
 

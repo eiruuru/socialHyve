@@ -6,6 +6,9 @@ import { PLAN_IDS } from '@/lib/plans';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { showToast } from '@/lib/toast';
+import { AdminTeamMembersCard } from '@/features/admin/AdminOrgMembershipsPanel';
+import { AdminClientMembersSection } from '@/features/admin/AdminClientMembershipsPanel';
+import { AdminProvisionResultDialog } from '@/features/admin/AdminProvisionResultDialog';
 
 const STATUS_OPTIONS = ['none', 'trialing', 'active', 'past_due', 'canceled'];
 
@@ -15,6 +18,7 @@ export default function AdminOrganizationDetailPage() {
   const [plan, setPlan] = useState('');
   const [subscriptionStatus, setSubscriptionStatus] = useState('none');
   const [saving, setSaving] = useState(false);
+  const [provisionResult, setProvisionResult] = useState(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-organization', orgId],
@@ -25,12 +29,18 @@ export default function AdminOrganizationDetailPage() {
   const org = data?.organization;
   const members = data?.members ?? [];
   const clients = data?.clients ?? [];
+  const clientMembers = data?.clientMembers ?? [];
 
   useEffect(() => {
     if (!org) return;
     setPlan(org.plan || '');
     setSubscriptionStatus(org.subscription_status || 'none');
   }, [org]);
+
+  const refresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['admin-organization', orgId] });
+    queryClient.invalidateQueries({ queryKey: ['admin-organizations'] });
+  };
 
   const handleSavePlan = async (e) => {
     e.preventDefault();
@@ -42,8 +52,7 @@ export default function AdminOrganizationDetailPage() {
         subscription_status: subscriptionStatus,
       });
       showToast({ title: 'Plan updated', variant: 'success' });
-      queryClient.invalidateQueries({ queryKey: ['admin-organization', orgId] });
-      queryClient.invalidateQueries({ queryKey: ['admin-organizations'] });
+      refresh();
     } catch (err) {
       showToast({ title: 'Could not update plan', description: err.message, variant: 'error' });
     } finally {
@@ -57,6 +66,8 @@ export default function AdminOrganizationDetailPage() {
         <Link to="/app/admin/organizations">← Organizations</Link>
       </Button>
 
+      <AdminProvisionResultDialog result={provisionResult} onDismiss={() => setProvisionResult(null)} />
+
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : !org ? (
@@ -66,7 +77,14 @@ export default function AdminOrganizationDetailPage() {
           <div>
             <h2 className="font-display text-xl font-bold">{org.name}</h2>
             <p className="text-sm text-muted-foreground">
-              Owner: {data.owner?.email || org.owner_id}
+              Owner:{' '}
+              {data.owner?.email ? (
+                <Link to={`/app/admin/users/${data.owner.id}`} className="hover:underline">
+                  {data.owner.email}
+                </Link>
+              ) : (
+                org.owner_id
+              )}
             </p>
           </div>
 
@@ -79,19 +97,20 @@ export default function AdminOrganizationDetailPage() {
                 <label className="space-y-1 text-sm">
                   <span className="font-medium">Plan</span>
                   <select
-                    className="block w-full min-w-[10rem] rounded-hyve-sm border border-input bg-background px-3 py-2"
+                    className="block w-full min-w-[8rem] rounded-hyve-sm border border-neutral-200 bg-white px-3 py-2"
                     value={plan}
                     onChange={(e) => setPlan(e.target.value)}
                   >
-                    <option value="">No plan</option>
-                    <option value={PLAN_IDS.STARTER}>Starter</option>
-                    <option value={PLAN_IDS.PRO}>Pro</option>
+                    <option value="">None</option>
+                    {PLAN_IDS.map((id) => (
+                      <option key={id} value={id}>{id}</option>
+                    ))}
                   </select>
                 </label>
                 <label className="space-y-1 text-sm">
                   <span className="font-medium">Subscription status</span>
                   <select
-                    className="block w-full min-w-[10rem] rounded-hyve-sm border border-input bg-background px-3 py-2 capitalize"
+                    className="block w-full min-w-[8rem] rounded-hyve-sm border border-neutral-200 bg-white px-3 py-2 capitalize"
                     value={subscriptionStatus}
                     onChange={(e) => setSubscriptionStatus(e.target.value)}
                   >
@@ -110,31 +129,21 @@ export default function AdminOrganizationDetailPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Team members ({members.length})</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              {members.map((member) => (
-                <div key={member.user_id} className="flex justify-between gap-4 border-b border-neutral-100 py-2 last:border-0">
-                  <span>{member.profiles?.email || member.user_id}</span>
-                  <span className="capitalize text-muted-foreground">{member.role}</span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+          <AdminTeamMembersCard
+            organizationId={orgId}
+            members={members}
+            owner={data.owner}
+            onUpdated={refresh}
+            onProvisioned={setProvisionResult}
+          />
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Clients ({clients.length})</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              {clients.map((client) => (
-                <div key={client.id} className="py-1">{client.name}</div>
-              ))}
-              {!clients.length ? <p className="text-muted-foreground">No clients.</p> : null}
-            </CardContent>
-          </Card>
+          <AdminClientMembersSection
+            organizationId={orgId}
+            clients={clients}
+            clientMembers={clientMembers}
+            onUpdated={refresh}
+            onProvisioned={setProvisionResult}
+          />
         </>
       )}
     </div>

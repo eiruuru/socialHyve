@@ -260,17 +260,19 @@ export function MetaConnectionPanel() {
                         : page.name;
                       return (
                         <div key={page.id} className="flex gap-3 rounded-md border p-3">
-                          <div className="shrink-0">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-neutral-100">
                             {page.profile_picture_url ? (
                               <img
                                 src={page.profile_picture_url}
                                 alt=""
-                                className="h-10 w-10 rounded-full object-cover"
+                                className="h-full w-full object-cover"
                               />
                             ) : (
-                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-neutral-100">
-                                <PlatformChip platform={page.platform} iconOnly />
-                              </div>
+                              <PlatformChip
+                                platform={page.platform}
+                                iconOnly
+                                className="h-7 w-7 text-xs"
+                              />
                             )}
                           </div>
                           <div className="min-w-0 flex-1 space-y-1.5">

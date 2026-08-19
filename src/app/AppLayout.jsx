@@ -16,7 +16,7 @@ import { IconTooltip } from '@/components/ui/IconTooltip';
 import { formatRoleLabel } from '@/lib/clientRoles';
 import { NotificationsProvider } from '@/lib/notifications/NotificationsProvider';
 import { PendingClientInviteNotifier } from '@/lib/PendingClientInviteNotifier';
-import { buildNavGroups, getBottomNavItems } from '@/app/navConfig';
+import { buildNavGroups, getBottomNavItems, helpNavItem, settingsNavItem } from '@/app/navConfig';
 import { MobileBottomNav } from '@/app/MobileBottomNav';
 import {
   DEVICE_TIERS,
@@ -84,6 +84,27 @@ function SidebarLink({ to, label, icon: Icon, highlight = false, onNavigate, col
   }
 
   return link;
+}
+
+function HeaderNavIcon({ to, label, icon: Icon }) {
+  return (
+    <IconTooltip title={label} side="bottom">
+      <NavLink
+        to={to}
+        className={({ isActive }) =>
+          cn(
+            'flex h-10 w-10 shrink-0 items-center justify-center rounded-hyve-sm transition-colors',
+            isActive
+              ? 'bg-sidebar-accent text-white'
+              : 'text-neutral-200 hover:bg-sidebar-accent hover:text-white',
+          )
+        }
+        aria-label={label}
+      >
+        <Icon className="h-5 w-5" />
+      </NavLink>
+    </IconTooltip>
+  );
 }
 
 function NavGroup({ label, items, onNavigate, collapsed, showDivider = false }) {
@@ -229,6 +250,7 @@ export function AppLayout() {
   const isWide = location.pathname.includes('/calendar')
     || location.pathname.includes('/interactions');
   const isMobile = tier === DEVICE_TIERS.MOBILE;
+  const isTablet = tier === DEVICE_TIERS.TABLET;
   const showSidebar = !isMobile;
 
   const navGroups = buildNavGroups(membership, clientCtx, tier);
@@ -255,6 +277,28 @@ export function AppLayout() {
             <Logo variant="dark" />
           </div>
           <div className="flex min-w-0 items-center gap-1 sm:gap-2">
+            {isTablet ? (
+              <>
+                <div className="flex items-center gap-0.5">
+                  {showClientSwitcher ? <HeaderClientSwitcher iconOnly /> : null}
+                  <HeaderNavIcon
+                    to={settingsNavItem.to}
+                    label={settingsNavItem.label}
+                    icon={settingsNavItem.icon}
+                  />
+                  <HeaderNavIcon
+                    to={helpNavItem.to}
+                    label={helpNavItem.label}
+                    icon={helpNavItem.icon}
+                  />
+                </div>
+                <div
+                  className="mx-1 h-6 w-px shrink-0 bg-sidebar-border/80"
+                  role="separator"
+                  aria-orientation="vertical"
+                />
+              </>
+            ) : null}
             {showClientSwitcher && isMobile ? <HeaderClientSwitcher /> : null}
             <NotificationBell variant="icon" />
             <button
@@ -281,7 +325,7 @@ export function AppLayout() {
                 workspace={workspace}
                 user={user}
                 roleDisplay={roleDisplay}
-                showClientSwitcher={showClientSwitcher}
+                showClientSwitcher={showClientSwitcher && !isTablet}
                 navGroups={navGroups}
                 collapsed={sidebarCollapsed}
                 onToggleCollapse={toggleSidebarCollapsed}

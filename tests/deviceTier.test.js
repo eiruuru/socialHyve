@@ -35,7 +35,7 @@ describe('deviceTier', () => {
     assert.equal(isRouteAllowed('/app/calendar', DEVICE_TIERS.TABLET), true);
     assert.equal(isRouteAllowed('/app/posts/import', DEVICE_TIERS.MOBILE), false);
     assert.equal(isRouteAllowed('/app/posts/import', DEVICE_TIERS.TABLET), true);
-    assert.equal(isRouteAllowed('/app/help', DEVICE_TIERS.TABLET), false);
+    assert.equal(isRouteAllowed('/app/help', DEVICE_TIERS.TABLET), true);
     assert.equal(isRouteAllowed('/app/help', DEVICE_TIERS.DESKTOP), true);
   });
 

@@ -21,6 +21,20 @@ export const settingsNavItem = {
   show: () => true,
 };
 
+export const helpNavItem = {
+  to: '/app/help',
+  label: 'Help',
+  icon: HelpCircle,
+  minTier: DEVICE_TIERS.TABLET,
+  show: () => true,
+};
+
+/** Shown in the tablet top bar instead of the sidebar */
+export const TABLET_HEADER_NAV_PATHS = new Set([
+  settingsNavItem.to,
+  helpNavItem.to,
+]);
+
 const orgNavGroups = [
   {
     label: null,
@@ -96,13 +110,7 @@ const orgNavGroups = [
     label: 'Support',
     items: [
       settingsNavItem,
-      {
-        to: '/app/help',
-        label: 'Help',
-        icon: HelpCircle,
-        minTier: DEVICE_TIERS.DESKTOP,
-        show: () => true,
-      },
+      helpNavItem,
     ],
   },
 ];
@@ -162,13 +170,7 @@ export function buildNavGroups(membership, clientCtx, tier = DEVICE_TIERS.DESKTO
       label: 'Support',
       items: [
         settingsNavItem,
-        {
-          to: '/app/help',
-          label: 'Help',
-          icon: HelpCircle,
-          minTier: DEVICE_TIERS.DESKTOP,
-          show: () => true,
-        },
+        helpNavItem,
       ],
     });
   } else {
@@ -183,6 +185,9 @@ export function buildNavGroups(membership, clientCtx, tier = DEVICE_TIERS.DESKTO
       ...group,
       items: group.items.filter((item) => {
         const minTier = item.minTier ?? DEVICE_TIERS.MOBILE;
+        if (tier === DEVICE_TIERS.TABLET && TABLET_HEADER_NAV_PATHS.has(item.to)) {
+          return false;
+        }
         return tierAtLeast(tier, minTier) && isRouteAllowed(item.to, tier);
       }),
     }))

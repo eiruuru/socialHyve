@@ -38,7 +38,7 @@ const ROUTE_MIN_TIER = [
   { pattern: /^\/app\/settings\/canva(\/|$)/, minTier: DEVICE_TIERS.TABLET },
   { pattern: /^\/app\/settings\/accounts(\/|$)/, minTier: DEVICE_TIERS.TABLET },
   { pattern: /^\/app\/settings\/meta(\/|$)/, minTier: DEVICE_TIERS.TABLET },
-  { pattern: /^\/app\/help(\/|$)/, minTier: DEVICE_TIERS.DESKTOP },
+  { pattern: /^\/app\/help(\/|$)/, minTier: DEVICE_TIERS.TABLET },
   { pattern: /^\/app\/clients(\/|$)/, minTier: DEVICE_TIERS.DESKTOP },
   { pattern: /^\/app\/team(\/|$)/, minTier: DEVICE_TIERS.DESKTOP },
   { pattern: /^\/app\/clients\/[^/]+\/members(\/|$)/, minTier: DEVICE_TIERS.DESKTOP },

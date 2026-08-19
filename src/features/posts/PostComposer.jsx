@@ -47,6 +47,11 @@ import {
   FB_CAPTION_LIMIT,
   validateFineTune,
 } from '@/features/posts/platformOverrides';
+import {
+  DEVICE_TIERS,
+  isSimplifiedComposerTier,
+  useDeviceTier,
+} from '@/lib/deviceTier';
 
 function validatePost({ caption, media, publishInstagram, publishFacebook }) {
   const errors = [];
@@ -75,6 +80,9 @@ export function PostComposer({ editPostId = null }) {
   const navMonth = searchParams.get('month') || undefined;
   const { activeClient } = useClient();
   const membership = useMembership();
+  const tier = useDeviceTier();
+  const simplifiedComposer = isSimplifiedComposerTier(tier);
+  const showCanvaImport = tier !== DEVICE_TIERS.MOBILE;
   const { canManageTeam } = membership;
   const clientScheduleOnly = hasCreativesQaAccess(membership);
   const isEditMode = !!editPostId;
@@ -529,11 +537,13 @@ export function PostComposer({ editPostId = null }) {
   const igCaption = getEffectiveCaption(caption, platformOverrides, 'instagram');
 
   const fineTuneHints = [];
-  if (publishFacebook && fineTuneValidation.platformStatus.facebook?.errors.length) {
-    fineTuneHints.push('Facebook is incomplete');
-  }
-  if (publishInstagram && fineTuneValidation.platformStatus.instagram?.errors.length) {
-    fineTuneHints.push('Instagram is incomplete');
+  if (!simplifiedComposer) {
+    if (publishFacebook && fineTuneValidation.platformStatus.facebook?.errors.length) {
+      fineTuneHints.push('Facebook is incomplete');
+    }
+    if (publishInstagram && fineTuneValidation.platformStatus.instagram?.errors.length) {
+      fineTuneHints.push('Instagram is incomplete');
+    }
   }
 
   if (isEditMode && loadingPost) {
@@ -578,6 +588,8 @@ export function PostComposer({ editPostId = null }) {
           media={media}
           setMedia={handleMediaChange}
           validationErrors={validationErrors}
+          simplified={simplifiedComposer}
+          showCanvaImport={showCanvaImport}
         />
 
         <div className="lg:sticky lg:top-[4.5rem] lg:z-0 lg:self-start">
@@ -631,26 +643,28 @@ export function PostComposer({ editPostId = null }) {
         onPublishNow={handlePublishNow}
       />
 
-      <FineTunePanel
-        open={fineTuneOpen}
-        onOpenChange={setFineTuneOpen}
-        caption={caption}
-        internalName={internalName}
-        label={label}
-        platformOverrides={platformOverrides}
-        setPlatformOverrides={setPlatformOverrides}
-        firstComment={firstComment}
-        setFirstComment={setFirstComment}
-        scheduledAt={scheduledAt}
-        scheduleTimezone={scheduleTimezone}
-        publishFacebook={publishFacebook}
-        publishInstagram={publishInstagram}
-        media={media}
-        onMediaChange={handleMediaChange}
-        instagramAccountId={instagramAccountId}
-        postId={draftPostId}
-        clientName={activeClient?.name}
-      />
+      {!simplifiedComposer && (
+        <FineTunePanel
+          open={fineTuneOpen}
+          onOpenChange={setFineTuneOpen}
+          caption={caption}
+          internalName={internalName}
+          label={label}
+          platformOverrides={platformOverrides}
+          setPlatformOverrides={setPlatformOverrides}
+          firstComment={firstComment}
+          setFirstComment={setFirstComment}
+          scheduledAt={scheduledAt}
+          scheduleTimezone={scheduleTimezone}
+          publishFacebook={publishFacebook}
+          publishInstagram={publishInstagram}
+          media={media}
+          onMediaChange={handleMediaChange}
+          instagramAccountId={instagramAccountId}
+          postId={draftPostId}
+          clientName={activeClient?.name}
+        />
+      )}
     </div>
   );
 }

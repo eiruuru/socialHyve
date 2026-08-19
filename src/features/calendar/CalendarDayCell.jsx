@@ -20,6 +20,8 @@ export function CalendarDayCell({
   onDragLeave,
   onDrop,
   tall = false,
+  touchReschedule = false,
+  onRescheduleRequest,
 }) {
   const navigate = useNavigate();
   const isPastDay = isPastCalendarDay(day);
@@ -71,7 +73,9 @@ export function CalendarDayCell({
           post={post}
           compact={dayPosts.length > 1}
           navSearch={navSearch}
-          draggable={!readOnly && isPostDraggable(post)}
+          draggable={!readOnly && !touchReschedule && isPostDraggable(post)}
+          touchReschedule={touchReschedule}
+          onRescheduleRequest={onRescheduleRequest}
           isDragging={draggingPostId === post.id}
           onDragStart={onDragStart}
           onDragEnd={onDragEnd}

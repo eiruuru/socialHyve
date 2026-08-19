@@ -32,6 +32,8 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { showToast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
+import { AppPageHeader } from '@/components/AppPageHeader';
+import { DEVICE_TIERS, useDeviceTier } from '@/lib/deviceTier';
 
 const QUICK_EMOJIS = ['👍', '❤️', '😊', '🎉', '🙏', '✨'];
 
@@ -87,6 +89,8 @@ export default function InteractionsPage() {
 
   const { activeClient, clients, loading: clientsLoading } = useClient();
   const membership = useMembership();
+  const tier = useDeviceTier();
+  const stackInbox = tier === DEVICE_TIERS.TABLET;
   const queryClient = useQueryClient();
   const clientId = activeClient?.id;
 
@@ -280,7 +284,12 @@ export default function InteractionsPage() {
 
       <div className="flex h-[calc(100dvh-14rem)] min-h-[520px] overflow-hidden rounded-hyve-lg border border-neutral-200 bg-white">
         {/* Filters + thread list */}
-        <div className="flex w-full max-w-sm shrink-0 flex-col border-r border-neutral-200">
+        <div
+          className={cn(
+            'flex w-full shrink-0 flex-col border-r border-neutral-200',
+            stackInbox ? (selectedThreadId ? 'hidden' : 'max-w-none') : 'max-w-sm',
+          )}
+        >
           <div className="space-y-2 border-b border-neutral-200 p-3">
             <Input
               value={search}
@@ -367,13 +376,25 @@ export default function InteractionsPage() {
         </div>
 
         {/* Thread detail */}
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div
+          className={cn(
+            'flex min-w-0 flex-1 flex-col',
+            stackInbox && !selectedThreadId && 'hidden',
+          )}
+        >
           {!selectedThread ? (
             <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
               Select a thread to view messages
             </div>
           ) : (
             <>
+              {stackInbox && (
+                <AppPageHeader
+                  title={selectedThread.participant_name || 'Thread'}
+                  backLabel="Back to inbox"
+                  onBack={() => setSelectedThreadId(null)}
+                />
+              )}
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200 px-4 py-3">
                 <div>
                   <div className="flex items-center gap-2">

@@ -1,0 +1,15 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAMID.app.socialhyve",
+        "paths": [
+          "/app/*",
+          "/login",
+          "/review/*"
+        ]
+      }
+    ]
+  }
+}

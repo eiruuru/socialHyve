@@ -18,6 +18,7 @@ import { ClientsPanel } from '@/features/settings/ClientsPanel';
 import { TeamPanel } from '@/features/settings/TeamPanel';
 import { ActivityLogPanel } from '@/features/settings/ActivityLogPanel';
 import { WorkspacePanel } from '@/features/settings/WorkspacePanel';
+import { DEVICE_TIERS, useDeviceTier } from '@/lib/deviceTier';
 
 function Field({ label, htmlFor, children, hint }) {
   return (
@@ -46,6 +47,8 @@ function StatusBanner({ message, tone = 'success' }) {
 export default function AccountSettingsPage() {
   const { user } = useAuth();
   const { isOwnerOrAdmin, isOrgTeam, isClientOnly, canManageTeam } = useMembership();
+  const tier = useDeviceTier();
+  const mobileSettings = tier === DEVICE_TIERS.MOBILE;
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const showWorkspaceTab = canManageTeam;
@@ -55,6 +58,7 @@ export default function AccountSettingsPage() {
   const showMetaTab = isOwnerOrAdmin;
 
   const activeTab = (() => {
+    if (mobileSettings) return 'profile';
     const tab = searchParams.get('tab');
     if (tab === 'workspace' && showWorkspaceTab) return 'workspace';
     if (
@@ -83,6 +87,13 @@ export default function AccountSettingsPage() {
       description: PAGE_DESCRIPTIONS.workspaceSettings,
     };
   }, [activeTab]);
+
+  useEffect(() => {
+    if (!mobileSettings) return;
+    if (activeTab !== 'profile') {
+      setSearchParams({}, { replace: true });
+    }
+  }, [mobileSettings, activeTab, setSearchParams]);
 
   useDocumentMeta(settingsMeta);
 
@@ -275,13 +286,13 @@ export default function AccountSettingsPage() {
       </div>
 
       <TabsRoot value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          {showWorkspaceTab && <TabsTrigger value="workspace">Workspace</TabsTrigger>}
+        <TabsList className="h-auto w-full justify-start overflow-x-auto">
+          {showWorkspaceTab && !mobileSettings && <TabsTrigger value="workspace">Workspace</TabsTrigger>}
           <TabsTrigger value="profile">Profile</TabsTrigger>
-          {showClientsTab && <TabsTrigger value="clients">Clients</TabsTrigger>}
-          {showTeamTab && <TabsTrigger value="team">Team</TabsTrigger>}
-          {showActivityTab && <TabsTrigger value="activity">Activity</TabsTrigger>}
-          {showMetaTab && <TabsTrigger value="meta">Meta Accounts</TabsTrigger>}
+          {showClientsTab && !mobileSettings && <TabsTrigger value="clients">Clients</TabsTrigger>}
+          {showTeamTab && !mobileSettings && <TabsTrigger value="team">Team</TabsTrigger>}
+          {showActivityTab && !mobileSettings && <TabsTrigger value="activity">Activity</TabsTrigger>}
+          {showMetaTab && !mobileSettings && <TabsTrigger value="meta">Meta Accounts</TabsTrigger>}
         </TabsList>
 
         {showWorkspaceTab && (

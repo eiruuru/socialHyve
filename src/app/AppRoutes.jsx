@@ -2,6 +2,8 @@ import { Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { RequireAuth } from './RequireAuth';
 import { AppLayout } from './AppLayout';
+import { AppIndexRedirect } from './AppIndexRedirect';
+import { DeviceRouteGuard } from './DeviceRouteGuard';
 import { WorkspaceProvider } from '@/lib/WorkspaceContext';
 import { ClientProvider } from '@/lib/clientContext';
 import { MembershipProvider } from '@/lib/membershipContext';
@@ -35,6 +37,10 @@ function Lazy({ children }) {
   );
 }
 
+function Guarded({ children }) {
+  return <DeviceRouteGuard>{children}</DeviceRouteGuard>;
+}
+
 export function AppRoutes() {
   return (
     <Routes>
@@ -52,26 +58,26 @@ export function AppRoutes() {
             </WorkspaceProvider>
           }
         >
-          <Route index element={<Navigate to="calendar" replace />} />
+          <Route index element={<AppIndexRedirect />} />
           <Route path="queue" element={<Lazy><QueuePage /></Lazy>} />
-          <Route path="calendar" element={<Lazy><CalendarPage /></Lazy>} />
-          <Route path="interactions" element={<Lazy><InteractionsPage /></Lazy>} />
+          <Route path="calendar" element={<Lazy><Guarded><CalendarPage /></Guarded></Lazy>} />
+          <Route path="interactions" element={<Lazy><Guarded><InteractionsPage /></Guarded></Lazy>} />
           <Route path="posts/new" element={<Lazy><PostComposerPage /></Lazy>} />
-          <Route path="posts/import" element={<Lazy><PostImportPage /></Lazy>} />
+          <Route path="posts/import" element={<Lazy><Guarded><PostImportPage /></Guarded></Lazy>} />
           <Route path="posts/:id/edit" element={<Lazy><EditPostPage /></Lazy>} />
           <Route path="posts/:id" element={<Lazy><PostDetailPage /></Lazy>} />
-          <Route path="clients" element={<Lazy><ClientsPage /></Lazy>} />
-          <Route path="clients/:clientId/members" element={<Lazy><ClientMembersPage /></Lazy>} />
+          <Route path="clients" element={<Lazy><Guarded><ClientsPage /></Guarded></Lazy>} />
+          <Route path="clients/:clientId/members" element={<Lazy><Guarded><ClientMembersPage /></Guarded></Lazy>} />
           <Route path="client/:clientId/review" element={<Lazy><ClientReviewPage /></Lazy>} />
-          <Route path="team" element={<Lazy><TeamPage /></Lazy>} />
+          <Route path="team" element={<Lazy><Guarded><TeamPage /></Guarded></Lazy>} />
           <Route path="settings/account" element={<Lazy><AccountSettingsPage /></Lazy>} />
-          <Route path="settings/meta" element={<Lazy><MetaConnectionPage /></Lazy>} />
-          <Route path="settings/accounts" element={<Lazy><ConnectedAccountsPage /></Lazy>} />
-          <Route path="settings/canva" element={<Lazy><CanvaSettingsPage /></Lazy>} />
-          <Route path="help" element={<Lazy><HelpPage /></Lazy>} />
+          <Route path="settings/meta" element={<Lazy><Guarded><MetaConnectionPage /></Guarded></Lazy>} />
+          <Route path="settings/accounts" element={<Lazy><Guarded><ConnectedAccountsPage /></Guarded></Lazy>} />
+          <Route path="settings/canva" element={<Lazy><Guarded><CanvaSettingsPage /></Guarded></Lazy>} />
+          <Route path="help" element={<Lazy><Guarded><HelpPage /></Guarded></Lazy>} />
         </Route>
       </Route>
-      <Route path="*" element={<Navigate to="/app/calendar" replace />} />
+      <Route path="*" element={<Navigate to="/app/queue" replace />} />
     </Routes>
   );
 }

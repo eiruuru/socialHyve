@@ -43,6 +43,8 @@ export function GenericContentStep({
   media,
   setMedia,
   validationErrors,
+  simplified = false,
+  showCanvaImport = true,
 }) {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0, fileName: '' });
@@ -146,12 +148,14 @@ export function GenericContentStep({
             rows={6}
           />
           <p className="mt-1 text-xs text-muted-foreground">{captionHint}</p>
-          <OptimizationTips
-            caption={caption}
-            media={media}
-            publishInstagram={publishInstagram}
-            scheduledAt={scheduledAt}
-          />
+          {!simplified && (
+            <OptimizationTips
+              caption={caption}
+              media={media}
+              publishInstagram={publishInstagram}
+              scheduledAt={scheduledAt}
+            />
+          )}
         </div>
 
         <div>
@@ -223,12 +227,14 @@ export function GenericContentStep({
           <div className="flex items-center justify-between gap-2">
             <p className="text-sm font-medium">Media</p>
             <div className="flex items-center gap-1">
-              <CanvaDesignPicker
-                iconOnly
-                onSelect={handleCanvaSelect}
-                mediaCount={media.length}
-                disabled={mediaBusy}
-              />
+              {showCanvaImport && (
+                <CanvaDesignPicker
+                  iconOnly
+                  onSelect={handleCanvaSelect}
+                  mediaCount={media.length}
+                  disabled={mediaBusy}
+                />
+              )}
               <IconTooltip title="Upload media" description="Add images or videos from your device">
                 <label
                   className={

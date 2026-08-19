@@ -1,0 +1,45 @@
+name: Mobile build
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: dist
+
+  cap-sync:
+    needs: build-web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: dist
+      - run: npx cap sync android
+        env:
+          CAPACITOR_ANDROID: true
+      - name: Upload Android project
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-project
+          path: android

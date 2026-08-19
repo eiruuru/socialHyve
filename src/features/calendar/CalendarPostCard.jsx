@@ -96,6 +96,8 @@ export function CalendarPostCard({
   onDragEnd,
   isDragging = false,
   navSearch = '',
+  touchReschedule = false,
+  onRescheduleRequest,
 }) {
   const navigate = useNavigate();
   const didDragRef = useRef(false);
@@ -117,6 +119,10 @@ export function CalendarPostCard({
   const handleClick = () => {
     if (didDragRef.current) {
       didDragRef.current = false;
+      return;
+    }
+    if (touchReschedule && isPostDraggable(post)) {
+      onRescheduleRequest?.(post);
       return;
     }
     navigate(`/app/posts/${post.id}${navSearch}`);

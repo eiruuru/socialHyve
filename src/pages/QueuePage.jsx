@@ -207,7 +207,7 @@ export default function QueuePage() {
             ) : filtered.length === 0 ? (
               <EmptyHiveState title={empty.title} description={empty.description} />
             ) : (
-              <div className="grid gap-4 rounded-hyve-lg bg-paper-alt p-5 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="grid gap-4 rounded-hyve-lg bg-paper-alt p-5 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
                 {filtered.map((post) => (
                   <PostQueueCard
                     key={post.id}

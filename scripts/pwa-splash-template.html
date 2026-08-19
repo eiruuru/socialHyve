@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>PWA splash</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@800&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 1284px; height: 2778px; overflow: hidden; }
+    body {
+      background:
+        radial-gradient(circle at 50% 35%, rgba(246, 166, 0, 0.15), transparent 55%),
+        #14110C;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      font-family: 'Baloo 2', system-ui, sans-serif;
+    }
+    .hex { width: 120px; height: 120px; }
+    .hex svg { width: 100%; height: 100%; }
+    .wordmark {
+      font-size: 48px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: 0.2px;
+    }
+    .wordmark span { color: #F6A600; }
+  </style>
+</head>
+<body>
+  <div id="splash-canvas">
+    <div class="hex">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="50,3 93,26 93,74 50,97 7,74 7,26" fill="none" stroke="#F6A600" stroke-width="7"/>
+        <circle cx="50" cy="50" r="10" fill="#F6A600"/>
+      </svg>
+    </div>
+    <p class="wordmark">social<span>Hyve</span></p>
+  </div>
+</body>
+</html>

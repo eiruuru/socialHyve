@@ -4,3 +4,7 @@ dist
 .env.local
 .DS_Store
 supabase/.temp
+
+# Capacitor — web assets are copied on cap sync (see npm run cap:sync)
+android/app/src/main/assets/public
+android/app/src/main/assets/capacitor.config.json

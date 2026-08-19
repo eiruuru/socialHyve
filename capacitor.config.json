@@ -1,0 +1,22 @@
+{
+  "appId": "app.socialhyve",
+  "appName": "socialHyve",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "backgroundColor": "#14110C",
+      "showSpinner": false
+    }
+  },
+  "ios": {
+    "contentInset": "automatic",
+    "scheme": "socialHyve"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}

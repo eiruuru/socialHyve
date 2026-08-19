@@ -16,16 +16,18 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useClient } from '@/lib/clientContext';
-import { reschedulePostToDay } from '@/lib/posts';
-import { isPastCalendarDay } from '@/lib/scheduleTime';
+import { reschedulePostToDay, updatePost } from '@/lib/posts';
+import { isPastCalendarDay, isScheduleInPast, zonedLocalToUtc } from '@/lib/scheduleTime';
 import { showToast } from '@/lib/toast';
 import { isPostDraggable } from './CalendarPostCard';
 import { CalendarDayCell } from './CalendarDayCell';
+import { CalendarRescheduleDialog } from './CalendarRescheduleDialog';
 import { PostStatusLegend } from '@/features/queue/postStatusIcons';
 import { Button } from '@/components/ui/button';
 import { IconTooltip } from '@/components/ui/IconTooltip';
 import { TabsRoot, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { buildPostNavSearch, getPostCalendarDate, parseCalendarMonthParam } from '@/features/posts/postNavUtils';
+import { DEVICE_TIERS, useDeviceTier } from '@/lib/deviceTier';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -40,13 +42,23 @@ function mondayEndWeek(date) {
 export function ContentCalendar({ posts = [], readOnly = false }) {
   const queryClient = useQueryClient();
   const { activeClient } = useClient();
+  const tier = useDeviceTier();
+  const touchReschedule = tier === DEVICE_TIERS.TABLET && !readOnly;
   const [searchParams, setSearchParams] = useSearchParams();
   const monthParam = searchParams.get('month');
   const [currentDate, setCurrentDate] = useState(() => parseCalendarMonthParam(monthParam) || new Date());
-  const [view, setView] = useState('month');
+  const [view, setView] = useState(() => (tier === DEVICE_TIERS.TABLET ? 'week' : 'month'));
   const [draggingPostId, setDraggingPostId] = useState(null);
   const [dropTargetDay, setDropTargetDay] = useState(null);
   const [rescheduling, setRescheduling] = useState(false);
+  const [reschedulePost, setReschedulePost] = useState(null);
+  const [rescheduleOpen, setRescheduleOpen] = useState(false);
+
+  useEffect(() => {
+    if (tier === DEVICE_TIERS.TABLET) {
+      setView('week');
+    }
+  }, [tier]);
 
   useEffect(() => {
     const parsed = parseCalendarMonthParam(monthParam);
@@ -80,6 +92,7 @@ export function ContentCalendar({ posts = [], readOnly = false }) {
   const monthNavSearch = buildPostNavSearch({ nav: 'calendar', month: calendarMonth });
 
   const handleDragStart = (_e, post) => {
+    if (touchReschedule) return;
     setDraggingPostId(post.id);
   };
 
@@ -127,6 +140,40 @@ export function ContentCalendar({ posts = [], readOnly = false }) {
     } finally {
       setRescheduling(false);
       setDraggingPostId(null);
+    }
+  };
+
+  const handleRescheduleRequest = (post) => {
+    if (!isPostDraggable(post)) return;
+    setReschedulePost(post);
+    setRescheduleOpen(true);
+  };
+
+  const handleRescheduleConfirm = async ({ scheduledAt, scheduleTimezone }) => {
+    if (!reschedulePost || rescheduling) return;
+    const scheduledUtc = zonedLocalToUtc(scheduledAt, scheduleTimezone);
+    if (isScheduleInPast(scheduledUtc)) {
+      showToast({ title: 'Cannot reschedule', description: 'Pick a future time.', variant: 'error' });
+      return;
+    }
+    setRescheduling(true);
+    try {
+      await updatePost(reschedulePost.id, {
+        scheduled_at: scheduledUtc,
+        schedule_timezone: scheduleTimezone,
+      });
+      await queryClient.invalidateQueries({ queryKey: ['posts', activeClient?.id] });
+      setRescheduleOpen(false);
+      setReschedulePost(null);
+      showToast({ title: 'Post rescheduled', variant: 'success' });
+    } catch (err) {
+      showToast({
+        title: 'Could not reschedule',
+        description: err.message || 'Try again.',
+        variant: 'error',
+      });
+    } finally {
+      setRescheduling(false);
     }
   };
 
@@ -187,13 +234,15 @@ export function ContentCalendar({ posts = [], readOnly = false }) {
           day={day}
           dayPosts={getPostsForDay(day)}
           currentDate={currentDate}
-          readOnly={readOnly}
+          readOnly={readOnly || touchReschedule}
           navSearch={monthNavSearch}
           draggingPostId={draggingPostId}
           dropTargetDay={dropTargetDay}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
           tall={tall}
+          touchReschedule={touchReschedule}
+          onRescheduleRequest={handleRescheduleRequest}
           {...makeDayHandlers(day)}
         />
       ))}
@@ -224,11 +273,19 @@ export function ContentCalendar({ posts = [], readOnly = false }) {
         </div>
         <TabsRoot value={view} onValueChange={setView}>
           <TabsList>
-            <TabsTrigger value="month">Month</TabsTrigger>
+            {tier !== DEVICE_TIERS.TABLET && (
+              <TabsTrigger value="month">Month</TabsTrigger>
+            )}
             <TabsTrigger value="week">Week</TabsTrigger>
           </TabsList>
         </TabsRoot>
       </div>
+
+      {touchReschedule && (
+        <p className="text-xs text-muted-foreground">
+          Tap a post to reschedule. Drag-and-drop is available on desktop.
+        </p>
+      )}
 
       <PostStatusLegend />
 
@@ -244,17 +301,28 @@ export function ContentCalendar({ posts = [], readOnly = false }) {
       )}
 
       {view === 'week' && (
-        <div className="rounded-hyve-lg border border-neutral-200">
-          <div className="grid grid-cols-7 border-b border-neutral-200 bg-paper-alt">
-            {weekDays.map((day) => (
-              <div key={day.toISOString()} className="p-2 text-center text-xs font-medium text-muted-foreground">
-                {format(day, 'EEE d')}
-              </div>
-            ))}
+        <div className="rounded-hyve-lg border border-neutral-200 overflow-x-auto">
+          <div className="min-w-[640px]">
+            <div className="grid grid-cols-7 border-b border-neutral-200 bg-paper-alt">
+              {weekDays.map((day) => (
+                <div key={day.toISOString()} className="p-2 text-center text-xs font-medium text-muted-foreground">
+                  {format(day, 'EEE d')}
+                </div>
+              ))}
+            </div>
+            {renderDayGrid(weekDays, { tall: true })}
           </div>
-          {renderDayGrid(weekDays, { tall: true })}
         </div>
       )}
+
+      <CalendarRescheduleDialog
+        open={rescheduleOpen}
+        onOpenChange={setRescheduleOpen}
+        post={reschedulePost}
+        clientTimezone={activeClient?.default_timezone}
+        onConfirm={handleRescheduleConfirm}
+        saving={rescheduling}
+      />
     </div>
   );
 }

@@ -11,12 +11,22 @@
     "test": "node --test tests/*.test.js",
     "smoke:check": "node scripts/smoke-check.mjs",
     "capture:marketing": "node scripts/capture-marketing-screenshots.mjs",
+    "generate:og-image": "node scripts/generate-og-image.mjs",
+    "generate:pwa-icons": "node scripts/generate-pwa-icons.mjs",
+    "cap:sync": "npm run build && npx cap sync",
+    "cap:ios": "npx cap open ios",
+    "cap:android": "npx cap open android",
+    "build:twa": "echo 'Run bubblewrap update --manifest twa/twa-manifest.json after installing @bubblewrap/cli globally'",
+    "setup:store-links": "node scripts/setup-store-links.mjs",
     "deploy:functions": "bash scripts/deploy-edge-functions.sh",
     "deploy:migrations": "bash scripts/apply-migrations.sh",
     "setup:supabase": "bash scripts/setup-supabase.sh",
     "setup:cron": "bash scripts/setup-cron.sh"
   },
   "dependencies": {
+    "@capacitor/android": "^7.2.0",
+    "@capacitor/core": "^7.2.0",
+    "@capacitor/ios": "^7.2.0",
     "@radix-ui/react-dialog": "^1.1.6",
     "@radix-ui/react-label": "^2.1.2",
     "@radix-ui/react-slot": "^1.1.2",
@@ -35,6 +45,7 @@
     "tailwind-merge": "^3.0.2"
   },
   "devDependencies": {
+    "@capacitor/cli": "^7.2.0",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.21.0",

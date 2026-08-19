@@ -1,0 +1,23 @@
+{
+  "packageId": "app.socialhyve.twa",
+  "host": "socialhyve.app",
+  "name": "socialHyve",
+  "launcherName": "socialHyve",
+  "display": "standalone",
+  "themeColor": "#14110C",
+  "navigationColor": "#14110C",
+  "backgroundColor": "#14110C",
+  "enableNotifications": true,
+  "startUrl": "/app/queue?source=twa",
+  "iconUrl": "https://socialhyve.app/icons/icon-512.png",
+  "maskableIconUrl": "https://socialhyve.app/icons/icon-maskable-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "../android/keystore.jks",
+    "alias": "socialhyve"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli"
+}

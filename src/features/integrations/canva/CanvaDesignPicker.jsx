@@ -152,7 +152,7 @@ export function CanvaDesignPicker({ onSelect, disabled, iconOnly = false, mediaC
         </DialogTrigger>
       </IconTooltip>
       {open ? (
-      <DialogContent className="flex max-h-[88vh] w-[92vw] max-w-5xl flex-col overflow-hidden p-6">
+      <DialogContent className="flex max-h-[88vh] w-[calc(100vw-2rem)] max-w-full flex-col overflow-hidden p-4 sm:max-w-5xl sm:p-6 md:mx-4">
         <DialogHeader>
           <DialogTitle>
             {step === 'browse' ? 'Search Canva Designs' : 'Import Canva Design'}

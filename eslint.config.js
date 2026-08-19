@@ -41,7 +41,7 @@ export default [
       'react/prop-types': 'off',
     },
   },
-  { ignores: ['dist/**', 'node_modules/**'] },
+  { ignores: ['dist/**', 'node_modules/**', 'android/**', 'ios/**'] },
   {
     files: ['public/sw.js'],
     languageOptions: {
@@ -58,6 +58,14 @@ export default [
         console: 'readonly',
         process: 'readonly',
         URL: 'readonly',
+      },
+    },
+  },
+  {
+    files: ['vite.config.js'],
+    languageOptions: {
+      globals: {
+        process: 'readonly',
       },
     },
   },

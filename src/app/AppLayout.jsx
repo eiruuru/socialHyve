@@ -262,66 +262,64 @@ export function AppLayout() {
     ? formatRoleLabel(membership.roleLabel)
     : null;
 
+  const shellPadding = 'px-3 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top,0px))]';
+
   return (
     <NotificationsProvider>
       <PendingClientInviteNotifier />
       <div
         className={cn(
-          'flex min-h-[100dvh] flex-col bg-paper',
+          'flex min-h-[100dvh] flex-col gap-3 bg-paper',
           standalone && 'standalone-app',
           showSidebar
-            ? 'box-border h-dvh gap-3 p-3 pt-safe'
-            : isMobile && 'pb-[calc(4rem+env(safe-area-inset-bottom,0px))]',
+            ? cn('box-border h-dvh', shellPadding)
+            : cn(
+                shellPadding,
+                isMobile && 'pb-[calc(4rem+env(safe-area-inset-bottom,0px))]',
+              ),
         )}
       >
-        <div className={cn('shrink-0', !showSidebar && 'px-3 pt-safe pt-3')}>
-          <header
-            className={cn(
-              'app-chrome-panel flex h-14 shrink-0 items-center justify-between gap-3 px-4 sm:px-5',
-              !showSidebar && 'sticky top-3 z-40',
-            )}
-          >
-            <div className="flex min-w-0 items-center gap-2">
-              <Logo variant="dark" />
-            </div>
-            <div className="flex min-w-0 items-center gap-1 sm:gap-2">
-              {showHeaderUtilityNav ? (
-                <>
-                  <div className="flex items-center gap-0.5">
-                    {showClientSwitcher ? <HeaderClientSwitcher iconOnly /> : null}
-                    <HeaderNavIcon
-                      to={settingsNavItem.to}
-                      label={settingsNavItem.label}
-                      icon={settingsNavItem.icon}
-                    />
-                    <HeaderNavIcon
-                      to={helpNavItem.to}
-                      label={helpNavItem.label}
-                      icon={helpNavItem.icon}
-                    />
-                  </div>
-                  <div
-                    className="mx-1 h-6 w-px shrink-0 bg-sidebar-border/80"
-                    role="separator"
-                    aria-orientation="vertical"
+        <header className="app-chrome-panel flex h-14 shrink-0 items-center justify-between gap-3 px-4 sm:px-5">
+          <div className="flex min-w-0 items-center gap-2">
+            <Logo variant="dark" />
+          </div>
+          <div className="flex min-w-0 items-center gap-1 sm:gap-2">
+            {showHeaderUtilityNav ? (
+              <>
+                <div className="flex items-center gap-0.5">
+                  {showClientSwitcher ? <HeaderClientSwitcher iconOnly /> : null}
+                  <HeaderNavIcon
+                    to={settingsNavItem.to}
+                    label={settingsNavItem.label}
+                    icon={settingsNavItem.icon}
                   />
-                </>
-              ) : null}
-              {showClientSwitcher && isMobile ? <HeaderClientSwitcher /> : null}
-              <NotificationBell variant="icon" />
-              <button
-                type="button"
-                onClick={logout}
-                className="flex min-h-11 shrink-0 items-center gap-2 rounded-hyve-sm px-3 py-2 text-sm text-neutral-200 transition-colors hover:bg-sidebar-accent hover:text-white"
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">Sign out</span>
-              </button>
-            </div>
-          </header>
-        </div>
+                  <HeaderNavIcon
+                    to={helpNavItem.to}
+                    label={helpNavItem.label}
+                    icon={helpNavItem.icon}
+                  />
+                </div>
+                <div
+                  className="mx-1 h-6 w-px shrink-0 bg-sidebar-border/80"
+                  role="separator"
+                  aria-orientation="vertical"
+                />
+              </>
+            ) : null}
+            {showClientSwitcher && isMobile ? <HeaderClientSwitcher /> : null}
+            <NotificationBell variant="icon" />
+            <button
+              type="button"
+              onClick={logout}
+              className="flex min-h-11 shrink-0 items-center gap-2 rounded-hyve-sm px-3 py-2 text-sm text-neutral-200 transition-colors hover:bg-sidebar-accent hover:text-white"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline">Sign out</span>
+            </button>
+          </div>
+        </header>
 
-        <div className={cn('flex min-h-0 flex-1', showSidebar && 'gap-3')}>
+        <div className={cn('flex min-h-0 flex-1 gap-3')}>
           {showSidebar ? (
             <aside
               className={cn(
@@ -342,7 +340,7 @@ export function AppLayout() {
             </aside>
           ) : null}
 
-          <main className={cn('min-w-0 flex-1 bg-paper', showSidebar && 'min-h-0 overflow-y-auto')}>
+          <main className="app-content-panel min-h-0 min-w-0 flex-1 overflow-y-auto">
             <div
               className={cn(
                 'mx-auto',

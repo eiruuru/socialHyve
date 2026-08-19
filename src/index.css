@@ -122,6 +122,11 @@
       0 12px 40px rgba(0, 0, 0, 0.28),
       0 2px 8px rgba(0, 0, 0, 0.16);
   }
+
+  .app-content-panel {
+    @apply rounded-hyve-lg border border-neutral-200 bg-paper;
+    box-shadow: var(--shadow-sm);
+  }
 }
 
 @media (display-mode: standalone) {

@@ -42,7 +42,7 @@ import {
 import { FineTunePanel } from '@/features/posts/composer/FineTunePanel';
 import { PlatformPreviewTabs } from '@/features/posts/previews/PlatformPreviewTabs';
 import { MAX_CAROUSEL_ITEMS } from '@/features/posts/MediaStrip';
-import { buildScheduleReturnPath, openPostDetail } from '@/features/posts/postNavUtils';
+import { buildScheduleReturnPath, buildPostDetailPath } from '@/features/posts/postNavUtils';
 import {
   getEffectiveCaption,
   IG_CAPTION_LIMIT,

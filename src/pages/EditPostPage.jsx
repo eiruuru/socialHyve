@@ -1,10 +1,11 @@
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { DocumentMeta } from '@/components/DocumentMeta';
 import { PAGE_DESCRIPTIONS } from '@/lib/pageMeta';
 import { PostComposer } from '@/features/posts/PostComposer';
 import { PostNavigation } from '@/features/posts/PostNavigation';
 import { usePostNavigation } from '@/features/posts/usePostNavigation';
-import { openPostDetail } from '@/features/posts/postNavUtils';
+import { buildPostDetailPath } from '@/features/posts/postNavUtils';
+import { prepareForRouteChange } from '@/lib/clearModalLocks';
 import { Button } from '@/components/ui/button';
 
 export default function EditPostPage() {
@@ -20,9 +21,14 @@ export default function EditPostPage() {
             variant="ghost"
             size="sm"
             className="mb-2 -ml-2"
-            onClick={() => openPostDetail(id)}
+            asChild
           >
-            ← Back to post
+            <Link
+              to={buildPostDetailPath(id, postNav.navSearch)}
+              onClick={() => prepareForRouteChange()}
+            >
+              ← Back to post
+            </Link>
           </Button>
           <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Edit</p>
           <h2 className="font-display text-2xl font-bold">Edit Post</h2>

@@ -46,6 +46,13 @@ export function buildPostDetailPath(postId, navSearch = '') {
   return `/app/posts/${postId}${navSearch}`;
 }
 
+export function isPostEditPath(pathname, postId) {
+  if (!postId) return false;
+  const normalized = pathname.replace(/\/+$/, '');
+  return normalized === `/app/posts/${postId}/edit`
+    || normalized.startsWith(`/app/posts/${postId}/edit/`);
+}
+
 /** Full reload — reliable when nested SPA routes desync detail vs edit. */
 export function openPostDetail(postId, navSearch = '') {
   prepareForRouteChange();

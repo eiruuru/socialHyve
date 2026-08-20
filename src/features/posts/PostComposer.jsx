@@ -139,6 +139,24 @@ export function PostComposer({ editPostId = null }) {
   const [approvalStatus, setApprovalStatus] = useState('draft');
 
   useEffect(() => {
+    if (!isEditMode) return;
+    hydratedRef.current = false;
+    accountsInitializedRef.current = false;
+    igManuallySetRef.current = false;
+    originalMediaIdsRef.current = [];
+    trackedStoragePathsRef.current = new Set();
+    setDraftPostId(editPostId);
+    setInternalName('');
+    setLabel('');
+    setCaption('');
+    setFirstComment('');
+    setPlatformOverrides({});
+    setMedia([]);
+    setScheduledAt('');
+    setApprovalStatus('draft');
+  }, [editPostId, isEditMode]);
+
+  useEffect(() => {
     if (isEditMode) return;
     setScheduleTimezone(resolvedDefaultTimezone);
   }, [activeClient?.id, activeClient?.default_timezone, workspaceTimezone, isEditMode, resolvedDefaultTimezone]);

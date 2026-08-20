@@ -397,6 +397,7 @@ export default function PostDetailPage() {
         onOpenChange={(nextOpen) => {
           setDuplicateDialogOpen(nextOpen);
           if (!nextOpen) {
+            clearModalLocks();
             window.setTimeout(() => setDuplicateResult(null), 300);
           }
         }}

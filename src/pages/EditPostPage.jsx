@@ -30,7 +30,7 @@ export default function EditPostPage() {
           className="flex items-center gap-1 pt-1"
         />
       </div>
-      <PostComposer editPostId={id} />
+      <PostComposer key={id} editPostId={id} />
     </div>
   );
 }

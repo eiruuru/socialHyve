@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   Dialog,
   DialogContent,
@@ -8,26 +8,23 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { clearModalLocks } from '@/lib/clearModalLocks';
 import { formatScheduledLabel } from '@/lib/scheduleTime';
 
 export function DuplicatePostSuccessDialog({ post, open, onOpenChange }) {
-  const navigate = useNavigate();
-
   if (!open && !post) return null;
 
   const scheduleLabel = post?.scheduled_at
     ? formatScheduledLabel(post.scheduled_at, post.schedule_timezone)
     : null;
 
-  const handleOpenCopy = () => {
-    if (!post?.id) return;
-    const targetId = post.id;
+  const handleOpenCopyClick = () => {
+    clearModalLocks();
     onOpenChange(false);
-    navigate(`/app/posts/${targetId}/edit`);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
       {post ? (
         <DialogContent>
           <DialogHeader>
@@ -42,8 +39,13 @@ export function DuplicatePostSuccessDialog({ post, open, onOpenChange }) {
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Close
             </Button>
-            <Button onClick={handleOpenCopy}>
-              Open copy
+            <Button asChild>
+              <Link
+                to={`/app/posts/${post.id}/edit`}
+                onClick={handleOpenCopyClick}
+              >
+                Open copy
+              </Link>
             </Button>
           </DialogFooter>
         </DialogContent>

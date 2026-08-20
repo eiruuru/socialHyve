@@ -5,6 +5,8 @@ import {
   buildDuplicateMediaRows,
   duplicateInternalName,
 } from '../src/lib/postDuplicate.js';
+import { validatePost } from '../src/features/posts/postValidation.js';
+import { validateFineTune } from '../src/features/posts/platformOverrides.js';
 
 test('buildDuplicatePayload preserves schedule and resets draft state', () => {
   const source = {
@@ -103,4 +105,59 @@ test('buildDuplicateMediaRows skips archived media and preserves order', () => {
   assert.equal(rows[0].source, 'canva');
   assert.equal(rows[0].canva_design_id, 'd-1');
   assert.equal(rows[1].storage_path, 'c.jpg');
+});
+
+test('validatePost allows Instagram draft without media when requireInstagramMedia is false', () => {
+  const errors = validatePost({
+    caption: 'Hello',
+    media: [],
+    publishInstagram: true,
+    publishFacebook: false,
+    requireInstagramMedia: false,
+  });
+
+  assert.deepEqual(errors, []);
+});
+
+test('validatePost requires Instagram media for publish when requireInstagramMedia is true', () => {
+  const errors = validatePost({
+    caption: 'Hello',
+    media: [],
+    publishInstagram: true,
+    publishFacebook: false,
+    requireInstagramMedia: true,
+  });
+
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /Instagram requires at least one image or video/);
+});
+
+test('validateFineTune skips Instagram media check for drafts', () => {
+  const { errors } = validateFineTune({
+    caption: 'Hello',
+    media: [],
+    platformOverrides: {},
+    publishFacebook: false,
+    publishInstagram: true,
+    scheduledAt: null,
+    firstComment: '',
+    requireInstagramMedia: false,
+  });
+
+  assert.equal(errors.some((e) => /Instagram requires at least one image or video/.test(e)), false);
+});
+
+test('validateFineTune requires Instagram media for schedule/publish', () => {
+  const { errors } = validateFineTune({
+    caption: 'Hello',
+    media: [],
+    platformOverrides: {},
+    publishFacebook: false,
+    publishInstagram: true,
+    scheduledAt: null,
+    firstComment: '',
+    requireInstagramMedia: true,
+  });
+
+  assert.equal(errors.some((e) => /Instagram requires at least one image or video/.test(e)), true);
 });

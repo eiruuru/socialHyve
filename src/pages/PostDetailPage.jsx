@@ -1,5 +1,5 @@
-import { useRef, useState, useEffect, useCallback } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { useRef, useState, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDocumentMeta } from '@/components/DocumentMeta';
 import { PAGE_DESCRIPTIONS, truncateForTitle } from '@/lib/pageMeta';
@@ -25,7 +25,7 @@ import { normalizeMediaList } from '@/features/posts/previews/mediaUtils';
 import { PostStatusBadges, canTransitionApproval } from '@/features/queue/postStatus';
 import { CommentThread } from '@/features/queue/CommentThread';
 import { PostActivityCard } from '@/features/posts/PostActivityCard';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { IconTooltip } from '@/components/ui/IconTooltip';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,8 +42,7 @@ import { hasCreativesQaAccess } from '@/lib/clientRoles';
 import { getEffectivePublishStatus } from '@/lib/publishStatus';
 import { PostSchedulePanel } from '@/features/review/PostSchedulePanel';
 import { DEVICE_TIERS, resolveTierAppPath, useDeviceTier } from '@/lib/deviceTier';
-import { recoverStaleDialogLayers, prepareForRouteChange, recoverUiAfterAsyncAction } from '@/lib/clearModalLocks';
-import { cn } from '@/lib/utils';
+import { recoverUiAfterAsyncAction } from '@/lib/clearModalLocks';
 
 const APPROVAL_OPTIONS = [
   { value: 'draft', label: 'Draft' },
@@ -114,12 +113,7 @@ export default function PostDetailPage() {
 
   useFocusedPostPolling(id, { enabled: !!id });
 
-  useEffect(() => {
-    recoverUiAfterAsyncAction();
-  }, [id]);
-
   const openPostEditor = useCallback((postId, navSearch = postNav.navSearch) => {
-    prepareForRouteChange();
     void queryClient.prefetchQuery({
       queryKey: ['post', postId],
       queryFn: () => getPost(postId),
@@ -128,7 +122,6 @@ export default function PostDetailPage() {
   }, [navigate, postNav.navSearch, queryClient]);
 
   const goBack = useCallback(() => {
-    prepareForRouteChange();
     navigate(listPath);
   }, [listPath, navigate]);
 
@@ -215,10 +208,7 @@ export default function PostDetailPage() {
         duration: 8000,
         actions: [{
           label: 'Open copy',
-          onClick: () => {
-            prepareForRouteChange();
-            openPostEditor(copy.id, '');
-          },
+          onClick: () => openPostEditor(copy.id, ''),
         }],
       });
     } catch (err) {
@@ -397,14 +387,14 @@ export default function PostDetailPage() {
               title={canSchedule && readOnly ? 'Schedule post' : 'Edit post'}
               description={canSchedule && readOnly ? 'Pick a schedule time and queue for publishing' : 'Open in the composer to edit'}
             >
-              <Link
-                to={`/app/posts/${id}/edit${postNav.navSearch}`}
+              <Button
+                size="icon"
+                variant="outline"
                 aria-label={canSchedule && readOnly ? 'Schedule post' : 'Edit post'}
-                className={cn(buttonVariants({ size: 'icon', variant: 'outline' }))}
-                onClick={() => prepareForRouteChange()}
+                onClick={() => openPostEditor(id)}
               >
                 <Pencil className="h-4 w-4" />
-              </Link>
+              </Button>
             </IconTooltip>
           )}
           {!readOnly && (

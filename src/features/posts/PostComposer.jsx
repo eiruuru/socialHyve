@@ -21,8 +21,8 @@ import { hasCreativesQaAccess } from '@/lib/clientRoles';
 import { getOrganization, listWorkflowApproverUserIds } from '@/lib/organization';
 import { notifyWorkflowEvent } from '@/lib/profile';
 import { showToast } from '@/lib/toast';
-import { prepareForRouteChange } from '@/lib/clearModalLocks';
 import { getEffectivePublishStatus, resolvePublishStatus } from '@/lib/publishStatus';
+import { validatePost } from '@/features/posts/postValidation';
 import { findLinkedInstagram, pickPrimaryAccount } from '@/lib/socialAccounts';
 import {
   formatScheduledLabel,
@@ -54,23 +54,6 @@ import {
   isSimplifiedComposerTier,
   useDeviceTier,
 } from '@/lib/deviceTier';
-
-function validatePost({ caption, media, publishInstagram, publishFacebook }) {
-  const errors = [];
-  if (publishInstagram && !media.length) {
-    errors.push('Instagram requires at least one image or video.');
-  }
-  if (media.length > MAX_CAROUSEL_ITEMS) {
-    errors.push(`Maximum ${MAX_CAROUSEL_ITEMS} media items per carousel.`);
-  }
-  if (publishInstagram && caption.length > IG_CAPTION_LIMIT) {
-    errors.push(`Instagram caption exceeds ${IG_CAPTION_LIMIT} characters.`);
-  }
-  if (publishFacebook && caption.length > FB_CAPTION_LIMIT) {
-    errors.push(`Facebook caption exceeds ${FB_CAPTION_LIMIT} characters.`);
-  }
-  return errors;
-}
 
 export function PostComposer({ editPostId = null }) {
   const navigate = useNavigate();
@@ -157,7 +140,6 @@ export function PostComposer({ editPostId = null }) {
     setMedia([]);
     setScheduledAt('');
     setApprovalStatus('draft');
-    prepareForRouteChange();
   }, [editPostId, isEditMode]);
 
   useEffect(() => {
@@ -256,7 +238,44 @@ export function PostComposer({ editPostId = null }) {
   const scheduledAtUtc = scheduledAt
     ? zonedLocalToUtc(scheduledAt, scheduleTimezone)
     : null;
-  const validationErrors = validatePost({ caption, media, publishInstagram, publishFacebook });
+  const draftValidationErrors = [
+    ...validatePost({
+      caption,
+      media,
+      publishInstagram,
+      publishFacebook,
+      requireInstagramMedia: false,
+    }),
+    ...validateFineTune({
+      caption,
+      media,
+      platformOverrides,
+      publishFacebook,
+      publishInstagram,
+      scheduledAt: scheduledAtUtc || scheduledAt,
+      firstComment,
+      requireInstagramMedia: false,
+    }).errors,
+  ];
+  const publishValidationErrors = [
+    ...validatePost({
+      caption,
+      media,
+      publishInstagram,
+      publishFacebook,
+      requireInstagramMedia: true,
+    }),
+    ...validateFineTune({
+      caption,
+      media,
+      platformOverrides,
+      publishFacebook,
+      publishInstagram,
+      scheduledAt: scheduledAtUtc || scheduledAt,
+      firstComment,
+      requireInstagramMedia: true,
+    }).errors,
+  ];
   const fineTuneValidation = validateFineTune({
     caption,
     media,
@@ -265,8 +284,8 @@ export function PostComposer({ editPostId = null }) {
     publishInstagram,
     scheduledAt: scheduledAtUtc || scheduledAt,
     firstComment,
+    requireInstagramMedia: true,
   });
-  const allValidationErrors = [...validationErrors, ...fineTuneValidation.errors];
   const captionHint = publishInstagram
     ? `${caption.length}/${IG_CAPTION_LIMIT} (Instagram)`
     : `${caption.length}/${FB_CAPTION_LIMIT} (Facebook)`;
@@ -372,13 +391,13 @@ export function PostComposer({ editPostId = null }) {
     return { id: post.id, created: true };
   };
 
-  const runWithValidation = async (action) => {
+  const runWithValidation = async (action, errors) => {
     if (isPublished) {
       showToast({ title: 'Published posts cannot be edited', variant: 'error' });
       return;
     }
-    if (allValidationErrors.length) {
-      showToast({ title: 'Fix validation errors', description: allValidationErrors[0], variant: 'error' });
+    if (errors.length) {
+      showToast({ title: 'Fix validation errors', description: errors[0], variant: 'error' });
       return;
     }
     setSaving(true);
@@ -401,7 +420,7 @@ export function PostComposer({ editPostId = null }) {
         variant: 'success',
       });
       navigate(`/app/posts/${id}`);
-    });
+    }, draftValidationErrors);
 
   const handleSaveChanges = () =>
     runWithValidation(async () => {
@@ -428,7 +447,7 @@ export function PostComposer({ editPostId = null }) {
         title: created ? 'Post created' : 'Changes saved',
         variant: 'success',
       });
-    });
+    }, draftValidationErrors);
 
   const handleSchedule = () =>
     runWithValidation(async () => {
@@ -467,7 +486,7 @@ export function PostComposer({ editPostId = null }) {
         month: navMonth,
         tier,
       }));
-    });
+    }, publishValidationErrors);
 
   const handlePublishNow = async () => {
     if (isPublished) {
@@ -478,8 +497,8 @@ export function PostComposer({ editPostId = null }) {
       showToast({ title: 'Approval required', description: 'Submit for review and get approval before publishing.', variant: 'info' });
       return;
     }
-    if (allValidationErrors.length) {
-      showToast({ title: 'Fix validation errors', description: allValidationErrors[0], variant: 'error' });
+    if (publishValidationErrors.length) {
+      showToast({ title: 'Fix validation errors', description: publishValidationErrors[0], variant: 'error' });
       return;
     }
 
@@ -561,7 +580,7 @@ export function PostComposer({ editPostId = null }) {
         }))
         .catch(() => {});
       navigate('/app/queue');
-    });
+    }, draftValidationErrors);
 
   const fbCaption = getEffectiveCaption(caption, platformOverrides, 'facebook');
   const igCaption = getEffectiveCaption(caption, platformOverrides, 'instagram');
@@ -634,7 +653,7 @@ export function PostComposer({ editPostId = null }) {
           workspaceTimezone={workspaceTimezone}
           media={media}
           setMedia={handleMediaChange}
-          validationErrors={validationErrors}
+          validationErrors={draftValidationErrors}
           simplified={simplifiedComposer}
           showCanvaImport={showCanvaImport}
         />

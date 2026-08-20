@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { prepareForRouteChange, recoverUiAfterAsyncAction } from '@/lib/clearModalLocks';
+import { recoverUiAfterNavigation } from '@/lib/clearModalLocks';
 import { ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useMembership } from '@/lib/membershipContext';
@@ -243,8 +243,8 @@ export function AppLayout() {
   const { collapsed: sidebarCollapsed, toggleCollapsed: toggleSidebarCollapsed } = useSidebarCollapsed();
   useNavigateOnClientSwitch();
 
-  useEffect(() => {
-    recoverUiAfterAsyncAction();
+  useLayoutEffect(() => {
+    recoverUiAfterNavigation();
   }, [location.pathname]);
 
   const isWide = location.pathname.includes('/calendar')
@@ -353,7 +353,7 @@ export function AppLayout() {
                 isWide && !isMobile ? 'max-w-none' : !isMobile && !isWide && 'lg:max-w-6xl',
               )}
             >
-              <Outlet />
+              <Outlet key={location.pathname} />
             </div>
           </main>
         </div>

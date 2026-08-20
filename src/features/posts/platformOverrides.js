@@ -1,4 +1,4 @@
-import { isVideo } from '@/features/posts/previews/mediaUtils';
+import { isVideo } from './previews/mediaUtils.js';
 
 export const IG_CAPTION_LIMIT = 2200;
 export const FB_CAPTION_LIMIT = 63206;
@@ -128,6 +128,7 @@ export function validateFineTune({
   publishInstagram = true,
   scheduledAt,
   firstComment = '',
+  requireInstagramMedia = true,
 }) {
   const overrides = normalizePlatformOverrides(platformOverrides);
   const errors = [];
@@ -170,7 +171,7 @@ export function validateFineTune({
       platformErrors.push('Facebook carousel requires a destination link URL.');
     }
 
-    if (platform === 'instagram' && mediaCount === 0) {
+    if (requireInstagramMedia && platform === 'instagram' && mediaCount === 0) {
       platformErrors.push('Instagram requires at least one image or video.');
     }
 

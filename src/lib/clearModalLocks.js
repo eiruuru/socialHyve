@@ -68,6 +68,16 @@ export function prepareForRouteChange() {
 
 /** Run recovery after async UI flows (duplicate, toast actions, etc.). */
 export function recoverUiAfterAsyncAction() {
-  prepareForRouteChange();
-  window.requestAnimationFrame(() => prepareForRouteChange());
+  clearModalLocks();
+  window.requestAnimationFrame(() => {
+    recoverStaleDialogLayers({ force: true });
+  });
+}
+
+/** Run recovery after navigation completes — style unlock first, portal removal deferred. */
+export function recoverUiAfterNavigation() {
+  clearModalLocks();
+  window.requestAnimationFrame(() => {
+    recoverStaleDialogLayers({ force: true });
+  });
 }

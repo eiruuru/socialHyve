@@ -146,7 +146,7 @@ export function PostQueueCard({
         <Button
           size="sm"
           variant="outline"
-          onClick={() => openPostEdit(post.id, navSearch)}
+          onClick={() => openPostEdit(post.id)}
         >
           Edit
         </Button>

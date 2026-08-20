@@ -43,6 +43,8 @@ import { getEffectivePublishStatus } from '@/lib/publishStatus';
 import { PostSchedulePanel } from '@/features/review/PostSchedulePanel';
 import { DEVICE_TIERS, resolveTierAppPath, useDeviceTier } from '@/lib/deviceTier';
 import { openPostEdit } from '@/features/posts/postNavUtils';
+import { isPostEditPath, useBrowserPathname } from '@/features/posts/postRouteUtils';
+import EditPostPage from '@/pages/EditPostPage';
 
 const APPROVAL_OPTIONS = [
   { value: 'draft', label: 'Draft' },
@@ -110,6 +112,7 @@ export default function PostDetailPage() {
   });
 
   const postNav = usePostNavigation(id);
+  const browserPathname = useBrowserPathname();
 
   useFocusedPostPolling(id, { enabled: !!id });
 
@@ -121,6 +124,10 @@ export default function PostDetailPage() {
     title: post ? truncateForTitle(post.internal_name || 'Post detail') : 'Post detail',
     description: PAGE_DESCRIPTIONS.postDetail,
   });
+
+  if (isPostEditPath(browserPathname, id)) {
+    return <EditPostPage />;
+  }
 
   if (isLoading) return <p className="text-muted-foreground">Loading…</p>;
   if (!post) return <p className="text-destructive">Post not found</p>;
@@ -385,7 +392,7 @@ export default function PostDetailPage() {
                 variant="outline"
                 type="button"
                 aria-label={canSchedule && readOnly ? 'Schedule post' : 'Edit post'}
-                onClick={() => openPostEdit(id, postNav.navSearch)}
+                onClick={() => openPostEdit(id)}
               >
                 <Pencil className="h-4 w-4" />
               </Button>

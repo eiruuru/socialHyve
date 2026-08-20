@@ -20,7 +20,7 @@ export default function EditPostPage() {
             variant="ghost"
             size="sm"
             className="mb-2 -ml-2"
-            onClick={() => openPostDetail(id, postNav.navSearch)}
+            onClick={() => openPostDetail(id)}
           >
             ← Back to post
           </Button>

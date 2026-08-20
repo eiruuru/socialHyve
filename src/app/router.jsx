@@ -24,8 +24,7 @@ const CalendarPage = lazyWithRetry(() => import('@/pages/CalendarPage'));
 const QueuePage = lazyWithRetry(() => import('@/pages/QueuePage'));
 const PostComposerPage = lazyWithRetry(() => import('@/pages/PostComposerPage'));
 const PostImportPage = lazyWithRetry(() => import('@/pages/PostImportPage'));
-const EditPostPage = lazyWithRetry(() => import('@/pages/EditPostPage'));
-const PostDetailPage = lazyWithRetry(() => import('@/pages/PostDetailPage'));
+const PostPageSwitch = lazyWithRetry(() => import('@/app/PostPageSwitch').then((m) => ({ default: m.PostPageSwitch })));
 const InteractionsPage = lazyWithRetry(() => import('@/pages/InteractionsPage'));
 const MetaConnectionPage = lazyWithRetry(() => import('@/pages/MetaConnectionPage'));
 const ConnectedAccountsPage = lazyWithRetry(() => import('@/pages/ConnectedAccountsPage'));
@@ -104,8 +103,7 @@ export const router = createBrowserRouter([
               { path: 'interactions', element: guardedElement(InteractionsPage) },
               { path: 'posts/new', element: lazyElement(PostComposerPage) },
               { path: 'posts/import', element: guardedElement(PostImportPage) },
-              { path: 'posts/:id/edit', element: lazyElement(EditPostPage) },
-              { path: 'posts/:id', element: lazyElement(PostDetailPage) },
+              { path: 'posts/:id/*', element: lazyElement(PostPageSwitch) },
               { path: 'clients', element: guardedElement(ClientsPage) },
               { path: 'clients/:clientId/members', element: guardedElement(ClientMembersPage) },
               { path: 'client/:clientId/review', element: lazyElement(ClientReviewPage) },

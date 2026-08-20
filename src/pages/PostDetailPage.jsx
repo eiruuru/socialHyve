@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDocumentMeta } from '@/components/DocumentMeta';
 import { PAGE_DESCRIPTIONS, truncateForTitle } from '@/lib/pageMeta';
@@ -42,9 +42,10 @@ import { hasCreativesQaAccess } from '@/lib/clientRoles';
 import { getEffectivePublishStatus } from '@/lib/publishStatus';
 import { PostSchedulePanel } from '@/features/review/PostSchedulePanel';
 import { DEVICE_TIERS, resolveTierAppPath, useDeviceTier } from '@/lib/deviceTier';
-import { buildPostEditPath, openPostEdit } from '@/features/posts/postNavUtils';
+import { buildPostEditPath, isPostEditRoute, openPostEdit } from '@/features/posts/postNavUtils';
 import { prepareForRouteChange } from '@/lib/clearModalLocks';
 import { cn } from '@/lib/utils';
+import EditPostPage from '@/pages/EditPostPage';
 
 const APPROVAL_OPTIONS = [
   { value: 'draft', label: 'Draft' },
@@ -75,6 +76,7 @@ const PUBLISH_STATE_HINTS = {
 export default function PostDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const tier = useDeviceTier();
   const listPath = resolveTierAppPath('/app/calendar', tier);
   const backLabel = tier === DEVICE_TIERS.MOBILE ? 'Back to queue' : 'Back to calendar';
@@ -123,6 +125,10 @@ export default function PostDetailPage() {
     title: post ? truncateForTitle(post.internal_name || 'Post detail') : 'Post detail',
     description: PAGE_DESCRIPTIONS.postDetail,
   });
+
+  if (isPostEditRoute(location.pathname, id)) {
+    return <EditPostPage />;
+  }
 
   if (isLoading) return <p className="text-muted-foreground">Loading…</p>;
   if (!post) return <p className="text-destructive">Post not found</p>;

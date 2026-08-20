@@ -38,6 +38,13 @@ export function buildPostNavSearch({ nav, tab, month } = {}) {
   return qs ? `?${qs}` : '';
 }
 
+export function isPostEditRoute(pathname, postId) {
+  if (!pathname || !postId) return false;
+  const normalized = pathname.replace(/\/+$/, '');
+  return normalized === `/app/posts/${postId}/edit`
+    || normalized.startsWith(`/app/posts/${postId}/edit/`);
+}
+
 export function buildPostEditPath(postId, navSearch = '') {
   return `/app/posts/${postId}/edit${navSearch}`;
 }

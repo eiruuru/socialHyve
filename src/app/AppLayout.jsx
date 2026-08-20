@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { clearModalLocks } from '@/lib/clearModalLocks';
+import { recoverStaleDialogLayers } from '@/lib/clearModalLocks';
 import { ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useMembership } from '@/lib/membershipContext';
@@ -244,7 +244,7 @@ export function AppLayout() {
   useNavigateOnClientSwitch();
 
   useEffect(() => {
-    clearModalLocks();
+    recoverStaleDialogLayers();
   }, [location.pathname]);
 
   const isWide = location.pathname.includes('/calendar')

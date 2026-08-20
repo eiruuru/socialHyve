@@ -32,7 +32,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatScheduledLabel } from '@/lib/scheduleTime';
 import { PostNavigation } from '@/features/posts/PostNavigation';
 import { usePostNavigation } from '@/features/posts/usePostNavigation';
-import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useFocusedPostPolling } from '@/lib/useLivePosts';
 import { showToast } from '@/lib/toast';
 import { notifyWorkflowEvent, getPostAuthorUserIds } from '@/lib/profile';
@@ -43,8 +42,7 @@ import { hasCreativesQaAccess } from '@/lib/clientRoles';
 import { getEffectivePublishStatus } from '@/lib/publishStatus';
 import { PostSchedulePanel } from '@/features/review/PostSchedulePanel';
 import { DEVICE_TIERS, resolveTierAppPath, useDeviceTier } from '@/lib/deviceTier';
-import { clearModalLocks } from '@/lib/clearModalLocks';
-import { DuplicatePostSuccessDialog } from '@/features/posts/DuplicatePostSuccessDialog';
+import { recoverStaleDialogLayers } from '@/lib/clearModalLocks';
 
 const APPROVAL_OPTIONS = [
   { value: 'draft', label: 'Draft' },
@@ -80,12 +78,8 @@ export default function PostDetailPage() {
   const backLabel = tier === DEVICE_TIERS.MOBILE ? 'Back to queue' : 'Back to calendar';
   const backDescription = tier === DEVICE_TIERS.MOBILE ? 'Return to the approval queue' : 'Return to the content calendar';
   const queryClient = useQueryClient();
-  const { confirm, dialog: confirmDialog } = useConfirm();
   const [duplicating, setDuplicating] = useState(false);
-  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
-  const [duplicateResult, setDuplicateResult] = useState(null);
   const duplicateLockRef = useRef(false);
-  const pendingCopyNavRef = useRef(null);
   const membership = useMembership();
   const { activeClient } = useClient();
   const { workspace } = useWorkspace();
@@ -120,16 +114,9 @@ export default function PostDetailPage() {
   useFocusedPostPolling(id, { enabled: !!id });
 
   useEffect(() => {
-    clearModalLocks();
-    return () => clearModalLocks();
+    recoverStaleDialogLayers();
+    return () => recoverStaleDialogLayers();
   }, [id]);
-
-  useEffect(() => {
-    if (duplicateDialogOpen || !pendingCopyNavRef.current) return;
-    const copyId = pendingCopyNavRef.current;
-    pendingCopyNavRef.current = null;
-    navigate(`/app/posts/${copyId}/edit`);
-  }, [duplicateDialogOpen, navigate]);
 
   useDocumentMeta({
     title: post ? truncateForTitle(post.internal_name || 'Post detail') : 'Post detail',
@@ -159,32 +146,39 @@ export default function PostDetailPage() {
     return accountLabel(resolvedIg, 'instagram');
   };
 
-  const handleDelete = async () => {
-    const ok = await confirm({
-      title: 'Delete post?',
+  const handleDelete = () => {
+    showToast({
+      toastId: `delete-post-${id}`,
+      title: 'Delete this post?',
       description: 'This permanently removes the post and cannot be undone.',
-      confirmLabel: 'Delete',
-      variant: 'destructive',
+      variant: 'error',
+      duration: 0,
+      actions: [
+        {
+          label: 'Delete',
+          variant: 'destructive',
+          onClick: async () => {
+            try {
+              await deletePost(id);
+              await queryClient.invalidateQueries({ queryKey: ['posts'] });
+              showToast({
+                title: 'Post deleted',
+                description: 'Returning to the calendar.',
+                variant: 'success',
+              });
+              navigate(listPath);
+            } catch (err) {
+              showToast({
+                title: 'Could not delete post',
+                description: err.message,
+                variant: 'error',
+              });
+            }
+          },
+        },
+        { label: 'Cancel', variant: 'outline' },
+      ],
     });
-    if (!ok) return;
-    try {
-      await deletePost(id);
-      await queryClient.invalidateQueries({ queryKey: ['posts'] });
-      showToast({
-        title: 'Post deleted',
-        description: 'Returning to the calendar.',
-        variant: 'success',
-      });
-      clearModalLocks();
-      navigate(listPath);
-    } catch (err) {
-      clearModalLocks();
-      showToast({
-        title: 'Could not delete post',
-        description: err.message,
-        variant: 'error',
-      });
-    }
   };
 
   const handleDuplicate = async () => {
@@ -194,15 +188,27 @@ export default function PostDetailPage() {
     try {
       const copy = await duplicatePost(id);
       await queryClient.invalidateQueries({ queryKey: ['posts'] });
-      setDuplicateResult(copy);
-      setDuplicateDialogOpen(true);
+      const scheduleLabel = copy.scheduled_at
+        ? formatScheduledLabel(copy.scheduled_at, copy.schedule_timezone)
+        : null;
+      showToast({
+        title: 'Post duplicated',
+        description: scheduleLabel
+          ? `Draft copy created with the same schedule (${scheduleLabel}).`
+          : 'Draft copy created.',
+        variant: 'success',
+        duration: 8000,
+        actions: [{
+          label: 'Open copy',
+          onClick: () => navigate(`/app/posts/${copy.id}/edit`),
+        }],
+      });
     } catch (err) {
       showToast({
         title: 'Could not duplicate post',
         description: err.message,
         variant: 'error',
       });
-      clearModalLocks();
     } finally {
       duplicateLockRef.current = false;
       setDuplicating(false);
@@ -396,23 +402,6 @@ export default function PostDetailPage() {
           </div>
         </div>
       </div>
-
-      {confirmDialog}
-
-      <DuplicatePostSuccessDialog
-        post={duplicateResult}
-        open={duplicateDialogOpen}
-        onOpenChange={(nextOpen) => {
-          setDuplicateDialogOpen(nextOpen);
-          if (!nextOpen) {
-            window.setTimeout(() => setDuplicateResult(null), 300);
-          }
-        }}
-        onOpenCopy={(copyId) => {
-          pendingCopyNavRef.current = copyId;
-          setDuplicateDialogOpen(false);
-        }}
-      />
 
       {post.error_message && (
         <div className="rounded-hyve-md bg-[#FCE4E3] p-4 text-sm text-[#A62E2B]">

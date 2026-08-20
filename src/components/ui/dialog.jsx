@@ -9,8 +9,6 @@ export function DialogRoot({ children, open, onOpenChange, ...props }) {
     if (open === false) clearModalLocks();
   }, [open]);
 
-  useEffect(() => () => clearModalLocks(), []);
-
   const handleOpenChange = (nextOpen) => {
     if (!nextOpen) clearModalLocks();
     onOpenChange?.(nextOpen);

@@ -2,7 +2,7 @@
 
 export function buildDuplicatePayload(source) {
   return {
-    internal_name: source.internal_name ? `${source.internal_name} (copy)` : null,
+    internal_name: source.internal_name ? `(copy) ${source.internal_name}` : null,
     label: source.label,
     caption: source.caption,
     first_comment: source.first_comment,

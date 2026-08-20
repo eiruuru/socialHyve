@@ -24,7 +24,7 @@ test('buildDuplicatePayload preserves schedule and resets draft state', () => {
 
   const payload = buildDuplicatePayload(source);
 
-  assert.equal(payload.internal_name, 'Summer promo (copy)');
+  assert.equal(payload.internal_name, '(copy) Summer promo');
   assert.equal(payload.scheduled_at, source.scheduled_at);
   assert.equal(payload.schedule_timezone, 'Asia/Manila');
   assert.equal(payload.status, 'draft');

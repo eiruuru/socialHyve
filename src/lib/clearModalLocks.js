@@ -10,3 +10,16 @@ export function clearModalLocks() {
   document.documentElement.removeAttribute('data-scroll-locked');
   document.body.removeAttribute('aria-hidden');
 }
+
+/** Clear style locks and remove stale Radix portal layers left after bad unmounts. */
+export function recoverStaleDialogLayers() {
+  clearModalLocks();
+
+  for (const portal of document.body.children) {
+    if (!(portal instanceof HTMLElement)) continue;
+    if (portal.querySelector('[data-state="open"]')) continue;
+    if (portal.querySelector('.fixed.inset-0')) {
+      portal.remove();
+    }
+  }
+}

@@ -412,7 +412,7 @@ export function PostComposer({ editPostId = null }) {
         description: created ? 'Your new draft is ready to edit.' : undefined,
         variant: 'success',
       });
-      openPostDetail(id);
+      navigate(buildPostDetailPath(id));
     }, draftValidationErrors);
 
   const handleSaveChanges = () =>
@@ -545,7 +545,7 @@ export function PostComposer({ editPostId = null }) {
       });
       showToast({ title: 'Post published', variant: 'success' });
       await new Promise((resolve) => { setTimeout(resolve, 400); });
-      openPostDetail(id);
+      navigate(buildPostDetailPath(id));
     } catch (err) {
       showToast({ title: 'Publish failed', description: err.message, variant: 'error' });
     } finally {
@@ -601,7 +601,7 @@ export function PostComposer({ editPostId = null }) {
           variant="outline"
           size="sm"
           className="mt-3"
-          onClick={() => openPostDetail(editPostId)}
+          onClick={() => navigate(buildPostDetailPath(editPostId))}
         >
           Back to post
         </Button>

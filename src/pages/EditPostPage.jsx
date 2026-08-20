@@ -1,23 +1,16 @@
-import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { Link, useParams } from 'react-router-dom';
 import { DocumentMeta } from '@/components/DocumentMeta';
 import { PAGE_DESCRIPTIONS } from '@/lib/pageMeta';
-import { getPost } from '@/lib/posts';
 import { PostComposer } from '@/features/posts/PostComposer';
 import { PostNavigation } from '@/features/posts/PostNavigation';
 import { usePostNavigation } from '@/features/posts/usePostNavigation';
-import { navigateToPostDetail } from '@/features/posts/postNavUtils';
+import { buildPostDetailPath } from '@/features/posts/postNavUtils';
+import { prepareForRouteChange } from '@/lib/clearModalLocks';
 import { Button } from '@/components/ui/button';
 
 export default function EditPostPage() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const postNav = usePostNavigation(id, { mode: 'edit' });
-  const { data: post } = useQuery({
-    queryKey: ['post', id],
-    queryFn: () => getPost(id),
-    enabled: !!id,
-  });
 
   return (
     <div className="space-y-6">
@@ -28,9 +21,14 @@ export default function EditPostPage() {
             variant="ghost"
             size="sm"
             className="mb-2 -ml-2"
-            onClick={() => navigateToPostDetail(navigate, id, postNav.navSearch, { post })}
+            asChild
           >
-            ← Back to post
+            <Link
+              to={buildPostDetailPath(id, postNav.navSearch)}
+              onClick={() => prepareForRouteChange()}
+            >
+              ← Back to post
+            </Link>
           </Button>
           <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Edit</p>
           <h2 className="font-display text-2xl font-bold">Edit Post</h2>

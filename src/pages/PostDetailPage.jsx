@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDocumentMeta } from '@/components/DocumentMeta';
 import { PAGE_DESCRIPTIONS, truncateForTitle } from '@/lib/pageMeta';
@@ -25,7 +25,7 @@ import { normalizeMediaList } from '@/features/posts/previews/mediaUtils';
 import { PostStatusBadges, canTransitionApproval } from '@/features/queue/postStatus';
 import { CommentThread } from '@/features/queue/CommentThread';
 import { PostActivityCard } from '@/features/posts/PostActivityCard';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { IconTooltip } from '@/components/ui/IconTooltip';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,7 +42,9 @@ import { hasCreativesQaAccess } from '@/lib/clientRoles';
 import { getEffectivePublishStatus } from '@/lib/publishStatus';
 import { PostSchedulePanel } from '@/features/review/PostSchedulePanel';
 import { DEVICE_TIERS, resolveTierAppPath, useDeviceTier } from '@/lib/deviceTier';
-import { navigateToPostEdit, openPostEdit } from '@/features/posts/postNavUtils';
+import { buildPostEditPath, openPostEdit } from '@/features/posts/postNavUtils';
+import { prepareForRouteChange } from '@/lib/clearModalLocks';
+import { cn } from '@/lib/utils';
 
 const APPROVAL_OPTIONS = [
   { value: 'draft', label: 'Draft' },
@@ -112,10 +114,6 @@ export default function PostDetailPage() {
   const postNav = usePostNavigation(id);
 
   useFocusedPostPolling(id, { enabled: !!id });
-
-  const goToEdit = useCallback(() => {
-    navigateToPostEdit(navigate, id, postNav.navSearch, { post });
-  }, [id, navigate, post, postNav.navSearch]);
 
   const goBack = useCallback(() => {
     navigate(listPath);
@@ -384,15 +382,14 @@ export default function PostDetailPage() {
               title={canSchedule && readOnly ? 'Schedule post' : 'Edit post'}
               description={canSchedule && readOnly ? 'Pick a schedule time and queue for publishing' : 'Open in the composer to edit'}
             >
-              <Button
-                size="icon"
-                variant="outline"
-                type="button"
+              <Link
+                to={buildPostEditPath(id, postNav.navSearch)}
                 aria-label={canSchedule && readOnly ? 'Schedule post' : 'Edit post'}
-                onClick={goToEdit}
+                className={cn(buttonVariants({ size: 'icon', variant: 'outline' }))}
+                onClick={() => prepareForRouteChange()}
               >
                 <Pencil className="h-4 w-4" />
-              </Button>
+              </Link>
             </IconTooltip>
           )}
           {!readOnly && (

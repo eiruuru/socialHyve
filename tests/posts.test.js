@@ -5,7 +5,7 @@ import {
   buildDuplicateMediaRows,
   duplicateInternalName,
 } from '../src/lib/postDuplicate.js';
-import { validatePost } from '../src/features/posts/postValidation.js';
+import { validatePost, validatePublishPlatforms } from '../src/features/posts/postValidation.js';
 import { validateFineTune } from '../src/features/posts/platformOverrides.js';
 
 test('buildDuplicatePayload preserves schedule and resets draft state', () => {
@@ -59,8 +59,8 @@ test('buildDuplicatePayload handles missing internal name and schedule', () => {
   assert.equal(payload.scheduled_at, null);
   assert.equal(payload.status, 'draft');
   assert.equal(payload.approval_status, 'draft');
-  assert.equal(payload.publish_facebook, true);
-  assert.equal(payload.publish_instagram, true);
+  assert.equal(payload.publish_facebook, false);
+  assert.equal(payload.publish_instagram, false);
 });
 
 test('duplicateInternalName strips existing copy prefix and suffix', () => {
@@ -89,8 +89,8 @@ test('buildDuplicatePayload dedupes already-copied internal names', () => {
   });
 
   assert.equal(payload.internal_name, '(copy) Summer promo');
-  assert.equal(payload.publish_facebook, true);
-  assert.equal(payload.publish_instagram, true);
+  assert.equal(payload.publish_facebook, false);
+  assert.equal(payload.publish_instagram, false);
 });
 
 test('buildDuplicateMediaRows skips archived media and preserves order', () => {
@@ -109,6 +109,21 @@ test('buildDuplicateMediaRows skips archived media and preserves order', () => {
   assert.equal(rows[0].source, 'canva');
   assert.equal(rows[0].canva_design_id, 'd-1');
   assert.equal(rows[1].storage_path, 'c.jpg');
+});
+
+test('validatePublishPlatforms requires at least one platform for schedule or publish', () => {
+  assert.deepEqual(
+    validatePublishPlatforms({ publishInstagram: false, publishFacebook: false }),
+    ['Select at least one platform (Facebook or Instagram) to schedule or publish.'],
+  );
+  assert.deepEqual(
+    validatePublishPlatforms({ publishInstagram: true, publishFacebook: false }),
+    [],
+  );
+  assert.deepEqual(
+    validatePublishPlatforms({ publishInstagram: false, publishFacebook: true }),
+    [],
+  );
 });
 
 test('validatePost allows Instagram draft without media when requireInstagramMedia is false', () => {

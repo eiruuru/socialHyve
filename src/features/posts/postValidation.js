@@ -1,6 +1,13 @@
 import { MAX_CAROUSEL_ITEMS } from './previews/mediaUtils.js';
 import { FB_CAPTION_LIMIT, IG_CAPTION_LIMIT } from './platformOverrides.js';
 
+export function validatePublishPlatforms({ publishInstagram, publishFacebook }) {
+  if (!publishInstagram && !publishFacebook) {
+    return ['Select at least one platform (Facebook or Instagram) to schedule or publish.'];
+  }
+  return [];
+}
+
 export function validatePost({
   caption,
   media,

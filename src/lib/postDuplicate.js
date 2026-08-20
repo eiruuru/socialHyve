@@ -9,24 +9,15 @@ export function duplicateInternalName(name) {
   return stripped ? `(copy) ${stripped}` : '(copy)';
 }
 
-function resolveDuplicatePlatformFlags(source) {
-  const publishFacebook = source.publish_facebook ?? false;
-  const publishInstagram = source.publish_instagram ?? false;
-  if (!publishFacebook && !publishInstagram) {
-    return { publish_facebook: true, publish_instagram: true };
-  }
-  return { publish_facebook: publishFacebook, publish_instagram: publishInstagram };
-}
-
 export function buildDuplicatePayload(source) {
-  const platformFlags = resolveDuplicatePlatformFlags(source);
   return {
     internal_name: source.internal_name ? duplicateInternalName(source.internal_name) : null,
     label: source.label,
     caption: source.caption,
     first_comment: source.first_comment,
     platform_overrides: source.platform_overrides,
-    ...platformFlags,
+    publish_facebook: source.publish_facebook ?? false,
+    publish_instagram: source.publish_instagram ?? false,
     facebook_account_id: source.facebook_account_id,
     instagram_account_id: source.instagram_account_id,
     schedule_timezone: source.schedule_timezone,

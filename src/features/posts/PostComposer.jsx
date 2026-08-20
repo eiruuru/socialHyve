@@ -22,7 +22,7 @@ import { getOrganization, listWorkflowApproverUserIds } from '@/lib/organization
 import { notifyWorkflowEvent } from '@/lib/profile';
 import { showToast } from '@/lib/toast';
 import { getEffectivePublishStatus, resolvePublishStatus } from '@/lib/publishStatus';
-import { validatePost } from '@/features/posts/postValidation';
+import { validatePost, validatePublishPlatforms } from '@/features/posts/postValidation';
 import { findLinkedInstagram, pickPrimaryAccount } from '@/lib/socialAccounts';
 import {
   formatScheduledLabel,
@@ -42,7 +42,7 @@ import {
 import { FineTunePanel } from '@/features/posts/composer/FineTunePanel';
 import { PlatformPreviewTabs } from '@/features/posts/previews/PlatformPreviewTabs';
 import { MAX_CAROUSEL_ITEMS } from '@/features/posts/MediaStrip';
-import { buildScheduleReturnPath, navigateToPostDetail } from '@/features/posts/postNavUtils';
+import { buildScheduleReturnPath, buildPostDetailPath } from '@/features/posts/postNavUtils';
 import {
   getEffectiveCaption,
   IG_CAPTION_LIMIT,
@@ -172,11 +172,8 @@ export function PostComposer({ editPostId = null }) {
     setCaption(existingPost.caption || '');
     setFirstComment(existingPost.first_comment || '');
     setPlatformOverrides(existingPost.platform_overrides || {});
-    const bothPlatformsOff = existingPost.publish_facebook === false
-      && existingPost.publish_instagram === false;
-    const isCopy = existingPost.internal_name?.startsWith('(copy)');
-    setPublishFacebook(bothPlatformsOff && isCopy ? true : (existingPost.publish_facebook ?? true));
-    setPublishInstagram(bothPlatformsOff && isCopy ? true : (existingPost.publish_instagram ?? true));
+    setPublishFacebook(existingPost.publish_facebook ?? false);
+    setPublishInstagram(existingPost.publish_instagram ?? false);
     setFacebookAccountId(existingPost.facebook_account_id || null);
     setInstagramAccountId(existingPost.instagram_account_id || null);
     igManuallySetRef.current = Boolean(existingPost.instagram_account_id);
@@ -272,6 +269,7 @@ export function PostComposer({ editPostId = null }) {
     ...draftFineTuneValidation.errors,
   ];
   const publishValidationErrors = [
+    ...validatePublishPlatforms({ publishInstagram, publishFacebook }),
     ...validatePost({
       caption,
       media,
@@ -414,7 +412,7 @@ export function PostComposer({ editPostId = null }) {
         description: created ? 'Your new draft is ready to edit.' : undefined,
         variant: 'success',
       });
-      navigateToPostDetail(navigate, id, '', { post: existingPost });
+      navigate(buildPostDetailPath(id));
     }, draftValidationErrors);
 
   const handleSaveChanges = () =>
@@ -547,7 +545,7 @@ export function PostComposer({ editPostId = null }) {
       });
       showToast({ title: 'Post published', variant: 'success' });
       await new Promise((resolve) => { setTimeout(resolve, 400); });
-      navigateToPostDetail(navigate, id, '', { post: existingPost });
+      navigate(buildPostDetailPath(id));
     } catch (err) {
       showToast({ title: 'Publish failed', description: err.message, variant: 'error' });
     } finally {
@@ -603,7 +601,7 @@ export function PostComposer({ editPostId = null }) {
           variant="outline"
           size="sm"
           className="mt-3"
-          onClick={() => navigateToPostDetail(navigate, editPostId, '', { post: existingPost })}
+          onClick={() => navigate(buildPostDetailPath(editPostId))}
         >
           Back to post
         </Button>

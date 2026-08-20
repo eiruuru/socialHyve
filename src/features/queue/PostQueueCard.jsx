@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Check, X } from 'lucide-react';
 import { PlatformChip } from '@/components/brand/PlatformChip';
 import { StatusBadge } from '@/components/brand/StatusBadge';
@@ -11,8 +11,7 @@ import { isQueuedToPublish } from '@/lib/publishStatus';
 import { normalizeMediaList, isVideo } from '@/features/posts/previews/mediaUtils';
 import { formatScheduledLabel, resolveScheduleTimezone } from '@/lib/scheduleTime';
 import { cn } from '@/lib/utils';
-import { buildPostEditPath } from '@/features/posts/postNavUtils';
-import { prepareForRouteChange } from '@/lib/clearModalLocks';
+import { openPostEdit } from '@/features/posts/postNavUtils';
 
 function PostThumb({ post, className }) {
   const media = normalizeMediaList(post.post_media || []);
@@ -144,13 +143,12 @@ export function PostQueueCard({
         <Button size="sm" onClick={() => onPublish?.(post.id)}>Publish now</Button>
       )}
       {(allowManageActions || allowScheduleActions) && (
-        <Button size="sm" variant="outline" asChild>
-          <Link
-            to={buildPostEditPath(post.id, navSearch)}
-            onClick={() => prepareForRouteChange()}
-          >
-            Edit
-          </Link>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => openPostEdit(post.id, navSearch)}
+        >
+          Edit
         </Button>
       )}
     </div>

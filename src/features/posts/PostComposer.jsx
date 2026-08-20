@@ -42,7 +42,7 @@ import {
 import { FineTunePanel } from '@/features/posts/composer/FineTunePanel';
 import { PlatformPreviewTabs } from '@/features/posts/previews/PlatformPreviewTabs';
 import { MAX_CAROUSEL_ITEMS } from '@/features/posts/MediaStrip';
-import { buildScheduleReturnPath, buildPostDetailPath } from '@/features/posts/postNavUtils';
+import { buildScheduleReturnPath, openPostDetail } from '@/features/posts/postNavUtils';
 import {
   getEffectiveCaption,
   IG_CAPTION_LIMIT,
@@ -412,7 +412,7 @@ export function PostComposer({ editPostId = null }) {
         description: created ? 'Your new draft is ready to edit.' : undefined,
         variant: 'success',
       });
-      navigate(buildPostDetailPath(id));
+      openPostDetail(id);
     }, draftValidationErrors);
 
   const handleSaveChanges = () =>
@@ -545,7 +545,7 @@ export function PostComposer({ editPostId = null }) {
       });
       showToast({ title: 'Post published', variant: 'success' });
       await new Promise((resolve) => { setTimeout(resolve, 400); });
-      navigate(buildPostDetailPath(id));
+      openPostDetail(id);
     } catch (err) {
       showToast({ title: 'Publish failed', description: err.message, variant: 'error' });
     } finally {
@@ -601,7 +601,7 @@ export function PostComposer({ editPostId = null }) {
           variant="outline"
           size="sm"
           className="mt-3"
-          onClick={() => navigate(buildPostDetailPath(editPostId))}
+          onClick={() => openPostDetail(editPostId)}
         >
           Back to post
         </Button>

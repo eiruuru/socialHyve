@@ -38,13 +38,6 @@ export function buildPostNavSearch({ nav, tab, month } = {}) {
   return qs ? `?${qs}` : '';
 }
 
-export function isPostEditRoute(pathname, postId) {
-  if (!pathname || !postId) return false;
-  const normalized = pathname.replace(/\/+$/, '');
-  return normalized === `/app/posts/${postId}/edit`
-    || normalized.startsWith(`/app/posts/${postId}/edit/`);
-}
-
 export function buildPostEditPath(postId, navSearch = '') {
   return `/app/posts/${postId}/edit${navSearch}`;
 }
@@ -53,7 +46,13 @@ export function buildPostDetailPath(postId, navSearch = '') {
   return `/app/posts/${postId}${navSearch}`;
 }
 
-/** Always reload — used after duplicate success toast. */
+/** Full reload — reliable when nested SPA routes desync detail vs edit. */
+export function openPostDetail(postId, navSearch = '') {
+  prepareForRouteChange();
+  window.location.assign(buildPostDetailPath(postId, navSearch));
+}
+
+/** Full reload — used after duplicate success toast and edit pencil. */
 export function openPostEdit(postId, navSearch = '') {
   prepareForRouteChange();
   window.location.assign(buildPostEditPath(postId, navSearch));

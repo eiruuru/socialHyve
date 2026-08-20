@@ -245,7 +245,7 @@ export function AppLayout() {
 
   useLayoutEffect(() => {
     recoverUiAfterNavigation();
-  }, [location.pathname]);
+  }, [location.key]);
 
   const isWide = location.pathname.includes('/calendar')
     || location.pathname.includes('/interactions');
@@ -353,7 +353,7 @@ export function AppLayout() {
                 isWide && !isMobile ? 'max-w-none' : !isMobile && !isWide && 'lg:max-w-6xl',
               )}
             >
-              <Outlet key={location.pathname} />
+              <Outlet key={location.key} />
             </div>
           </main>
         </div>

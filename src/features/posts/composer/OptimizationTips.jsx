@@ -5,13 +5,14 @@ export function OptimizationTips({
   media,
   publishInstagram,
   scheduledAt,
+  requireInstagramMedia = false,
 }) {
   const tips = [];
 
   if (publishInstagram && caption.length > IG_CAPTION_LIMIT * 0.9) {
     tips.push('Caption is nearing Instagram\'s 2,200 character limit.');
   }
-  if (publishInstagram && media.length === 0) {
+  if (requireInstagramMedia && publishInstagram && media.length === 0) {
     tips.push('Add at least one image or video for Instagram.');
   }
   if (scheduledAt) {

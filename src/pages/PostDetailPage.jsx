@@ -42,7 +42,6 @@ import { hasCreativesQaAccess } from '@/lib/clientRoles';
 import { getEffectivePublishStatus } from '@/lib/publishStatus';
 import { PostSchedulePanel } from '@/features/review/PostSchedulePanel';
 import { DEVICE_TIERS, resolveTierAppPath, useDeviceTier } from '@/lib/deviceTier';
-import { recoverUiAfterAsyncAction } from '@/lib/clearModalLocks';
 
 const APPROVAL_OPTIONS = [
   { value: 'draft', label: 'Draft' },
@@ -118,7 +117,9 @@ export default function PostDetailPage() {
       queryKey: ['post', postId],
       queryFn: () => getPost(postId),
     });
-    navigate(`/app/posts/${postId}/edit${navSearch}`);
+    window.requestAnimationFrame(() => {
+      navigate(`/app/posts/${postId}/edit${navSearch}`);
+    });
   }, [navigate, postNav.navSearch, queryClient]);
 
   const goBack = useCallback(() => {
@@ -220,7 +221,6 @@ export default function PostDetailPage() {
     } finally {
       duplicateLockRef.current = false;
       setDuplicating(false);
-      recoverUiAfterAsyncAction();
     }
   };
 

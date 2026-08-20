@@ -238,45 +238,17 @@ export function PostComposer({ editPostId = null }) {
   const scheduledAtUtc = scheduledAt
     ? zonedLocalToUtc(scheduledAt, scheduleTimezone)
     : null;
-  const draftValidationErrors = [
-    ...validatePost({
-      caption,
-      media,
-      publishInstagram,
-      publishFacebook,
-      requireInstagramMedia: false,
-    }),
-    ...validateFineTune({
-      caption,
-      media,
-      platformOverrides,
-      publishFacebook,
-      publishInstagram,
-      scheduledAt: scheduledAtUtc || scheduledAt,
-      firstComment,
-      requireInstagramMedia: false,
-    }).errors,
-  ];
-  const publishValidationErrors = [
-    ...validatePost({
-      caption,
-      media,
-      publishInstagram,
-      publishFacebook,
-      requireInstagramMedia: true,
-    }),
-    ...validateFineTune({
-      caption,
-      media,
-      platformOverrides,
-      publishFacebook,
-      publishInstagram,
-      scheduledAt: scheduledAtUtc || scheduledAt,
-      firstComment,
-      requireInstagramMedia: true,
-    }).errors,
-  ];
-  const fineTuneValidation = validateFineTune({
+  const draftFineTuneValidation = validateFineTune({
+    caption,
+    media,
+    platformOverrides,
+    publishFacebook,
+    publishInstagram,
+    scheduledAt: scheduledAtUtc || scheduledAt,
+    firstComment,
+    requireInstagramMedia: false,
+  });
+  const publishFineTuneValidation = validateFineTune({
     caption,
     media,
     platformOverrides,
@@ -286,6 +258,26 @@ export function PostComposer({ editPostId = null }) {
     firstComment,
     requireInstagramMedia: true,
   });
+  const draftValidationErrors = [
+    ...validatePost({
+      caption,
+      media,
+      publishInstagram,
+      publishFacebook,
+      requireInstagramMedia: false,
+    }),
+    ...draftFineTuneValidation.errors,
+  ];
+  const publishValidationErrors = [
+    ...validatePost({
+      caption,
+      media,
+      publishInstagram,
+      publishFacebook,
+      requireInstagramMedia: true,
+    }),
+    ...publishFineTuneValidation.errors,
+  ];
   const captionHint = publishInstagram
     ? `${caption.length}/${IG_CAPTION_LIMIT} (Instagram)`
     : `${caption.length}/${FB_CAPTION_LIMIT} (Facebook)`;
@@ -587,10 +579,10 @@ export function PostComposer({ editPostId = null }) {
 
   const fineTuneHints = [];
   if (!simplifiedComposer) {
-    if (publishFacebook && fineTuneValidation.platformStatus.facebook?.errors.length) {
+    if (publishFacebook && draftFineTuneValidation.platformStatus.facebook?.errors.length) {
       fineTuneHints.push('Facebook is incomplete');
     }
-    if (publishInstagram && fineTuneValidation.platformStatus.instagram?.errors.length) {
+    if (publishInstagram && draftFineTuneValidation.platformStatus.instagram?.errors.length) {
       fineTuneHints.push('Instagram is incomplete');
     }
   }

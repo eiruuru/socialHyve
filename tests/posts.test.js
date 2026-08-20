@@ -161,3 +161,29 @@ test('validateFineTune requires Instagram media for schedule/publish', () => {
 
   assert.equal(errors.some((e) => /Instagram requires at least one image or video/.test(e)), true);
 });
+
+test('draft validation allows Instagram enabled with no media', () => {
+  const postErrors = validatePost({
+    caption: 'Hello',
+    media: [],
+    publishInstagram: true,
+    publishFacebook: false,
+    requireInstagramMedia: false,
+  });
+  const { errors: fineTuneErrors } = validateFineTune({
+    caption: 'Hello',
+    media: [],
+    platformOverrides: {},
+    publishFacebook: false,
+    publishInstagram: true,
+    scheduledAt: '2028-09-05T00:00:00.000Z',
+    firstComment: '',
+    requireInstagramMedia: false,
+  });
+  const draftValidationErrors = [...postErrors, ...fineTuneErrors];
+
+  assert.equal(
+    draftValidationErrors.some((e) => /Instagram requires at least one image or video/.test(e)),
+    false,
+  );
+});

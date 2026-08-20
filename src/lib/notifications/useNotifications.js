@@ -14,11 +14,13 @@ import {
   listDerivedReadKeys,
   markNotificationRead,
   markAllNotificationsRead,
+  clearAllPersistedNotifications,
   markDerivedRead,
   markAllDerivedRead,
   isInAppEnabled,
   normalizeNotificationItem,
 } from './notificationStore';
+import { dismissNotificationKeys, getDismissedNotificationKeys } from './dismissedNotifications';
 import { DEFAULT_IN_APP_PREFS } from './notificationTypes';
 
 const INVITE_POLL_MS = 20000;
@@ -120,6 +122,7 @@ export function useNotifications(profile) {
   const membership = useMembership();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [dismissedKeys, setDismissedKeys] = useState(() => getDismissedNotificationKeys());
 
   const prefs = useMemo(
     () => ({ ...DEFAULT_IN_APP_PREFS, ...(profile?.in_app_notification_preferences || {}) }),
@@ -197,11 +200,13 @@ export function useNotifications(profile) {
       }),
     );
 
-    const derived = derivedQuery.data?.items || [];
+    const derived = (derivedQuery.data?.items || []).filter(
+      (item) => !dismissedKeys.has(item.key),
+    );
     const merged = [...persisted, ...derived];
     merged.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     return merged;
-  }, [persistedQuery.data, derivedQuery.data?.items, inAppEnabled]);
+  }, [persistedQuery.data, derivedQuery.data?.items, inAppEnabled, dismissedKeys]);
 
   const unreadCount = useMemo(
     () => items.filter((item) => !item.read).length,
@@ -237,6 +242,17 @@ export function useNotifications(profile) {
     refresh();
   }, [items, refresh]);
 
+  const clearAll = useCallback(async () => {
+    const derivedKeys = items.filter((i) => i.derived).map((i) => i.key);
+    dismissNotificationKeys(derivedKeys);
+    setDismissedKeys(getDismissedNotificationKeys());
+    await Promise.all([
+      clearAllPersistedNotifications(),
+      markAllDerivedRead(derivedKeys),
+    ]);
+    refresh();
+  }, [items, refresh]);
+
   return {
     items,
     unreadCount,
@@ -244,6 +260,7 @@ export function useNotifications(profile) {
     setOpen,
     markRead,
     markAllRead,
+    clearAll,
     isInviteRead,
     refresh,
     loading: persistedQuery.isLoading || derivedQuery.isLoading,

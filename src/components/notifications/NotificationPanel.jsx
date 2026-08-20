@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { CheckCheck, X } from 'lucide-react';
+import { CheckCheck, Trash2, X } from 'lucide-react';
 import { useNotificationsContext } from '@/lib/notifications/NotificationsProvider';
 import { formatRelativeTime } from '@/lib/notifications/notificationTypes';
 import {
@@ -76,6 +76,7 @@ export function NotificationPanel({ onClose }) {
     unreadCount,
     markRead,
     markAllRead,
+    clearAll,
     loading,
   } = useNotificationsContext();
 
@@ -140,6 +141,15 @@ export function NotificationPanel({ onClose }) {
     }
   };
 
+  const handleClearAll = async () => {
+    try {
+      await clearAll();
+      showToast({ title: 'Notifications cleared', variant: 'info' });
+    } catch (err) {
+      showToast({ title: 'Could not clear notifications', description: err.message, variant: 'error' });
+    }
+  };
+
   return (
     <div className="overflow-hidden rounded-hyve-md border border-neutral-200 bg-white shadow-hyve-lg">
       <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-3">
@@ -159,6 +169,17 @@ export function NotificationPanel({ onClose }) {
               aria-label="Mark all as read"
             >
               <CheckCheck className="h-4 w-4" />
+            </button>
+          )}
+          {items.length > 0 && (
+            <button
+              type="button"
+              onClick={handleClearAll}
+              className="rounded p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800"
+              title="Clear all"
+              aria-label="Clear all notifications"
+            >
+              <Trash2 className="h-4 w-4" />
             </button>
           )}
           <button

@@ -135,7 +135,6 @@ export function PostComposer({ editPostId = null }) {
   const [scheduledAt, setScheduledAt] = useState('');
   const [media, setMedia] = useState([]);
   const [saving, setSaving] = useState(false);
-  const [saveNotice, setSaveNotice] = useState(null);
   const [publishProgress, setPublishProgress] = useState(null);
   const [approvalStatus, setApprovalStatus] = useState('draft');
 
@@ -343,12 +342,12 @@ export function PostComposer({ editPostId = null }) {
     if (draftPostId) {
       await updatePost(draftPostId, buildPayload(existingPost?.status || 'draft'));
       await syncMedia(draftPostId, options);
-      return draftPostId;
+      return { id: draftPostId, created: false };
     }
     const post = await createPost(buildPayload('draft', 'draft'));
     await syncMedia(post.id, options);
     setDraftPostId(post.id);
-    return post.id;
+    return { id: post.id, created: true };
   };
 
   const runWithValidation = async (action) => {
@@ -372,7 +371,13 @@ export function PostComposer({ editPostId = null }) {
 
   const handleSaveDraft = () =>
     runWithValidation(async () => {
-      const id = await ensureDraft();
+      const { id, created } = await ensureDraft();
+      await queryClient.invalidateQueries({ queryKey: ['posts'] });
+      showToast({
+        title: created ? 'Post created' : 'Draft saved',
+        description: created ? 'Your new draft is ready to edit.' : undefined,
+        variant: 'success',
+      });
       navigate(`/app/posts/${id}`);
     });
 
@@ -386,7 +391,7 @@ export function PostComposer({ editPostId = null }) {
         });
         return;
       }
-      const id = await ensureDraft();
+      const { id, created } = await ensureDraft();
       if (isEditMode) {
         await logPostActivity(id, 'updated', 'Post content updated');
       }
@@ -397,8 +402,10 @@ export function PostComposer({ editPostId = null }) {
       }
       await queryClient.invalidateQueries({ queryKey: ['post', id] });
       await queryClient.invalidateQueries({ queryKey: ['posts'] });
-      setSaveNotice('Changes saved');
-      setTimeout(() => setSaveNotice(null), 4000);
+      showToast({
+        title: created ? 'Post created' : 'Changes saved',
+        variant: 'success',
+      });
     });
 
   const handleSchedule = () =>
@@ -421,7 +428,7 @@ export function PostComposer({ editPostId = null }) {
         showToast({ title: 'Schedule too soon', description: 'Pick a time at least 10 minutes from now.', variant: 'error' });
         return;
       }
-      const id = await ensureDraft();
+      const { id } = await ensureDraft();
       await updatePost(id, buildPayload('scheduled'));
       await schedulePost(id, scheduledAtUtc);
       await queryClient.invalidateQueries({ queryKey: ['posts'] });
@@ -462,7 +469,7 @@ export function PostComposer({ editPostId = null }) {
         indeterminate: false,
       });
 
-      const id = await ensureDraft({
+      const { id } = await ensureDraft({
         onUploadProgress: ({ current, total, fileName }) => {
           const uploadEnd = 55;
           const value = total
@@ -515,7 +522,7 @@ export function PostComposer({ editPostId = null }) {
 
   const handleSubmitForReview = () =>
     runWithValidation(async () => {
-      const id = await ensureDraft();
+      const { id } = await ensureDraft();
       const resubmitting = existingPost?.approval_status === 'changes_requested';
       await updatePost(id, buildPayload('draft', 'pending'));
       setApprovalStatus('pending');
@@ -610,12 +617,6 @@ export function PostComposer({ editPostId = null }) {
           />
         </div>
       </div>
-
-      {saveNotice && (
-        <div className="rounded-hyve-md bg-[#DFF3E6] px-4 py-3 text-sm text-status-published">
-          {saveNotice}
-        </div>
-      )}
 
       {publishProgress && (
         <PublishProgressPanel

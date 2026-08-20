@@ -29,6 +29,16 @@ export async function markAllNotificationsRead() {
   if (error) throw error;
 }
 
+export async function clearAllPersistedNotifications() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  const { error } = await supabase
+    .from('user_notifications')
+    .delete()
+    .eq('user_id', user.id);
+  if (error) throw error;
+}
+
 export async function markDerivedRead(notificationKey) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;

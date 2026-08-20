@@ -25,6 +25,7 @@ import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { showToast } from '@/lib/toast';
 
 const STEPS = {
   IDLE: 'idle',
@@ -242,6 +243,22 @@ export function PostImportView() {
     setLiveSession(null);
     setImportResults({ created, failed });
     setStep(STEPS.SUMMARY);
+
+    if (created > 0) {
+      showToast({
+        title: `${created} post${created === 1 ? '' : 's'} imported`,
+        description: failed.length
+          ? `${failed.length} row${failed.length === 1 ? '' : 's'} failed`
+          : undefined,
+        variant: 'success',
+      });
+    } else if (failed.length > 0) {
+      showToast({
+        title: 'Import failed',
+        description: `No posts were created. ${failed.length} row${failed.length === 1 ? '' : 's'} failed.`,
+        variant: 'error',
+      });
+    }
   };
 
   const handleClearLog = () => {

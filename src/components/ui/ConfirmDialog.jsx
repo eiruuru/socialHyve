@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,6 +8,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { clearModalLocks } from '@/lib/clearModalLocks';
+
+const CLOSE_DELAY_MS = 200;
 
 export function ConfirmDialog({
   open,
@@ -25,7 +28,6 @@ export function ConfirmDialog({
     setBusy(true);
     try {
       await onConfirm();
-      onOpenChange(false);
     } finally {
       setBusy(false);
     }
@@ -39,7 +41,11 @@ export function ConfirmDialog({
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={busy}
+          >
             {cancelLabel}
           </Button>
           <Button
@@ -57,19 +63,36 @@ export function ConfirmDialog({
 
 export function useConfirm() {
   const [state, setState] = useState(null);
+  const [open, setOpen] = useState(false);
+  const resolveRef = useRef(null);
+  const finishedRef = useRef(false);
 
-  const confirm = (options) => new Promise((resolve) => {
-    setState({ ...options, resolve });
-  });
+  const finish = useCallback((result) => {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
+    setOpen(false);
+    clearModalLocks();
+    window.setTimeout(() => {
+      resolveRef.current?.(result);
+      resolveRef.current = null;
+      setState(null);
+      finishedRef.current = false;
+      clearModalLocks();
+    }, CLOSE_DELAY_MS);
+  }, []);
+
+  const confirm = useCallback((options) => new Promise((resolve) => {
+    finishedRef.current = false;
+    resolveRef.current = resolve;
+    setState(options);
+    setOpen(true);
+  }), []);
 
   const dialog = state ? (
     <ConfirmDialog
-      open
-      onOpenChange={(open) => {
-        if (!open) {
-          state.resolve(false);
-          setState(null);
-        }
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) finish(false);
       }}
       title={state.title}
       description={state.description}
@@ -78,8 +101,7 @@ export function useConfirm() {
       variant={state.variant}
       onConfirm={async () => {
         const result = await state.onConfirm?.();
-        state.resolve(result !== false);
-        setState(null);
+        finish(result !== false);
       }}
     />
   ) : null;

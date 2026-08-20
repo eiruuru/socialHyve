@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDocumentMeta } from '@/components/DocumentMeta';
@@ -82,6 +82,7 @@ export default function PostDetailPage() {
   const queryClient = useQueryClient();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [duplicating, setDuplicating] = useState(false);
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
   const [duplicateResult, setDuplicateResult] = useState(null);
   const duplicateLockRef = useRef(false);
   const membership = useMembership();
@@ -117,6 +118,11 @@ export default function PostDetailPage() {
 
   useFocusedPostPolling(id, { enabled: !!id });
 
+  useEffect(() => {
+    clearModalLocks();
+    return () => clearModalLocks();
+  }, [id]);
+
   useDocumentMeta({
     title: post ? truncateForTitle(post.internal_name || 'Post detail') : 'Post detail',
     description: PAGE_DESCRIPTIONS.postDetail,
@@ -151,13 +157,26 @@ export default function PostDetailPage() {
       description: 'This permanently removes the post and cannot be undone.',
       confirmLabel: 'Delete',
       variant: 'destructive',
-      onConfirm: async () => true,
     });
     if (!ok) return;
-    await deletePost(id);
-    queryClient.invalidateQueries({ queryKey: ['posts'] });
-    showToast({ title: 'Post deleted', variant: 'success' });
-    navigate(listPath);
+    try {
+      await deletePost(id);
+      await queryClient.invalidateQueries({ queryKey: ['posts'] });
+      showToast({
+        title: 'Post deleted',
+        description: 'Returning to the calendar.',
+        variant: 'success',
+      });
+      clearModalLocks();
+      navigate(listPath);
+    } catch (err) {
+      clearModalLocks();
+      showToast({
+        title: 'Could not delete post',
+        description: err.message,
+        variant: 'error',
+      });
+    }
   };
 
   const handleDuplicate = async () => {
@@ -168,16 +187,17 @@ export default function PostDetailPage() {
       const copy = await duplicatePost(id);
       await queryClient.invalidateQueries({ queryKey: ['posts'] });
       setDuplicateResult(copy);
+      setDuplicateDialogOpen(true);
     } catch (err) {
       showToast({
         title: 'Could not duplicate post',
         description: err.message,
         variant: 'error',
       });
+      clearModalLocks();
     } finally {
       duplicateLockRef.current = false;
       setDuplicating(false);
-      clearModalLocks();
     }
   };
 
@@ -373,9 +393,12 @@ export default function PostDetailPage() {
 
       <DuplicatePostSuccessDialog
         post={duplicateResult}
-        open={!!duplicateResult}
-        onOpenChange={(open) => {
-          if (!open) setDuplicateResult(null);
+        open={duplicateDialogOpen}
+        onOpenChange={(nextOpen) => {
+          setDuplicateDialogOpen(nextOpen);
+          if (!nextOpen) {
+            window.setTimeout(() => setDuplicateResult(null), 300);
+          }
         }}
       />
 

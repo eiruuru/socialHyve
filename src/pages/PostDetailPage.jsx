@@ -1,5 +1,5 @@
-import { useRef, useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useRef, useState, useEffect, useCallback } from 'react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDocumentMeta } from '@/components/DocumentMeta';
 import { PAGE_DESCRIPTIONS, truncateForTitle } from '@/lib/pageMeta';
@@ -25,7 +25,7 @@ import { normalizeMediaList } from '@/features/posts/previews/mediaUtils';
 import { PostStatusBadges, canTransitionApproval } from '@/features/queue/postStatus';
 import { CommentThread } from '@/features/queue/CommentThread';
 import { PostActivityCard } from '@/features/posts/PostActivityCard';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { IconTooltip } from '@/components/ui/IconTooltip';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,7 +42,8 @@ import { hasCreativesQaAccess } from '@/lib/clientRoles';
 import { getEffectivePublishStatus } from '@/lib/publishStatus';
 import { PostSchedulePanel } from '@/features/review/PostSchedulePanel';
 import { DEVICE_TIERS, resolveTierAppPath, useDeviceTier } from '@/lib/deviceTier';
-import { clearModalLocks, recoverStaleDialogLayers } from '@/lib/clearModalLocks';
+import { recoverStaleDialogLayers, prepareForRouteChange, recoverUiAfterAsyncAction } from '@/lib/clearModalLocks';
+import { cn } from '@/lib/utils';
 
 const APPROVAL_OPTIONS = [
   { value: 'draft', label: 'Draft' },
@@ -114,9 +115,22 @@ export default function PostDetailPage() {
   useFocusedPostPolling(id, { enabled: !!id });
 
   useEffect(() => {
-    recoverStaleDialogLayers();
-    return () => clearModalLocks();
+    recoverUiAfterAsyncAction();
   }, [id]);
+
+  const openPostEditor = useCallback((postId, navSearch = postNav.navSearch) => {
+    prepareForRouteChange();
+    void queryClient.prefetchQuery({
+      queryKey: ['post', postId],
+      queryFn: () => getPost(postId),
+    });
+    navigate(`/app/posts/${postId}/edit${navSearch}`);
+  }, [navigate, postNav.navSearch, queryClient]);
+
+  const goBack = useCallback(() => {
+    prepareForRouteChange();
+    navigate(listPath);
+  }, [listPath, navigate]);
 
   useDocumentMeta({
     title: post ? truncateForTitle(post.internal_name || 'Post detail') : 'Post detail',
@@ -187,6 +201,7 @@ export default function PostDetailPage() {
     setDuplicating(true);
     try {
       const copy = await duplicatePost(id);
+      queryClient.setQueryData(['post', copy.id], copy);
       await queryClient.invalidateQueries({ queryKey: ['posts'] });
       const scheduleLabel = copy.scheduled_at
         ? formatScheduledLabel(copy.scheduled_at, copy.schedule_timezone)
@@ -200,7 +215,10 @@ export default function PostDetailPage() {
         duration: 8000,
         actions: [{
           label: 'Open copy',
-          onClick: () => navigate(`/app/posts/${copy.id}/edit`),
+          onClick: () => {
+            prepareForRouteChange();
+            openPostEditor(copy.id, '');
+          },
         }],
       });
     } catch (err) {
@@ -212,6 +230,7 @@ export default function PostDetailPage() {
     } finally {
       duplicateLockRef.current = false;
       setDuplicating(false);
+      recoverUiAfterAsyncAction();
     }
   };
 
@@ -378,14 +397,14 @@ export default function PostDetailPage() {
               title={canSchedule && readOnly ? 'Schedule post' : 'Edit post'}
               description={canSchedule && readOnly ? 'Pick a schedule time and queue for publishing' : 'Open in the composer to edit'}
             >
-              <Button
-                size="icon"
-                variant="outline"
+              <Link
+                to={`/app/posts/${id}/edit${postNav.navSearch}`}
                 aria-label={canSchedule && readOnly ? 'Schedule post' : 'Edit post'}
-                onClick={() => navigate(`/app/posts/${id}/edit${postNav.navSearch}`)}
+                className={cn(buttonVariants({ size: 'icon', variant: 'outline' }))}
+                onClick={() => prepareForRouteChange()}
               >
                 <Pencil className="h-4 w-4" />
-              </Button>
+              </Link>
             </IconTooltip>
           )}
           {!readOnly && (
@@ -400,7 +419,7 @@ export default function PostDetailPage() {
               size="icon"
               variant="outline"
               aria-label={backLabel}
-              onClick={() => navigate(listPath)}
+              onClick={goBack}
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>

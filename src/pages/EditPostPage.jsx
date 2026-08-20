@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { DocumentMeta } from '@/components/DocumentMeta';
 import { PAGE_DESCRIPTIONS } from '@/lib/pageMeta';
@@ -5,10 +6,15 @@ import { PostComposer } from '@/features/posts/PostComposer';
 import { PostNavigation } from '@/features/posts/PostNavigation';
 import { usePostNavigation } from '@/features/posts/usePostNavigation';
 import { Button } from '@/components/ui/button';
+import { prepareForRouteChange } from '@/lib/clearModalLocks';
 
 export default function EditPostPage() {
   const { id } = useParams();
   const postNav = usePostNavigation(id, { mode: 'edit' });
+
+  useEffect(() => {
+    prepareForRouteChange();
+  }, [id]);
 
   return (
     <div className="space-y-6">
@@ -16,7 +22,12 @@ export default function EditPostPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <Button variant="ghost" size="sm" asChild className="mb-2 -ml-2">
-            <Link to={`/app/posts/${id}${postNav.navSearch}`}>← Back to post</Link>
+            <Link
+              to={`/app/posts/${id}${postNav.navSearch}`}
+              onClick={() => prepareForRouteChange()}
+            >
+              ← Back to post
+            </Link>
           </Button>
           <p className="font-mono text-xs font-semibold uppercase tracking-wider text-honey-dark">Edit</p>
           <h2 className="font-display text-2xl font-bold">Edit Post</h2>

@@ -21,6 +21,7 @@ import { hasCreativesQaAccess } from '@/lib/clientRoles';
 import { getOrganization, listWorkflowApproverUserIds } from '@/lib/organization';
 import { notifyWorkflowEvent } from '@/lib/profile';
 import { showToast } from '@/lib/toast';
+import { prepareForRouteChange } from '@/lib/clearModalLocks';
 import { getEffectivePublishStatus, resolvePublishStatus } from '@/lib/publishStatus';
 import { findLinkedInstagram, pickPrimaryAccount } from '@/lib/socialAccounts';
 import {
@@ -33,6 +34,7 @@ import {
 } from '@/lib/scheduleTime';
 import { GenericContentStep } from '@/features/posts/composer/GenericContentStep';
 import { ComposerActionBar } from '@/features/posts/composer/ComposerActionBar';
+import { Button } from '@/components/ui/button';
 import {
   getPublishPlatformLabel,
   PublishProgressPanel,
@@ -92,10 +94,11 @@ export function PostComposer({ editPostId = null }) {
   const originalMediaIdsRef = useRef([]);
   const trackedStoragePathsRef = useRef(new Set());
 
-  const { data: existingPost, isLoading: loadingPost } = useQuery({
+  const { data: existingPost, isLoading: loadingPost, isError, error, isFetched } = useQuery({
     queryKey: ['post', editPostId],
     queryFn: () => getPost(editPostId),
-    enabled: isEditMode,
+    enabled: isEditMode && !!editPostId,
+    initialData: () => queryClient.getQueryData(['post', editPostId]),
   });
 
   const { data: socialAccounts = [] } = useQuery({
@@ -154,6 +157,7 @@ export function PostComposer({ editPostId = null }) {
     setMedia([]);
     setScheduledAt('');
     setApprovalStatus('draft');
+    prepareForRouteChange();
   }, [editPostId, isEditMode]);
 
   useEffect(() => {
@@ -574,6 +578,23 @@ export function PostComposer({ editPostId = null }) {
 
   if (isEditMode && loadingPost) {
     return <p className="text-muted-foreground">Loading post…</p>;
+  }
+
+  if (isEditMode && isFetched && !loadingPost && (isError || !existingPost)) {
+    return (
+      <div className="rounded-hyve-md border border-red-200 bg-[#FCE4E3] p-4 text-sm text-[#A62E2B]">
+        <p className="font-medium">Could not load this post for editing.</p>
+        <p className="mt-1">{error?.message || 'The post may have been deleted or you may not have access.'}</p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-3"
+          onClick={() => navigate(`/app/posts/${editPostId}`)}
+        >
+          Back to post
+        </Button>
+      </div>
+    );
   }
 
   if (isEditMode && isPublished) {

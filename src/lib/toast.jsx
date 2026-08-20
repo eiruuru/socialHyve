@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { recoverUiAfterAsyncAction } from '@/lib/clearModalLocks';
 import { cn } from '@/lib/utils';
 
 const ToastContext = createContext(null);
@@ -31,6 +32,7 @@ export function ToastProvider({ children }) {
 
   const dismiss = useCallback((id) => {
     setToasts((current) => current.filter((item) => item.id !== id));
+    recoverUiAfterAsyncAction();
   }, []);
 
   const toast = useCallback(({

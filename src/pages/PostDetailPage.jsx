@@ -85,6 +85,7 @@ export default function PostDetailPage() {
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
   const [duplicateResult, setDuplicateResult] = useState(null);
   const duplicateLockRef = useRef(false);
+  const pendingCopyNavRef = useRef(null);
   const membership = useMembership();
   const { activeClient } = useClient();
   const { workspace } = useWorkspace();
@@ -122,6 +123,13 @@ export default function PostDetailPage() {
     clearModalLocks();
     return () => clearModalLocks();
   }, [id]);
+
+  useEffect(() => {
+    if (duplicateDialogOpen || !pendingCopyNavRef.current) return;
+    const copyId = pendingCopyNavRef.current;
+    pendingCopyNavRef.current = null;
+    navigate(`/app/posts/${copyId}/edit`);
+  }, [duplicateDialogOpen, navigate]);
 
   useDocumentMeta({
     title: post ? truncateForTitle(post.internal_name || 'Post detail') : 'Post detail',
@@ -397,9 +405,12 @@ export default function PostDetailPage() {
         onOpenChange={(nextOpen) => {
           setDuplicateDialogOpen(nextOpen);
           if (!nextOpen) {
-            clearModalLocks();
             window.setTimeout(() => setDuplicateResult(null), 300);
           }
+        }}
+        onOpenCopy={(copyId) => {
+          pendingCopyNavRef.current = copyId;
+          setDuplicateDialogOpen(false);
         }}
       />
 

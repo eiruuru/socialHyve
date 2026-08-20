@@ -1,15 +1,23 @@
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { DocumentMeta } from '@/components/DocumentMeta';
 import { PAGE_DESCRIPTIONS } from '@/lib/pageMeta';
+import { getPost } from '@/lib/posts';
 import { PostComposer } from '@/features/posts/PostComposer';
 import { PostNavigation } from '@/features/posts/PostNavigation';
 import { usePostNavigation } from '@/features/posts/usePostNavigation';
+import { navigateToPostDetail } from '@/features/posts/postNavUtils';
 import { Button } from '@/components/ui/button';
 
 export default function EditPostPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const postNav = usePostNavigation(id, { mode: 'edit' });
+  const { data: post } = useQuery({
+    queryKey: ['post', id],
+    queryFn: () => getPost(id),
+    enabled: !!id,
+  });
 
   return (
     <div className="space-y-6">
@@ -20,7 +28,7 @@ export default function EditPostPage() {
             variant="ghost"
             size="sm"
             className="mb-2 -ml-2"
-            onClick={() => navigate(`/app/posts/${id}${postNav.navSearch}`)}
+            onClick={() => navigateToPostDetail(navigate, id, postNav.navSearch, { post })}
           >
             ← Back to post
           </Button>

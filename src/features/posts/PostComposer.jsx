@@ -42,7 +42,7 @@ import {
 import { FineTunePanel } from '@/features/posts/composer/FineTunePanel';
 import { PlatformPreviewTabs } from '@/features/posts/previews/PlatformPreviewTabs';
 import { MAX_CAROUSEL_ITEMS } from '@/features/posts/MediaStrip';
-import { buildScheduleReturnPath } from '@/features/posts/postNavUtils';
+import { buildScheduleReturnPath, navigateToPostDetail } from '@/features/posts/postNavUtils';
 import {
   getEffectiveCaption,
   IG_CAPTION_LIMIT,
@@ -172,8 +172,11 @@ export function PostComposer({ editPostId = null }) {
     setCaption(existingPost.caption || '');
     setFirstComment(existingPost.first_comment || '');
     setPlatformOverrides(existingPost.platform_overrides || {});
-    setPublishFacebook(existingPost.publish_facebook ?? true);
-    setPublishInstagram(existingPost.publish_instagram ?? true);
+    const bothPlatformsOff = existingPost.publish_facebook === false
+      && existingPost.publish_instagram === false;
+    const isCopy = existingPost.internal_name?.startsWith('(copy)');
+    setPublishFacebook(bothPlatformsOff && isCopy ? true : (existingPost.publish_facebook ?? true));
+    setPublishInstagram(bothPlatformsOff && isCopy ? true : (existingPost.publish_instagram ?? true));
     setFacebookAccountId(existingPost.facebook_account_id || null);
     setInstagramAccountId(existingPost.instagram_account_id || null);
     igManuallySetRef.current = Boolean(existingPost.instagram_account_id);
@@ -411,7 +414,7 @@ export function PostComposer({ editPostId = null }) {
         description: created ? 'Your new draft is ready to edit.' : undefined,
         variant: 'success',
       });
-      navigate(`/app/posts/${id}`);
+      navigateToPostDetail(navigate, id, '', { post: existingPost });
     }, draftValidationErrors);
 
   const handleSaveChanges = () =>
@@ -544,7 +547,7 @@ export function PostComposer({ editPostId = null }) {
       });
       showToast({ title: 'Post published', variant: 'success' });
       await new Promise((resolve) => { setTimeout(resolve, 400); });
-      navigate(`/app/posts/${id}`);
+      navigateToPostDetail(navigate, id, '', { post: existingPost });
     } catch (err) {
       showToast({ title: 'Publish failed', description: err.message, variant: 'error' });
     } finally {
@@ -600,7 +603,7 @@ export function PostComposer({ editPostId = null }) {
           variant="outline"
           size="sm"
           className="mt-3"
-          onClick={() => navigate(`/app/posts/${editPostId}`)}
+          onClick={() => navigateToPostDetail(navigate, editPostId, '', { post: existingPost })}
         >
           Back to post
         </Button>

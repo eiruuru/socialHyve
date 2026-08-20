@@ -11,6 +11,7 @@ import { isQueuedToPublish } from '@/lib/publishStatus';
 import { normalizeMediaList, isVideo } from '@/features/posts/previews/mediaUtils';
 import { formatScheduledLabel, resolveScheduleTimezone } from '@/lib/scheduleTime';
 import { cn } from '@/lib/utils';
+import { navigateToPostEdit } from '@/features/posts/postNavUtils';
 
 function PostThumb({ post, className }) {
   const media = normalizeMediaList(post.post_media || []);
@@ -142,7 +143,7 @@ export function PostQueueCard({
         <Button size="sm" onClick={() => onPublish?.(post.id)}>Publish now</Button>
       )}
       {(allowManageActions || allowScheduleActions) && (
-        <Button size="sm" variant="outline" onClick={() => navigate(`/app/posts/${post.id}/edit${navSearch}`)}>
+        <Button size="sm" variant="outline" onClick={() => navigateToPostEdit(navigate, post.id, navSearch, { post })}>
           Edit
         </Button>
       )}

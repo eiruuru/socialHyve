@@ -1,5 +1,7 @@
 import { compareAsc, endOfMonth, format, isValid, parse, startOfMonth } from 'date-fns';
+import { flushSync } from 'react-dom';
 import { filterQueuePosts } from '@/features/queue/postStatus';
+import { prepareForRouteChange } from '@/lib/clearModalLocks';
 
 import { DEVICE_TIERS } from '@/lib/deviceTier';
 
@@ -39,12 +41,55 @@ export function buildPostNavSearch({ nav, tab, month } = {}) {
 
 export function isPostEditRoute(pathname, postId) {
   if (!pathname || !postId) return false;
-  return pathname === `/app/posts/${postId}/edit`
-    || pathname.startsWith(`/app/posts/${postId}/edit/`);
+  const normalized = pathname.replace(/\/+$/, '');
+  return normalized === `/app/posts/${postId}/edit`
+    || normalized.startsWith(`/app/posts/${postId}/edit/`);
 }
 
 export function buildPostEditPath(postId, navSearch = '') {
   return `/app/posts/${postId}/edit${navSearch}`;
+}
+
+export function buildPostDetailPath(postId, navSearch = '') {
+  return `/app/posts/${postId}${navSearch}`;
+}
+
+/** Duplicated drafts with no platforms often desync SPA routing after the duplicate toast flow. */
+export function isIncompleteCopyPost(post) {
+  if (!post) return false;
+  const isCopy = typeof post.internal_name === 'string' && post.internal_name.startsWith('(copy)');
+  const noPlatforms = post.publish_facebook === false && post.publish_instagram === false;
+  return isCopy && noPlatforms;
+}
+
+export function navigateToPostEdit(navigate, postId, navSearch = '', { post } = {}) {
+  prepareForRouteChange();
+  const path = buildPostEditPath(postId, navSearch);
+  if (isIncompleteCopyPost(post)) {
+    window.location.assign(path);
+    return;
+  }
+  flushSync(() => {
+    navigate(path);
+  });
+}
+
+export function navigateToPostDetail(navigate, postId, navSearch = '', { post } = {}) {
+  prepareForRouteChange();
+  const path = buildPostDetailPath(postId, navSearch);
+  if (isIncompleteCopyPost(post)) {
+    window.location.assign(path);
+    return;
+  }
+  flushSync(() => {
+    navigate(path);
+  });
+}
+
+/** Always reload — used after duplicate success toast. */
+export function openPostEdit(postId, navSearch = '') {
+  prepareForRouteChange();
+  window.location.assign(buildPostEditPath(postId, navSearch));
 }
 
 export function sortPostsForNavigation(posts) {

@@ -59,6 +59,8 @@ test('buildDuplicatePayload handles missing internal name and schedule', () => {
   assert.equal(payload.scheduled_at, null);
   assert.equal(payload.status, 'draft');
   assert.equal(payload.approval_status, 'draft');
+  assert.equal(payload.publish_facebook, true);
+  assert.equal(payload.publish_instagram, true);
 });
 
 test('duplicateInternalName strips existing copy prefix and suffix', () => {
@@ -87,6 +89,8 @@ test('buildDuplicatePayload dedupes already-copied internal names', () => {
   });
 
   assert.equal(payload.internal_name, '(copy) Summer promo');
+  assert.equal(payload.publish_facebook, true);
+  assert.equal(payload.publish_instagram, true);
 });
 
 test('buildDuplicateMediaRows skips archived media and preserves order', () => {

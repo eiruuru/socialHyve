@@ -1,6 +1,6 @@
 import { useLayoutEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { recoverUiAfterNavigation } from '@/lib/clearModalLocks';
+import { clearModalLocks } from '@/lib/clearModalLocks';
 import { ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useMembership } from '@/lib/membershipContext';
@@ -244,8 +244,8 @@ export function AppLayout() {
   useNavigateOnClientSwitch();
 
   useLayoutEffect(() => {
-    recoverUiAfterNavigation();
-  }, [location.key]);
+    clearModalLocks();
+  }, [location.pathname]);
 
   const isWide = location.pathname.includes('/calendar')
     || location.pathname.includes('/interactions');
@@ -353,7 +353,7 @@ export function AppLayout() {
                 isWide && !isMobile ? 'max-w-none' : !isMobile && !isWide && 'lg:max-w-6xl',
               )}
             >
-              <Outlet key={location.key} />
+              <Outlet key={`${location.pathname}${location.search}`} />
             </div>
           </main>
         </div>

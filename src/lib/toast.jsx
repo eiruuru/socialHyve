@@ -110,8 +110,8 @@ export function ToastProvider({ children }) {
                     size="sm"
                     variant={action.variant || 'default'}
                     onClick={async () => {
-                      await action.onClick?.();
                       dismiss(item.id);
+                      await action.onClick?.();
                     }}
                   >
                     {action.label}

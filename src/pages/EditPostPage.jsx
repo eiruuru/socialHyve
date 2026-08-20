@@ -1,4 +1,3 @@
-import { useLayoutEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { DocumentMeta } from '@/components/DocumentMeta';
 import { PAGE_DESCRIPTIONS } from '@/lib/pageMeta';
@@ -6,16 +5,11 @@ import { PostComposer } from '@/features/posts/PostComposer';
 import { PostNavigation } from '@/features/posts/PostNavigation';
 import { usePostNavigation } from '@/features/posts/usePostNavigation';
 import { Button } from '@/components/ui/button';
-import { recoverUiAfterNavigation } from '@/lib/clearModalLocks';
 
 export default function EditPostPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const postNav = usePostNavigation(id, { mode: 'edit' });
-
-  useLayoutEffect(() => {
-    recoverUiAfterNavigation();
-  }, [id]);
 
   return (
     <div className="space-y-6">

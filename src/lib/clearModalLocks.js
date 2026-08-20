@@ -74,10 +74,7 @@ export function recoverUiAfterAsyncAction() {
   });
 }
 
-/** Run recovery after navigation completes — style unlock first, portal removal deferred. */
+/** Run recovery after navigation completes — unlock styles only. */
 export function recoverUiAfterNavigation() {
   clearModalLocks();
-  window.requestAnimationFrame(() => {
-    recoverStaleDialogLayers({ force: true });
-  });
 }

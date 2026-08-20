@@ -117,9 +117,7 @@ export default function PostDetailPage() {
       queryKey: ['post', postId],
       queryFn: () => getPost(postId),
     });
-    window.requestAnimationFrame(() => {
-      navigate(`/app/posts/${postId}/edit${navSearch}`);
-    });
+    navigate(`/app/posts/${postId}/edit${navSearch}`);
   }, [navigate, postNav.navSearch, queryClient]);
 
   const goBack = useCallback(() => {

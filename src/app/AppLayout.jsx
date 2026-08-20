@@ -353,7 +353,7 @@ export function AppLayout() {
                 isWide && !isMobile ? 'max-w-none' : !isMobile && !isWide && 'lg:max-w-6xl',
               )}
             >
-              <Outlet key={`${location.pathname}${location.search}`} />
+              <Outlet />
             </div>
           </main>
         </div>

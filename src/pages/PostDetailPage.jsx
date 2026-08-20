@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDocumentMeta } from '@/components/DocumentMeta';
 import { PAGE_DESCRIPTIONS, truncateForTitle } from '@/lib/pageMeta';
@@ -25,7 +25,7 @@ import { normalizeMediaList } from '@/features/posts/previews/mediaUtils';
 import { PostStatusBadges, canTransitionApproval } from '@/features/queue/postStatus';
 import { CommentThread } from '@/features/queue/CommentThread';
 import { PostActivityCard } from '@/features/posts/PostActivityCard';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { IconTooltip } from '@/components/ui/IconTooltip';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,6 +42,7 @@ import { hasCreativesQaAccess } from '@/lib/clientRoles';
 import { getEffectivePublishStatus } from '@/lib/publishStatus';
 import { PostSchedulePanel } from '@/features/review/PostSchedulePanel';
 import { DEVICE_TIERS, resolveTierAppPath, useDeviceTier } from '@/lib/deviceTier';
+import { cn } from '@/lib/utils';
 
 const APPROVAL_OPTIONS = [
   { value: 'draft', label: 'Draft' },
@@ -111,14 +112,6 @@ export default function PostDetailPage() {
   const postNav = usePostNavigation(id);
 
   useFocusedPostPolling(id, { enabled: !!id });
-
-  const openPostEditor = useCallback((postId, navSearch = postNav.navSearch) => {
-    void queryClient.prefetchQuery({
-      queryKey: ['post', postId],
-      queryFn: () => getPost(postId),
-    });
-    navigate(`/app/posts/${postId}/edit${navSearch}`);
-  }, [navigate, postNav.navSearch, queryClient]);
 
   const goBack = useCallback(() => {
     navigate(listPath);
@@ -207,7 +200,9 @@ export default function PostDetailPage() {
         duration: 8000,
         actions: [{
           label: 'Open copy',
-          onClick: () => openPostEditor(copy.id, ''),
+          onClick: () => {
+            window.location.assign(`/app/posts/${copy.id}/edit`);
+          },
         }],
       });
     } catch (err) {
@@ -385,14 +380,13 @@ export default function PostDetailPage() {
               title={canSchedule && readOnly ? 'Schedule post' : 'Edit post'}
               description={canSchedule && readOnly ? 'Pick a schedule time and queue for publishing' : 'Open in the composer to edit'}
             >
-              <Button
-                size="icon"
-                variant="outline"
+              <Link
+                to={`/app/posts/${id}/edit${postNav.navSearch}`}
                 aria-label={canSchedule && readOnly ? 'Schedule post' : 'Edit post'}
-                onClick={() => openPostEditor(id)}
+                className={cn(buttonVariants({ size: 'icon', variant: 'outline' }))}
               >
                 <Pencil className="h-4 w-4" />
-              </Button>
+              </Link>
             </IconTooltip>
           )}
           {!readOnly && (

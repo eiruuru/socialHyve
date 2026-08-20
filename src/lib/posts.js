@@ -11,6 +11,7 @@ import {
   rescheduleUtcToDay,
   resolveScheduleTimezone,
 } from './scheduleTime';
+import { buildDuplicateMediaRows, buildDuplicatePayload } from './postDuplicate';
 export {
   listSocialAccounts,
   setPrimarySocialAccount,
@@ -138,39 +139,21 @@ export async function deletePost(id) {
   if (error) throw error;
 }
 
+export { buildDuplicatePayload, buildDuplicateMediaRows } from './postDuplicate';
+
 export async function duplicatePost(sourceId) {
   const source = await getPost(sourceId);
-  const copyPayload = {
-    internal_name: source.internal_name ? `${source.internal_name} (copy)` : null,
-    label: source.label,
-    caption: source.caption,
-    first_comment: source.first_comment,
-    platform_overrides: source.platform_overrides,
-    publish_facebook: source.publish_facebook,
-    publish_instagram: source.publish_instagram,
-    facebook_account_id: source.facebook_account_id,
-    instagram_account_id: source.instagram_account_id,
-    schedule_timezone: source.schedule_timezone,
-    status: 'draft',
-    approval_status: 'draft',
-    scheduled_at: null,
-  };
+  const copyPayload = buildDuplicatePayload(source);
 
   const copy = await createPost(copyPayload);
-  const media = [...(source.post_media || [])].sort(
-    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
-  );
+  const mediaRows = buildDuplicateMediaRows(source.post_media, copy.id);
 
-  for (const item of media) {
-    await addPostMedia(copy.id, {
-      storage_path: item.storage_path,
-      preview_storage_path: item.preview_storage_path,
-      original_storage_path: item.original_storage_path,
-      public_url: item.public_url,
-      mime_type: item.mime_type,
-      sort_order: item.sort_order,
-    });
+  if (mediaRows.length) {
+    const { error: mediaErr } = await supabase.from('post_media').insert(mediaRows);
+    if (mediaErr) throw mediaErr;
   }
+
+  await logPostActivity(copy.id, 'duplicated', `Duplicated from ${sourceId}`);
 
   return getPost(copy.id);
 }

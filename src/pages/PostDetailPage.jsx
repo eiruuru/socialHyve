@@ -1,8 +1,9 @@
+import { useRef, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDocumentMeta } from '@/components/DocumentMeta';
 import { PAGE_DESCRIPTIONS, truncateForTitle } from '@/lib/pageMeta';
-import { ArrowLeft, Check, Copy, Link2, Pencil, RefreshCw, RotateCcw, Trash2 } from 'lucide-react';
+import { ArrowLeft, Check, Copy, Link2, Loader2, Pencil, RefreshCw, RotateCcw, Trash2 } from 'lucide-react';
 import {
   getPost,
   deletePost,
@@ -42,6 +43,8 @@ import { hasCreativesQaAccess } from '@/lib/clientRoles';
 import { getEffectivePublishStatus } from '@/lib/publishStatus';
 import { PostSchedulePanel } from '@/features/review/PostSchedulePanel';
 import { DEVICE_TIERS, resolveTierAppPath, useDeviceTier } from '@/lib/deviceTier';
+import { clearModalLocks } from '@/lib/clearModalLocks';
+import { DuplicatePostSuccessDialog } from '@/features/posts/DuplicatePostSuccessDialog';
 
 const APPROVAL_OPTIONS = [
   { value: 'draft', label: 'Draft' },
@@ -78,6 +81,9 @@ export default function PostDetailPage() {
   const backDescription = tier === DEVICE_TIERS.MOBILE ? 'Return to the approval queue' : 'Return to the content calendar';
   const queryClient = useQueryClient();
   const { confirm, dialog: confirmDialog } = useConfirm();
+  const [duplicating, setDuplicating] = useState(false);
+  const [duplicateResult, setDuplicateResult] = useState(null);
+  const duplicateLockRef = useRef(false);
   const membership = useMembership();
   const { activeClient } = useClient();
   const { workspace } = useWorkspace();
@@ -155,9 +161,24 @@ export default function PostDetailPage() {
   };
 
   const handleDuplicate = async () => {
-    const copy = await duplicatePost(id);
-    showToast({ title: 'Post duplicated', variant: 'success' });
-    navigate(`/app/posts/${copy.id}/edit`);
+    if (duplicateLockRef.current || duplicating) return;
+    duplicateLockRef.current = true;
+    setDuplicating(true);
+    try {
+      const copy = await duplicatePost(id);
+      await queryClient.invalidateQueries({ queryKey: ['posts'] });
+      setDuplicateResult(copy);
+    } catch (err) {
+      showToast({
+        title: 'Could not duplicate post',
+        description: err.message,
+        variant: 'error',
+      });
+    } finally {
+      duplicateLockRef.current = false;
+      setDuplicating(false);
+      clearModalLocks();
+    }
   };
 
   const handleRetry = async () => {
@@ -296,8 +317,19 @@ export default function PostDetailPage() {
           {!readOnly && (
             <>
               <IconTooltip title="Duplicate post" description="Create a copy as a new draft">
-                <Button size="icon" variant="outline" onClick={handleDuplicate} aria-label="Duplicate post">
-                  <Copy className="h-4 w-4" />
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={handleDuplicate}
+                  disabled={duplicating}
+                  aria-label="Duplicate post"
+                  aria-busy={duplicating}
+                >
+                  {duplicating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
                 </Button>
               </IconTooltip>
               <IconTooltip title="Copy review link" description="Share a link for external approval">
@@ -338,6 +370,14 @@ export default function PostDetailPage() {
       </div>
 
       {confirmDialog}
+
+      <DuplicatePostSuccessDialog
+        post={duplicateResult}
+        open={!!duplicateResult}
+        onOpenChange={(open) => {
+          if (!open) setDuplicateResult(null);
+        }}
+      />
 
       {post.error_message && (
         <div className="rounded-hyve-md bg-[#FCE4E3] p-4 text-sm text-[#A62E2B]">

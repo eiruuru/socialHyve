@@ -18,8 +18,6 @@ const CalendarPage = lazyWithRetry(() => import('@/pages/CalendarPage'));
 const QueuePage = lazyWithRetry(() => import('@/pages/QueuePage'));
 const PostComposerPage = lazyWithRetry(() => import('@/pages/PostComposerPage'));
 const PostImportPage = lazyWithRetry(() => import('@/pages/PostImportPage'));
-const EditPostPage = lazyWithRetry(() => import('@/pages/EditPostPage'));
-const PostDetailPage = lazyWithRetry(() => import('@/pages/PostDetailPage'));
 const InteractionsPage = lazyWithRetry(() => import('@/pages/InteractionsPage'));
 const MetaConnectionPage = lazyWithRetry(() => import('@/pages/MetaConnectionPage'));
 const ConnectedAccountsPage = lazyWithRetry(() => import('@/pages/ConnectedAccountsPage'));
@@ -75,10 +73,7 @@ export function AppRoutes() {
           <Route path="interactions" element={<Lazy><Guarded><InteractionsPage /></Guarded></Lazy>} />
           <Route path="posts/new" element={<Lazy><PostComposerPage /></Lazy>} />
           <Route path="posts/import" element={<Lazy><Guarded><PostImportPage /></Guarded></Lazy>} />
-          <Route path="posts/:id" element={<PostPageLayout />}>
-            <Route index element={<Lazy><PostDetailPage /></Lazy>} />
-            <Route path="edit" element={<Lazy><EditPostPage /></Lazy>} />
-          </Route>
+          <Route path="posts/:id/*" element={<PostPageLayout />} />
           <Route path="clients" element={<Lazy><Guarded><ClientsPage /></Guarded></Lazy>} />
           <Route path="clients/:clientId/members" element={<Lazy><Guarded><ClientMembersPage /></Guarded></Lazy>} />
           <Route path="client/:clientId/review" element={<Lazy><ClientReviewPage /></Lazy>} />

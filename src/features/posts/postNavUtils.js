@@ -37,6 +37,16 @@ export function buildPostNavSearch({ nav, tab, month } = {}) {
   return qs ? `?${qs}` : '';
 }
 
+export function isPostEditRoute(pathname, postId) {
+  if (!pathname || !postId) return false;
+  return pathname === `/app/posts/${postId}/edit`
+    || pathname.startsWith(`/app/posts/${postId}/edit/`);
+}
+
+export function buildPostEditPath(postId, navSearch = '') {
+  return `/app/posts/${postId}/edit${navSearch}`;
+}
+
 export function sortPostsForNavigation(posts) {
   return [...posts].sort((a, b) => {
     const da = getPostCalendarDate(a);

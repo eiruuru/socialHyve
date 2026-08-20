@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   buildDuplicatePayload,
   buildDuplicateMediaRows,
+  duplicateInternalName,
 } from '../src/lib/postDuplicate.js';
 
 test('buildDuplicatePayload preserves schedule and resets draft state', () => {
@@ -56,6 +57,34 @@ test('buildDuplicatePayload handles missing internal name and schedule', () => {
   assert.equal(payload.scheduled_at, null);
   assert.equal(payload.status, 'draft');
   assert.equal(payload.approval_status, 'draft');
+});
+
+test('duplicateInternalName strips existing copy prefix and suffix', () => {
+  assert.equal(duplicateInternalName('Summer promo'), '(copy) Summer promo');
+  assert.equal(duplicateInternalName('(copy) Summer promo'), '(copy) Summer promo');
+  assert.equal(duplicateInternalName('Summer promo (copy)'), '(copy) Summer promo');
+  assert.equal(duplicateInternalName('(copy) (copy) Summer promo'), '(copy) Summer promo');
+  assert.equal(duplicateInternalName(null), null);
+});
+
+test('buildDuplicatePayload dedupes already-copied internal names', () => {
+  const payload = buildDuplicatePayload({
+    internal_name: '(copy) Summer promo',
+    label: null,
+    caption: null,
+    first_comment: null,
+    platform_overrides: null,
+    publish_facebook: false,
+    publish_instagram: false,
+    facebook_account_id: null,
+    instagram_account_id: null,
+    schedule_timezone: null,
+    scheduled_at: null,
+    status: 'draft',
+    approval_status: 'draft',
+  });
+
+  assert.equal(payload.internal_name, '(copy) Summer promo');
 });
 
 test('buildDuplicateMediaRows skips archived media and preserves order', () => {

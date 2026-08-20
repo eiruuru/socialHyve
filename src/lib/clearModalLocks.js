@@ -16,10 +16,12 @@ export function recoverStaleDialogLayers() {
   clearModalLocks();
 
   for (const portal of document.body.children) {
-    if (!(portal instanceof HTMLElement)) continue;
+    if (portal.nodeType !== 1) continue;
+    if (portal.id === 'root' || portal.querySelector('#root')) continue;
     if (portal.querySelector('[data-state="open"]')) continue;
-    if (portal.querySelector('.fixed.inset-0')) {
-      portal.remove();
-    }
+    const overlay = portal.querySelector('.fixed.inset-0');
+    if (!overlay) continue;
+    if (overlay.getAttribute('data-state') === 'open') continue;
+    portal.remove();
   }
 }

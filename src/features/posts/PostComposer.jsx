@@ -173,7 +173,7 @@ export function PostComposer({ editPostId = null }) {
   }, [presetDate, resolvedDefaultTimezone, scheduledAt]);
 
   useEffect(() => {
-    if (!existingPost || hydratedRef.current) return;
+    if (!existingPost || existingPost.id !== editPostId || hydratedRef.current) return;
     hydratedRef.current = true;
     const tz = resolveScheduleTimezone({
       postTimezone: existingPost.schedule_timezone,
@@ -212,7 +212,7 @@ export function PostComposer({ editPostId = null }) {
     trackedStoragePathsRef.current = new Set(
       sortedMedia.map((m) => m.storage_path).filter(Boolean),
     );
-  }, [existingPost, activeClient?.default_timezone, workspaceTimezone]);
+  }, [existingPost, editPostId, activeClient?.default_timezone, workspaceTimezone]);
 
   useEffect(() => {
     accountsInitializedRef.current = false;

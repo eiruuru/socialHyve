@@ -1,8 +1,17 @@
 /** Pure helpers for post duplication — exported for unit tests. */
 
+export function duplicateInternalName(name) {
+  if (!name) return null;
+  const stripped = name
+    .replace(/^(?:\(copy\)\s*)+/, '')
+    .replace(/(?:\s*\(copy\))+$/, '')
+    .trim();
+  return stripped ? `(copy) ${stripped}` : '(copy)';
+}
+
 export function buildDuplicatePayload(source) {
   return {
-    internal_name: source.internal_name ? `(copy) ${source.internal_name}` : null,
+    internal_name: source.internal_name ? duplicateInternalName(source.internal_name) : null,
     label: source.label,
     caption: source.caption,
     first_comment: source.first_comment,

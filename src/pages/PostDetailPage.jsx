@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDocumentMeta } from '@/components/DocumentMeta';
 import { PAGE_DESCRIPTIONS, truncateForTitle } from '@/lib/pageMeta';
@@ -42,7 +42,7 @@ import { hasCreativesQaAccess } from '@/lib/clientRoles';
 import { getEffectivePublishStatus } from '@/lib/publishStatus';
 import { PostSchedulePanel } from '@/features/review/PostSchedulePanel';
 import { DEVICE_TIERS, resolveTierAppPath, useDeviceTier } from '@/lib/deviceTier';
-import { recoverStaleDialogLayers } from '@/lib/clearModalLocks';
+import { clearModalLocks, recoverStaleDialogLayers } from '@/lib/clearModalLocks';
 
 const APPROVAL_OPTIONS = [
   { value: 'draft', label: 'Draft' },
@@ -115,7 +115,7 @@ export default function PostDetailPage() {
 
   useEffect(() => {
     recoverStaleDialogLayers();
-    return () => recoverStaleDialogLayers();
+    return () => clearModalLocks();
   }, [id]);
 
   useDocumentMeta({
@@ -378,10 +378,13 @@ export default function PostDetailPage() {
               title={canSchedule && readOnly ? 'Schedule post' : 'Edit post'}
               description={canSchedule && readOnly ? 'Pick a schedule time and queue for publishing' : 'Open in the composer to edit'}
             >
-              <Button size="icon" variant="outline" asChild aria-label={canSchedule && readOnly ? 'Schedule post' : 'Edit post'}>
-                <Link to={`/app/posts/${id}/edit${postNav.navSearch}`}>
-                  <Pencil className="h-4 w-4" />
-                </Link>
+              <Button
+                size="icon"
+                variant="outline"
+                aria-label={canSchedule && readOnly ? 'Schedule post' : 'Edit post'}
+                onClick={() => navigate(`/app/posts/${id}/edit${postNav.navSearch}`)}
+              >
+                <Pencil className="h-4 w-4" />
               </Button>
             </IconTooltip>
           )}
@@ -393,10 +396,13 @@ export default function PostDetailPage() {
             </IconTooltip>
           )}
           <IconTooltip title={backLabel} description={backDescription}>
-            <Button size="icon" variant="outline" asChild aria-label={backLabel}>
-              <Link to={listPath}>
-                <ArrowLeft className="h-4 w-4" />
-              </Link>
+            <Button
+              size="icon"
+              variant="outline"
+              aria-label={backLabel}
+              onClick={() => navigate(listPath)}
+            >
+              <ArrowLeft className="h-4 w-4" />
             </Button>
           </IconTooltip>
           </div>

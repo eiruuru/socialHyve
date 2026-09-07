@@ -12,6 +12,8 @@ import {
   resolveScheduleTimezone,
 } from './scheduleTime';
 import { buildDuplicateMediaRows, buildDuplicatePayload } from './postDuplicate';
+import { buildPublishJobRow } from './publishQueue';
+import { buildSavedMediaPath } from './postMedia';
 export {
   listSocialAccounts,
   setPrimarySocialAccount,
@@ -168,6 +170,42 @@ export async function addPostMedia(postId, media) {
   return data;
 }
 
+export async function updatePostMedia(id, patch) {
+  const { data, error } = await supabase
+    .from('post_media')
+    .update(patch)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function relocateDraftMedia(storagePath, postId) {
+  const nextPath = buildSavedMediaPath(storagePath, postId);
+  if (!storagePath || nextPath === storagePath) {
+    const { data: urlData } = supabase.storage.from('post-media').getPublicUrl(storagePath);
+    return {
+      storage_path: storagePath,
+      public_url: urlData.publicUrl,
+    };
+  }
+
+  const { error } = await supabase.storage.from('post-media').move(storagePath, nextPath);
+  if (error) {
+    const message = String(error.message || '').toLowerCase();
+    const alreadyExists = message.includes('already exists') || message.includes('duplicate');
+    if (!alreadyExists) throw error;
+    await supabase.storage.from('post-media').remove([storagePath]);
+  }
+
+  const { data: urlData } = supabase.storage.from('post-media').getPublicUrl(nextPath);
+  return {
+    storage_path: nextPath,
+    public_url: urlData.publicUrl,
+  };
+}
+
 export async function removePostMedia(id) {
   const { data: row, error: fetchErr } = await supabase
     .from('post_media')
@@ -186,6 +224,19 @@ export async function removePostMedia(id) {
   if (error) throw error;
 }
 
+export async function syncPublishJob(postId, scheduledAt) {
+  const { error } = await supabase.from('publish_jobs').upsert(
+    buildPublishJobRow(postId, scheduledAt),
+    { onConflict: 'post_id' },
+  );
+  if (error) throw error;
+}
+
+export async function clearPublishJob(postId) {
+  const { error } = await supabase.from('publish_jobs').delete().eq('post_id', postId);
+  if (error) throw error;
+}
+
 export async function schedulePost(postId, scheduledAt) {
   const post = await updatePost(postId, { status: 'scheduled', scheduled_at: scheduledAt });
   const scheduleLabel = formatScheduledLabel(scheduledAt, post.schedule_timezone);
@@ -199,18 +250,13 @@ export async function schedulePost(postId, scheduledAt) {
     detail: `Scheduled for ${scheduleLabel}`,
     metadata: { scheduled_at: scheduledAt },
   });
-  await supabase.from('publish_jobs').upsert({
-    post_id: postId,
-    attempts: 0,
-    next_run_at: scheduledAt,
-    last_error: null,
-  }, { onConflict: 'post_id' });
+  await syncPublishJob(postId, scheduledAt);
   return post;
 }
 
 export async function unschedulePost(postId) {
   const post = await updatePost(postId, { status: 'draft', scheduled_at: null });
-  await supabase.from('publish_jobs').delete().eq('post_id', postId);
+  await clearPublishJob(postId);
   await logPostActivity(postId, 'unscheduled', 'Removed from publish queue');
   await logWorkspaceEvent({
     clientId: post.client_id,
@@ -255,12 +301,7 @@ export async function reschedulePostToDay(postId, targetDay, post, clientTimezon
   });
 
   if (post.status === 'scheduled') {
-    await supabase.from('publish_jobs').upsert({
-      post_id: postId,
-      attempts: 0,
-      next_run_at: scheduledAt,
-      last_error: null,
-    }, { onConflict: 'post_id' });
+    await syncPublishJob(postId, scheduledAt);
   }
 
   return updated;

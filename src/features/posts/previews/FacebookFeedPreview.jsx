@@ -1,17 +1,13 @@
 import { Globe, MessageCircle, Share2, ThumbsUp } from 'lucide-react';
-import { normalizeMediaList, isVideo } from './mediaUtils';
+import { isVideo, normalizeMediaList } from './mediaUtils';
+import { PostMediaThumb } from '@/features/posts/PostMediaThumb';
 import { ProfileAvatar, usePreviewAccounts } from '../hooks/usePreviewAccounts';
 import { cn } from '@/lib/utils';
 
 function CollageTile({ item, className, overlay }) {
-  const video = isVideo(item.mime_type);
   return (
     <div className={cn('relative overflow-hidden bg-neutral-900', className)}>
-      {video ? (
-        <video src={item.public_url} className="h-full w-full object-cover" muted playsInline />
-      ) : (
-        <img src={item.public_url} alt="" className="h-full w-full object-cover" />
-      )}
+      <PostMediaThumb item={item} className="h-full w-full object-cover" />
       {overlay && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/50">
           <span className="text-2xl font-bold text-white">{overlay}</span>
@@ -83,11 +79,11 @@ function FacebookMedia({ items }) {
     if (isVideo(item.mime_type)) {
       return (
         <div className="relative bg-black">
-          <video src={item.public_url} className="max-h-[500px] w-full object-cover" muted playsInline />
+          <PostMediaThumb item={item} className="max-h-[500px] w-full object-cover" />
         </div>
       );
     }
-    return <img src={item.public_url} alt="" className="max-h-[500px] w-full object-cover" />;
+    return <PostMediaThumb item={item} className="max-h-[500px] w-full object-cover" />;
   }
 
   return <FacebookCollage items={items} />;

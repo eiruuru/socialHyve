@@ -79,13 +79,21 @@ async function cleanupOrphans(service: ServiceClient) {
   const prefixes = await listDraftPrefixes(service);
   const toDelete: string[] = [];
   const errors: string[] = [];
+  let skippedReferenced = 0;
+  let skippedRecent = 0;
 
   for (const prefix of prefixes) {
     const objects = await listAllObjects(service, prefix);
     for (const obj of objects) {
-      if (referenced.has(obj.path)) continue;
+      if (referenced.has(obj.path)) {
+        skippedReferenced += 1;
+        continue;
+      }
       const updatedAt = obj.updatedAt ? new Date(obj.updatedAt).getTime() : 0;
-      if (updatedAt && updatedAt > cutoff) continue;
+      if (updatedAt && updatedAt > cutoff) {
+        skippedRecent += 1;
+        continue;
+      }
       toDelete.push(obj.path);
     }
   }
@@ -96,7 +104,7 @@ async function cleanupOrphans(service: ServiceClient) {
     if (error) errors.push(error.message);
   }
 
-  return { deleted: toDelete.length, errors };
+  return { deleted: toDelete.length, skippedReferenced, skippedRecent, errors };
 }
 
 async function listDraftPrefixes(service: ServiceClient): Promise<string[]> {

@@ -4,6 +4,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createPost,
   addPostMedia,
+  updatePostMedia,
+  relocateDraftMedia,
   schedulePost,
   unschedulePost,
   uploadMediaFile,
@@ -12,6 +14,7 @@ import {
   logPostActivity,
   removePostMedia,
   deleteStorageObject,
+  clearPublishJob,
   listSocialAccounts,
 } from '@/lib/posts';
 import { invokeFunction } from '@/lib/supabaseFunctions';
@@ -41,8 +44,8 @@ import {
 } from '@/features/posts/composer/PublishProgressPanel';
 import { FineTunePanel } from '@/features/posts/composer/FineTunePanel';
 import { PlatformPreviewTabs } from '@/features/posts/previews/PlatformPreviewTabs';
-import { MAX_CAROUSEL_ITEMS } from '@/features/posts/MediaStrip';
-import { buildScheduleReturnPath, buildPostDetailPath } from '@/features/posts/postNavUtils';
+import { buildPostDetailPath, buildScheduleReturnPath } from '@/features/posts/postNavUtils';
+import { isDraftStoragePath } from '@/lib/postMedia';
 import {
   getEffectiveCaption,
   IG_CAPTION_LIMIT,
@@ -303,8 +306,26 @@ export function PostComposer({ editPostId = null }) {
   });
 
   const syncMedia = async (postId, { onUploadProgress } = {}) => {
-    const currentIds = new Set(media.filter((m) => m.id).map((m) => m.id));
-    const currentPaths = new Set(media.filter((m) => m.storage_path).map((m) => m.storage_path));
+    const relocatedMedia = [];
+    for (const item of media) {
+      if (item.storage_path && isDraftStoragePath(item.storage_path)) {
+        const moved = await relocateDraftMedia(item.storage_path, postId);
+        if (moved.storage_path !== item.storage_path) {
+          trackedStoragePathsRef.current.delete(item.storage_path);
+        }
+        relocatedMedia.push({
+          ...item,
+          storage_path: moved.storage_path,
+          public_url: moved.public_url,
+        });
+      } else {
+        relocatedMedia.push(item);
+      }
+    }
+    setMedia(relocatedMedia.map((item, index) => ({ ...item, sort_order: index })));
+
+    const currentIds = new Set(relocatedMedia.filter((m) => m.id).map((m) => m.id));
+    const currentPaths = new Set(relocatedMedia.filter((m) => m.storage_path).map((m) => m.storage_path));
 
     for (const id of originalMediaIdsRef.current) {
       if (!currentIds.has(id)) {
@@ -312,7 +333,7 @@ export function PostComposer({ editPostId = null }) {
       }
     }
 
-    const pendingUploads = media.filter((item) => item.file);
+    const pendingUploads = relocatedMedia.filter((item) => item.file);
     for (let i = 0; i < pendingUploads.length; i += 1) {
       const item = pendingUploads[i];
       onUploadProgress?.({
@@ -328,11 +349,11 @@ export function PostComposer({ editPostId = null }) {
       });
     }
 
-    for (const item of media) {
+    for (const item of relocatedMedia) {
       if (item.file) {
         continue;
       } else if (!item.id) {
-        await addPostMedia(postId, {
+        const saved = await addPostMedia(postId, {
           source: item.source,
           canva_design_id: item.canva_design_id,
           storage_path: item.storage_path,
@@ -340,10 +361,22 @@ export function PostComposer({ editPostId = null }) {
           mime_type: item.mime_type,
           sort_order: item.sort_order,
         });
+        item.id = saved.id;
+      } else if (item.id && item.storage_path) {
+        const previous = media.find((original) => original.id === item.id);
+        if (
+          previous?.storage_path !== item.storage_path
+          || previous?.public_url !== item.public_url
+        ) {
+          await updatePostMedia(item.id, {
+            storage_path: item.storage_path,
+            public_url: item.public_url,
+          });
+        }
       }
     }
 
-    originalMediaIdsRef.current = media.filter((m) => m.id).map((m) => m.id);
+    originalMediaIdsRef.current = relocatedMedia.filter((m) => m.id).map((m) => m.id);
     for (const path of [...trackedStoragePathsRef.current]) {
       if (!currentPaths.has(path)) {
         await deleteStorageObject(path);
@@ -529,6 +562,7 @@ export function PostComposer({ editPostId = null }) {
         ...buildPayload('scheduled'),
         scheduled_at: nowIso,
       });
+      await clearPublishJob(id);
 
       setPublishProgress({
         label: getPublishPlatformLabel(publishFacebook, publishInstagram),
@@ -649,6 +683,7 @@ export function PostComposer({ editPostId = null }) {
           validationErrors={draftValidationErrors}
           simplified={simplifiedComposer}
           showCanvaImport={showCanvaImport}
+          postId={draftPostId}
         />
 
         <div className="lg:sticky lg:top-[4.5rem] lg:z-0 lg:self-start">

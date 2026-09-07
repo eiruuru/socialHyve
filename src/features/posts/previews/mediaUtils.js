@@ -2,7 +2,9 @@ export const MAX_CAROUSEL_ITEMS = 10;
 
 export function normalizeMediaItem(item) {
   return {
+    id: item.id,
     public_url: item.public_url || item.publicUrl,
+    storage_path: item.storage_path || item.storagePath || null,
     mime_type: item.mime_type || item.mimeType || 'image/png',
     source: item.source,
     sort_order: item.sort_order ?? 0,

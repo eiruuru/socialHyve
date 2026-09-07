@@ -6,6 +6,15 @@ import { debugTokenInfo, isPageGrantedToUser, isValidPageTokenFor, resolvePageAc
 import { getServiceClient, META_GRAPH } from '../_shared/supabase.ts';
 import { buildPostEntityLabel, logWorkspaceEvent } from '../_shared/workspaceEvents.ts';
 import { shortenCaptionUrls } from '../_shared/shortLinks.ts';
+import {
+  claimStatusesForSource,
+  collectQueuePostIds,
+  findPlatformTarget,
+  isRetryableAttempt,
+  MAX_PUBLISH_ATTEMPTS,
+  nextPublishRetryAt,
+  shouldSkipPublishedPlatform,
+} from '../_shared/publishQueue.ts';
 
 const META_APP_ID = Deno.env.get('META_APP_ID') || '';
 const META_APP_SECRET = Deno.env.get('META_APP_SECRET') || '';
@@ -172,32 +181,22 @@ Deno.serve(async (req) => {
         return jsonResponse({ error: 'Unauthorized' }, 401);
       }
       const now = new Date().toISOString();
-      const { data: duePosts } = await service
-        .from('posts')
-        .select('id')
-        .eq('status', 'scheduled')
-        .lte('scheduled_at', now);
-
-      const results = [];
-      for (const post of duePosts || []) {
-        results.push(await publishPost(service, post.id));
-      }
-
       const { data: jobs } = await service
         .from('publish_jobs')
         .select('post_id')
         .lte('next_run_at', now)
-        .lt('attempts', 3);
+        .lt('attempts', MAX_PUBLISH_ATTEMPTS);
 
-      for (const job of jobs || []) {
-        results.push(await publishPost(service, job.post_id));
+      const results = [];
+      for (const postId of collectQueuePostIds(jobs || [])) {
+        results.push(await publishPost(service, postId, { fromQueue: true }));
       }
 
       return jsonResponse({ processed: results.length, results });
     }
 
     if (body.postId) {
-      const result = await publishPost(service, body.postId);
+      const result = await publishPost(service, body.postId, { fromQueue: false });
       return jsonResponse(result);
     }
 
@@ -374,16 +373,50 @@ async function resolveWorkingAccount(
   return null;
 }
 
-async function publishPost(service: ReturnType<typeof getServiceClient>, postId: string) {
-  const { data: post, error: postErr } = await service
+async function claimPostForPublish(
+  service: ReturnType<typeof getServiceClient>,
+  postId: string,
+  fromQueue: boolean,
+) {
+  const allowed = [...claimStatusesForSource(fromQueue)];
+  const { data: claimed, error } = await service
     .from('posts')
-    .select('*, post_media(*), post_targets(*)')
+    .update({ status: 'publishing' })
     .eq('id', postId)
-    .single();
+    .in('status', allowed)
+    .select('*, post_media(*), post_targets(*)')
+    .maybeSingle();
 
-  if (postErr || !post) return { postId, error: 'Post not found' };
+  if (error) {
+    const noRows = error.code === 'PGRST116' || /0 rows/i.test(error.message || '');
+    if (!noRows) return { error: error.message };
+  }
+  if (claimed) return { post: claimed };
 
-  await service.from('posts').update({ status: 'publishing' }).eq('id', postId);
+  const { data: current } = await service
+    .from('posts')
+    .select('id, status')
+    .eq('id', postId)
+    .maybeSingle();
+
+  if (current?.status === 'published' || current?.status === 'draft') {
+    await service.from('publish_jobs').delete().eq('post_id', postId);
+  }
+
+  return { skipped: true, reason: current?.status || 'not_claimable' };
+}
+
+async function publishPost(
+  service: ReturnType<typeof getServiceClient>,
+  postId: string,
+  options: { fromQueue?: boolean } = {},
+) {
+  const fromQueue = Boolean(options.fromQueue);
+  const claimed = await claimPostForPublish(service, postId, fromQueue);
+  if (claimed.error) return { postId, error: claimed.error };
+  if (claimed.skipped) return { postId, skipped: true, reason: claimed.reason };
+
+  const post = claimed.post;
 
   const accountRows = post.client_id
     ? await loadClientAssignedAccounts(service, post.client_id as string)
@@ -425,8 +458,17 @@ async function publishPost(service: ReturnType<typeof getServiceClient>, postId:
 
   let hasError = false;
   const errors: string[] = [];
+  const targets = (post.post_targets || []) as Array<{
+    platform?: string;
+    status?: string | null;
+    external_post_id?: string | null;
+  }>;
+  const fbTarget = findPlatformTarget(targets, 'facebook');
+  const igTarget = findPlatformTarget(targets, 'instagram');
 
-  if (post.publish_facebook && fbAccount) {
+  if (shouldSkipPublishedPlatform(fbTarget)) {
+    // Already live on Facebook — do not create another post.
+  } else if (post.publish_facebook && fbAccount) {
     try {
       assertAutomaticPlacementSupported(post, 'facebook');
       const { result: externalId, pageToken } = await publishWithPageToken(
@@ -468,7 +510,9 @@ async function publishPost(service: ReturnType<typeof getServiceClient>, postId:
     }, { onConflict: 'post_id,platform' });
   }
 
-  if (post.publish_instagram && igAccount) {
+  if (shouldSkipPublishedPlatform(igTarget)) {
+    // Already live on Instagram — do not create another post.
+  } else if (post.publish_instagram && igAccount) {
     try {
       assertAutomaticPlacementSupported(post, 'instagram');
       const { result: externalId, pageToken } = await publishWithPageToken(
@@ -565,15 +609,13 @@ async function publishPost(service: ReturnType<typeof getServiceClient>, postId:
       .maybeSingle();
 
     const attempts = (existingJob?.attempts || 0) + 1;
-    if (attempts < 3) {
-      const nextRun = new Date(Date.now() + attempts * 5 * 60 * 1000).toISOString();
+    if (isRetryableAttempt(attempts)) {
       await service.from('publish_jobs').upsert({
         post_id: postId,
         attempts,
-        next_run_at: nextRun,
+        next_run_at: nextPublishRetryAt(attempts),
         last_error: errors.join('; '),
       }, { onConflict: 'post_id' });
-      await service.from('posts').update({ status: 'scheduled' }).eq('id', postId);
     } else {
       await service.from('publish_jobs').delete().eq('post_id', postId);
       await notifyPublishFailed(service, post);

@@ -1,6 +1,7 @@
 import { Heart, MessageCircle, MoreHorizontal, Send, ThumbsUp } from 'lucide-react';
 import { ProfileAvatar, usePreviewAccounts } from '../hooks/usePreviewAccounts';
 import { normalizeMediaList } from './mediaUtils';
+import { PostMediaThumb } from '@/features/posts/PostMediaThumb';
 
 export function FacebookStoriesPreview({ caption, media = [], facebookAccountId = null }) {
   const { facebook } = usePreviewAccounts({ facebookAccountId });
@@ -9,8 +10,8 @@ export function FacebookStoriesPreview({ caption, media = [], facebookAccountId 
 
   return (
     <div className="relative mx-auto aspect-[9/16] w-full max-w-[300px] overflow-hidden rounded-xl bg-neutral-900">
-      {first?.public_url ? (
-        <img src={first.public_url} alt="" className="h-full w-full object-cover" />
+      {first?.public_url || first?.storage_path ? (
+        <PostMediaThumb item={first} className="h-full w-full object-cover" />
       ) : (
         <div className="flex h-full items-center justify-center text-sm text-white/70">
           Add media for Stories preview

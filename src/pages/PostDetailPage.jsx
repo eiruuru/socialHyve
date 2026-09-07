@@ -22,6 +22,7 @@ import { listOrganizationMembers, displayMember } from '@/lib/organization';
 import { invokeFunction } from '@/lib/supabaseFunctions';
 import { PlatformPreviewTabs } from '@/features/posts/previews/PlatformPreviewTabs';
 import { normalizeMediaList } from '@/features/posts/previews/mediaUtils';
+import { PostMediaThumb } from '@/features/posts/PostMediaThumb';
 import { PostStatusBadges, canTransitionApproval } from '@/features/queue/postStatus';
 import { CommentThread } from '@/features/queue/CommentThread';
 import { PostActivityCard } from '@/features/posts/PostActivityCard';
@@ -555,11 +556,11 @@ export default function PostDetailPage() {
                   )}
                   <div className="flex flex-wrap gap-2">
                     {mediaItems.map((item, i) => (
-                      item.mime_type?.startsWith('video') ? (
-                        <video key={i} src={item.public_url} className="h-20 w-20 rounded object-cover" muted />
-                      ) : (
-                        <img key={i} src={item.public_url} alt="" className="h-20 w-20 rounded object-cover" />
-                      )
+                      <PostMediaThumb
+                        key={item.id || item.storage_path || i}
+                        item={item}
+                        className="h-20 w-20 rounded object-cover"
+                      />
                     ))}
                   </div>
                 </div>

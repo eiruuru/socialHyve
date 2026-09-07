@@ -45,6 +45,7 @@ export function GenericContentStep({
   validationErrors,
   simplified = false,
   showCanvaImport = true,
+  postId = null,
 }) {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0, fileName: '' });
@@ -233,6 +234,7 @@ export function GenericContentStep({
                   onSelect={handleCanvaSelect}
                   mediaCount={media.length}
                   disabled={mediaBusy}
+                  postId={postId}
                 />
               )}
               <IconTooltip title="Upload media" description="Add images or videos from your device">

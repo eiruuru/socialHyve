@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { CanvaImportStep } from './CanvaImportStep';
 
-export function CanvaDesignPicker({ onSelect, disabled, iconOnly = false, mediaCount = 0 }) {
+export function CanvaDesignPicker({ onSelect, disabled, iconOnly = false, mediaCount = 0, postId = null }) {
   const { activeClient } = useClient();
   const clientId = activeClient?.id;
   const [open, setOpen] = useState(false);
@@ -231,6 +231,7 @@ export function CanvaDesignPicker({ onSelect, disabled, iconOnly = false, mediaC
           <CanvaImportStep
             design={selectedDesign}
             clientId={clientId}
+            postId={postId}
             remainingSlots={remainingSlots}
             onBack={() => setStep('browse')}
             onImport={handleImport}

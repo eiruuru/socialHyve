@@ -1,7 +1,8 @@
 import { ChevronLeft, ChevronRight, GripVertical, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { IconTooltip } from '@/components/ui/IconTooltip';
-import { MAX_CAROUSEL_ITEMS, isVideo, reorderMedia } from '@/features/posts/previews/mediaUtils';
+import { MAX_CAROUSEL_ITEMS, reorderMedia } from '@/features/posts/previews/mediaUtils';
+import { PostMediaThumb } from '@/features/posts/PostMediaThumb';
 
 export function MediaStrip({ items, onChange, maxItems = MAX_CAROUSEL_ITEMS }) {
   const atLimit = items.length >= maxItems;
@@ -34,11 +35,7 @@ export function MediaStrip({ items, onChange, maxItems = MAX_CAROUSEL_ITEMS }) {
         {items.map((item, index) => (
           <div key={`${item.public_url}-${index}`} className="flex items-center gap-2 rounded-md border p-2">
             <GripVertical className="h-4 w-4 shrink-0 text-muted-foreground" />
-            {isVideo(item.mime_type) ? (
-              <video src={item.public_url} className="h-14 w-14 rounded object-cover" muted />
-            ) : (
-              <img src={item.public_url} alt="" className="h-14 w-14 rounded object-cover" />
-            )}
+            <PostMediaThumb item={item} className="h-14 w-14 rounded object-cover" />
             <span className="flex-1 truncate text-xs text-muted-foreground">
               {item.source === 'canva' ? 'Canva design' : 'Upload'} · #{index + 1}
             </span>

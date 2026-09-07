@@ -4,6 +4,7 @@ import { Clapperboard, Layers } from 'lucide-react';
 import { listPosts } from '@/lib/posts';
 import { invokeFunction } from '@/lib/supabaseFunctions';
 import { normalizeMediaList, isVideo } from './mediaUtils';
+import { PostMediaThumb } from '@/features/posts/PostMediaThumb';
 import { cn } from '@/lib/utils';
 
 const PIPELINE_STATUSES = ['draft', 'scheduled', 'failed', 'publishing'];
@@ -38,12 +39,8 @@ function GridCell({ post, isCurrent }) {
   const statusBadge =
     post.status === 'draft' ? 'Draft' : post.status === 'scheduled' ? 'Scheduled' : null;
 
-  const content = thumb?.public_url ? (
-    hasVideo ? (
-      <video src={thumb.public_url} className="h-full w-full object-cover" muted />
-    ) : (
-      <img src={thumb.public_url} alt="" className="h-full w-full object-cover" />
-    )
+  const content = thumb?.public_url || thumb?.storage_path ? (
+    <PostMediaThumb item={thumb} className="h-full w-full object-cover" />
   ) : (
     <div className="flex h-full items-center justify-center text-xs text-neutral-400">No media</div>
   );

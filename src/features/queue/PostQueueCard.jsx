@@ -8,7 +8,8 @@ import { showToast } from '@/lib/toast';
 import { getPostDisplayBadges, isApprovedDraft } from './postStatus';
 import { getScheduleUrgency } from './scheduleUrgency';
 import { isQueuedToPublish } from '@/lib/publishStatus';
-import { normalizeMediaList, isVideo } from '@/features/posts/previews/mediaUtils';
+import { normalizeMediaList } from '@/features/posts/previews/mediaUtils';
+import { PostMediaThumb } from '@/features/posts/PostMediaThumb';
 import { formatScheduledLabel, resolveScheduleTimezone } from '@/lib/scheduleTime';
 import { cn } from '@/lib/utils';
 import { buildPostEditPath } from '@/features/posts/postNavUtils';
@@ -19,11 +20,8 @@ function PostThumb({ post, className }) {
   const first = media[0];
   const mediaClass = cn('h-full w-full object-cover', className ?? 'rounded-[10px]');
 
-  if (first?.public_url) {
-    if (isVideo(first.mime_type)) {
-      return <video src={first.public_url} className={mediaClass} muted />;
-    }
-    return <img src={first.public_url} alt="" className={mediaClass} />;
+  if (first?.public_url || first?.storage_path) {
+    return <PostMediaThumb item={first} className={mediaClass} />;
   }
 
   const label = post.publish_instagram && !post.publish_facebook ? 'IG' : post.publish_facebook ? 'FB' : '—';

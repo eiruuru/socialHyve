@@ -1,6 +1,7 @@
 import { Heart, MessageCircle, MoreHorizontal, Music2, Send } from 'lucide-react';
 import { ProfileAvatar, usePreviewAccounts } from '../hooks/usePreviewAccounts';
 import { isVideo, normalizeMediaList } from './mediaUtils';
+import { PostMediaThumb } from '@/features/posts/PostMediaThumb';
 
 export function FacebookReelsPreview({ caption, media = [], facebookAccountId = null }) {
   const { facebook } = usePreviewAccounts({ facebookAccountId });
@@ -10,18 +11,8 @@ export function FacebookReelsPreview({ caption, media = [], facebookAccountId = 
 
   return (
     <div className="relative mx-auto aspect-[9/16] w-full max-w-[300px] overflow-hidden rounded-xl bg-black">
-      {videoItem?.public_url ? (
-        isVideo(videoItem.mime_type) ? (
-          <video
-            src={videoItem.public_url}
-            className="h-full w-full object-cover"
-            muted
-            playsInline
-            loop
-          />
-        ) : (
-          <img src={videoItem.public_url} alt="" className="h-full w-full object-cover" />
-        )
+      {videoItem?.public_url || videoItem?.storage_path ? (
+        <PostMediaThumb item={videoItem} className="h-full w-full object-cover" loop />
       ) : (
         <div className="flex h-full items-center justify-center text-sm text-white/70">
           Add a video for Reels preview

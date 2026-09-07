@@ -6,7 +6,7 @@ import { getScheduleUrgency } from '@/features/queue/scheduleUrgency';
 import { PostStatusIconRow } from '@/features/queue/postStatusIcons';
 import { getPostCalendarDate } from '@/features/posts/postNavUtils';
 import { shouldShowScheduleUrgency } from '@/lib/publishStatus';
-import { isVideo } from '@/features/posts/previews/mediaUtils';
+import { PostMediaThumb } from '@/features/posts/PostMediaThumb';
 import { cn } from '@/lib/utils';
 
 const NON_DRAGGABLE_STATUSES = new Set(['published', 'publishing']);
@@ -32,12 +32,8 @@ function MediaPlaceholder({ className }) {
 function PostThumbnail({ thumb, isCarousel, className }) {
   return (
     <div className={cn('relative shrink-0 overflow-hidden bg-neutral-100', className)}>
-      {thumb?.public_url ? (
-        isVideo(thumb.mime_type) ? (
-          <video src={thumb.public_url} className="h-full w-full object-cover" muted />
-        ) : (
-          <img src={thumb.public_url} alt="" className="h-full w-full object-cover" />
-        )
+      {thumb?.public_url || thumb?.storage_path ? (
+        <PostMediaThumb item={thumb} className="h-full w-full object-cover" />
       ) : (
         <MediaPlaceholder className="h-full w-full" />
       )}

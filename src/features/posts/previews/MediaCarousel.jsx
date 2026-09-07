@@ -3,9 +3,9 @@ import useEmblaCarousel from 'embla-carousel-react';
 import { Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { computeAspectRatio, getAspectRatioClass, isVideo } from './mediaUtils';
+import { PostMediaThumb } from '@/features/posts/PostMediaThumb';
 
 function MediaSlide({ item, platform, onAspectLoad }) {
-  const url = item.public_url;
   const video = isVideo(item.mime_type);
 
   const handleLoad = (e) => {
@@ -14,7 +14,7 @@ function MediaSlide({ item, platform, onAspectLoad }) {
     onAspectLoad?.(ratio);
   };
 
-  if (!url) {
+  if (!item?.public_url && !item?.storage_path) {
     return (
       <div className="flex h-full min-h-[200px] items-center justify-center bg-gray-100 text-sm text-gray-400">
         No media
@@ -25,12 +25,10 @@ function MediaSlide({ item, platform, onAspectLoad }) {
   if (video) {
     return (
       <div className="relative h-full w-full bg-black">
-        <video
-          src={url}
+        <PostMediaThumb
+          item={item}
           className="h-full w-full object-cover"
-          muted
-          playsInline
-          onLoadedMetadata={handleLoad}
+          onLoad={handleLoad}
         />
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="rounded-full bg-black/50 p-3">
@@ -42,9 +40,8 @@ function MediaSlide({ item, platform, onAspectLoad }) {
   }
 
   return (
-    <img
-      src={url}
-      alt=""
+    <PostMediaThumb
+      item={item}
       className={cn('h-full w-full object-cover', platform === 'facebook' ? 'max-h-[500px]' : '')}
       onLoad={handleLoad}
     />

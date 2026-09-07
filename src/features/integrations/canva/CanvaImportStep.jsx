@@ -21,6 +21,7 @@ function clampPage(page, pageCount) {
 export function CanvaImportStep({
   design,
   clientId,
+  postId = null,
   onBack,
   onImport,
   remainingSlots,
@@ -117,6 +118,7 @@ export function CanvaImportStep({
         formatType,
         pages: pages || undefined,
         clientId,
+        postId: postId || undefined,
       });
 
       const files = result?.files || [];

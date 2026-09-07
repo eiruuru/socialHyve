@@ -16,7 +16,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useClient } from '@/lib/clientContext';
-import { reschedulePostToDay, updatePost } from '@/lib/posts';
+import { reschedulePostToDay, syncPublishJob, updatePost } from '@/lib/posts';
 import { isPastCalendarDay, isScheduleInPast, zonedLocalToUtc } from '@/lib/scheduleTime';
 import { showToast } from '@/lib/toast';
 import { isPostDraggable } from './CalendarPostCard';
@@ -162,6 +162,9 @@ export function ContentCalendar({ posts = [], readOnly = false }) {
         scheduled_at: scheduledUtc,
         schedule_timezone: scheduleTimezone,
       });
+      if (reschedulePost.status === 'scheduled') {
+        await syncPublishJob(reschedulePost.id, scheduledUtc);
+      }
       await queryClient.invalidateQueries({ queryKey: ['posts', activeClient?.id] });
       setRescheduleOpen(false);
       setReschedulePost(null);

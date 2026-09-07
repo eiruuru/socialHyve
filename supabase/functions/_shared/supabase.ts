@@ -71,10 +71,14 @@ export async function getCanvaConnection(
   const { data, error } = await query.maybeSingle();
   if (error) throw error;
   if (!data) return null;
+  const [accessToken, refreshToken] = await Promise.all([
+    readToken(data.access_token as string),
+    readToken(data.refresh_token as string),
+  ]);
   return {
     ...data,
-    access_token: await readToken(data.access_token as string),
-    refresh_token: await readToken(data.refresh_token as string),
+    access_token: accessToken,
+    refresh_token: refreshToken,
   };
 }
 

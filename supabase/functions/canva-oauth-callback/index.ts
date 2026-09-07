@@ -1,4 +1,5 @@
 import { handleOptions, redirectResponse } from '../_shared/cors.ts';
+import { runInBackground, warmCanvaDesignCache } from '../_shared/canvaDesigns.ts';
 import { getServiceClient } from '../_shared/supabase.ts';
 import { encryptAccountTokenFields } from '../_shared/accountTokens.ts';
 
@@ -110,6 +111,19 @@ Deno.serve(async (req) => {
 
     const tokens = await exchangeToken(code, oauthState.code_verifier);
     await saveCanvaConnection(service, oauthState, tokens);
+
+    const warm = warmCanvaDesignCache(
+      service,
+      oauthState.workspace_id,
+      oauthState.client_id,
+      tokens.access_token,
+    );
+    if (!runInBackground(warm)) {
+      await Promise.race([
+        warm.catch(() => {}),
+        new Promise((resolve) => setTimeout(resolve, 1500)),
+      ]);
+    }
 
     const clientParam = oauthState.client_id ? `&clientId=${oauthState.client_id}` : '';
     return redirectResponse(`${APP_URL}/app/settings/canva?connected=canva${clientParam}`);

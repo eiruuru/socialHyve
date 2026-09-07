@@ -57,7 +57,8 @@ export function CanvaImportStep({
   });
 
   const previewUrl = pagePreview?.thumbnailUrl || designThumbnailUrl;
-  const previewLoading = metaLoading || (showPageNavigator && pagePreviewLoading);
+  const previewLoading = (metaLoading && !designThumbnailUrl)
+    || (showPageNavigator && pagePreviewLoading && !previewUrl);
   const usingFallbackThumbnail = showPageNavigator
     && !pagePreview?.thumbnailUrl
     && Boolean(designThumbnailUrl);

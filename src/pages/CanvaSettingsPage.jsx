@@ -5,6 +5,8 @@ import { useDocumentMeta } from '@/components/DocumentMeta';
 import { PAGE_DESCRIPTIONS } from '@/lib/pageMeta';
 import { invokeFunction } from '@/lib/supabaseFunctions';
 import { getCanvaConnection, disconnectCanva } from '@/lib/posts';
+import { prefetchCanvaDesigns } from '@/lib/canvaDesignsApi';
+import { canvaDesignsQueryKey } from '@/lib/canvaDesigns';
 import { UpgradeToProBanner } from '@/components/billing/UpgradeToProBanner';
 import { getActiveClientId, useClient } from '@/lib/clientContext';
 import { useMembership } from '@/lib/membershipContext';
@@ -35,6 +37,11 @@ export default function CanvaSettingsPage() {
     refetch();
   }, [connected, queryClient, refetch]);
 
+  useEffect(() => {
+    if (!connection || !clientId) return;
+    void prefetchCanvaDesigns(queryClient, clientId);
+  }, [connection, clientId, queryClient]);
+
   const dismissBanner = () => {
     navigate('/app/settings/canva', { replace: true });
   };
@@ -55,6 +62,7 @@ export default function CanvaSettingsPage() {
   const disconnect = async () => {
     await disconnectCanva();
     await queryClient.invalidateQueries({ queryKey: ['canva-connection'] });
+    queryClient.removeQueries({ queryKey: canvaDesignsQueryKey(clientId) });
     refetch();
   };
 

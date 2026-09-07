@@ -2,9 +2,8 @@ import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { clearModalLocks } from '@/lib/clearModalLocks';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { CanvaIcon } from '@/components/icons/CanvaIcon';
-import { invokeFunction } from '@/lib/supabaseFunctions';
 import { getCanvaConnection } from '@/lib/posts';
 import { useClient } from '@/lib/clientContext';
 import { MAX_CAROUSEL_ITEMS } from '@/features/posts/previews/mediaUtils';
@@ -14,16 +13,21 @@ import { DialogRoot, DialogTrigger, DialogContent, DialogHeader, DialogTitle } f
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { CanvaImportStep } from './CanvaImportStep';
+import {
+  CANVA_DESIGNS_STALE_MS,
+  canvaDesignsQueryKey,
+  mergeCanvaDesignPages,
+} from '@/lib/canvaDesigns';
+import { listCanvaDesigns } from '@/lib/canvaDesignsApi';
 
 export function CanvaDesignPicker({ onSelect, disabled, iconOnly = false, mediaCount = 0, postId = null }) {
   const { activeClient } = useClient();
   const clientId = activeClient?.id;
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState('browse');
   const [search, setSearch] = useState('');
   const [selectedDesign, setSelectedDesign] = useState(null);
-  const [allDesigns, setAllDesigns] = useState([]);
-  const [continuation, setContinuation] = useState(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [importNotice, setImportNotice] = useState('');
 
@@ -35,28 +39,24 @@ export function CanvaDesignPicker({ onSelect, disabled, iconOnly = false, mediaC
     enabled: !!clientId,
   });
 
-  const { data, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ['canva-designs', clientId],
-    queryFn: async () => {
-      const result = await invokeFunction('canvaListDesigns', { clientId });
-      setAllDesigns(result?.designs || []);
-      setContinuation(result?.continuation || null);
-      return result;
-    },
-    enabled: open && !!connection && !!clientId && step === 'browse',
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: canvaDesignsQueryKey(clientId),
+    queryFn: () => listCanvaDesigns({ clientId }),
+    enabled: !!connection && !!clientId,
+    staleTime: CANVA_DESIGNS_STALE_MS,
   });
 
-  const designs = (allDesigns.length ? allDesigns : data?.designs || []).filter((d) =>
+  const designs = (data?.designs || []).filter((d) =>
     !search || d.title?.toLowerCase().includes(search.toLowerCase())
   );
+  const continuation = data?.continuation || null;
+  const showInitialLoading = isLoading && !designs.length;
 
   const resetState = () => {
     setStep('browse');
     setSelectedDesign(null);
     setSearch('');
     setImportNotice('');
-    setAllDesigns([]);
-    setContinuation(null);
   };
 
   const location = useLocation();
@@ -81,16 +81,30 @@ export function CanvaDesignPicker({ onSelect, disabled, iconOnly = false, mediaC
   }, [location.pathname]);
 
   const loadMore = async () => {
-    if (!continuation || loadingMore) return;
+    if (loadingMore) return;
     setLoadingMore(true);
     try {
-      const result = await invokeFunction('canvaListDesigns', { clientId, continuation });
-      setAllDesigns((prev) => [...prev, ...(result?.designs || [])]);
-      setContinuation(result?.continuation || null);
+      const result = continuation
+        ? await listCanvaDesigns({ clientId, continuation })
+        : await listCanvaDesigns({ clientId, fresh: true });
+      queryClient.setQueryData(canvaDesignsQueryKey(clientId), (current) => (
+        continuation ? mergeCanvaDesignPages(current, result) : result
+      ));
     } catch (err) {
       setImportNotice(err.message);
     } finally {
       setLoadingMore(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    try {
+      await queryClient.fetchQuery({
+        queryKey: canvaDesignsQueryKey(clientId),
+        queryFn: () => listCanvaDesigns({ clientId, fresh: true }),
+      });
+    } catch (err) {
+      setImportNotice(err.message);
     }
   };
 
@@ -171,7 +185,7 @@ export function CanvaDesignPicker({ onSelect, disabled, iconOnly = false, mediaC
               onChange={(e) => setSearch(e.target.value)}
             />
             <div className="min-h-0 flex-1 overflow-y-auto">
-              {isLoading || isFetching ? (
+              {showInitialLoading ? (
                 <p className="text-sm text-muted-foreground">Loading designs…</p>
               ) : (
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
@@ -191,6 +205,8 @@ export function CanvaDesignPicker({ onSelect, disabled, iconOnly = false, mediaC
                           <img
                             src={design.thumbnailUrl}
                             alt={design.title}
+                            loading="lazy"
+                            decoding="async"
                             className="mb-2 aspect-[4/5] w-full rounded object-cover"
                           />
                         ) : (
@@ -204,14 +220,16 @@ export function CanvaDesignPicker({ onSelect, disabled, iconOnly = false, mediaC
                   })}
                 </div>
               )}
-              {!isLoading && !designs.length && (
+              {!showInitialLoading && !designs.length && (
                 <p className="text-sm text-muted-foreground">No designs found.</p>
               )}
             </div>
             <div className="flex items-center justify-between border-t pt-4">
               <div className="flex gap-2">
-                <Button variant="ghost" size="sm" onClick={() => refetch()}>Refresh</Button>
-                {continuation && (
+                <Button variant="ghost" size="sm" onClick={handleRefresh} disabled={isFetching}>
+                  {isFetching && designs.length ? 'Refreshing…' : 'Refresh'}
+                </Button>
+                {(continuation) && (
                   <Button variant="ghost" size="sm" onClick={loadMore} disabled={loadingMore}>
                     {loadingMore ? 'Loading…' : 'Load more'}
                   </Button>

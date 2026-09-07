@@ -16,6 +16,7 @@ import {
   createReviewLink,
   logPostActivity,
   listSocialAccounts,
+  addPostComment,
 } from '@/lib/posts';
 import { resolvePostAccounts, findAccountById } from '@/lib/socialAccounts';
 import { listOrganizationMembers, displayMember } from '@/lib/organization';
@@ -29,6 +30,7 @@ import { PostActivityCard } from '@/features/posts/PostActivityCard';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { IconTooltip } from '@/components/ui/IconTooltip';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatScheduledLabel } from '@/lib/scheduleTime';
 import { PostNavigation } from '@/features/posts/PostNavigation';
@@ -82,13 +84,16 @@ export default function PostDetailPage() {
   const backDescription = tier === DEVICE_TIERS.MOBILE ? 'Return to the approval queue' : 'Return to the content calendar';
   const queryClient = useQueryClient();
   const [duplicating, setDuplicating] = useState(false);
+  const [changeNote, setChangeNote] = useState('');
   const duplicateLockRef = useRef(false);
   const membership = useMembership();
   const { activeClient } = useClient();
   const { workspace } = useWorkspace();
-  const readOnly = membership.isClientOnly;
-  const canApprove = hasCreativesQaAccess(membership);
-  const canSchedule = canApprove;
+  const canReview = hasCreativesQaAccess(membership);
+  const isClientMember = membership.isClientOnly;
+  const readOnly = isClientMember && !canReview;
+  const canApprove = canReview;
+  const canSchedule = canReview;
 
   const { data: post, isLoading } = useQuery({
     queryKey: ['post', id],
@@ -97,7 +102,7 @@ export default function PostDetailPage() {
 
   const { data: activity = [] } = useQuery({
     queryKey: ['post-activity', id],
-    queryFn: () => listPostActivity(id, { clientView: readOnly }),
+    queryFn: () => listPostActivity(id, { clientView: isClientMember }),
     enabled: !!id,
   });
 
@@ -238,6 +243,33 @@ export default function PostDetailPage() {
     }).catch(() => {});
   };
 
+  const handleRequestChanges = async () => {
+    const note = changeNote.trim();
+    if (!note) {
+      showToast({ title: 'Add feedback', description: 'Explain what needs to change.', variant: 'error' });
+      return;
+    }
+    if (!canTransitionApproval(approval, 'changes_requested')) {
+      showToast({ title: 'Cannot request changes on this post', variant: 'error' });
+      return;
+    }
+    await addPostComment(id, note, 'client');
+    if (approval !== 'changes_requested') {
+      await updateApprovalStatus(id, 'changes_requested');
+    }
+    setChangeNote('');
+    queryClient.invalidateQueries({ queryKey: ['post', id] });
+    queryClient.invalidateQueries({ queryKey: ['posts'] });
+    queryClient.invalidateQueries({ queryKey: ['post-activity', id] });
+    queryClient.invalidateQueries({ queryKey: ['post-comments', id] });
+    showToast({ title: 'Changes requested', description: 'Feedback sent to the author', variant: 'info' });
+    notifyWorkflowEvent({
+      event: 'changes_requested',
+      postId: id,
+      recipientUserIds: getPostAuthorUserIds(post),
+    }).catch(() => {});
+  };
+
   const handleResubmit = async () => {
     if (!canTransitionApproval(approval, 'pending')) return;
     await updateApprovalStatus(id, 'pending');
@@ -247,9 +279,15 @@ export default function PostDetailPage() {
   };
 
   const handleApprovalChange = async (value) => {
+    if (value === approval) return;
+    if (canReview && !canTransitionApproval(approval, value)) {
+      showToast({ title: 'Cannot change approval to that state', variant: 'error' });
+      return;
+    }
     await updateApprovalStatus(id, value);
     queryClient.invalidateQueries({ queryKey: ['post', id] });
     queryClient.invalidateQueries({ queryKey: ['post-activity', id] });
+    queryClient.invalidateQueries({ queryKey: ['posts'] });
   };
 
   const handleStatusChange = async (value) => {
@@ -298,6 +336,10 @@ export default function PostDetailPage() {
   const qaCanManagePublish = canSchedule
     && approval === 'approved'
     && !['published', 'publishing'].includes(post.status);
+  const qaApprovalOptions = APPROVAL_OPTIONS.filter((o) => {
+    if (o.value === 'draft') return o.value === approval;
+    return o.value === approval || canTransitionApproval(approval, o.value);
+  });
 
   const scheduleSummary = [];
   if (post.publish_facebook) {
@@ -332,28 +374,28 @@ export default function PostDetailPage() {
             total={postNav.total}
           />
           <div className="flex items-center gap-1">
-          {canApprove && approval === 'pending' && (
+          {canApprove && canTransitionApproval(approval, 'approved') && (
             <IconTooltip title="Approve" description="Mark this post as approved">
               <Button size="icon" onClick={handleApprove} aria-label="Approve">
                 <Check className="h-4 w-4" />
               </Button>
             </IconTooltip>
           )}
-          {!readOnly && approval === 'changes_requested' && (
+          {!isClientMember && approval === 'changes_requested' && (
             <IconTooltip title="Resubmit for review" description="Send back to the approval queue">
               <Button size="icon" variant="secondary" onClick={handleResubmit} aria-label="Resubmit for review">
                 <RotateCcw className="h-4 w-4" />
               </Button>
             </IconTooltip>
           )}
-          {!readOnly && post.status === 'failed' && (
+          {!isClientMember && post.status === 'failed' && (
             <IconTooltip title="Try again" description="Retry publishing this post">
               <Button size="icon" variant="secondary" onClick={handleRetry} aria-label="Try again">
                 <RefreshCw className="h-4 w-4" />
               </Button>
             </IconTooltip>
           )}
-          {!readOnly && (
+          {!isClientMember && (
             <>
               <IconTooltip title="Duplicate post" description="Create a copy as a new draft">
                 <Button
@@ -378,14 +420,14 @@ export default function PostDetailPage() {
               </IconTooltip>
             </>
           )}
-          {post.status !== 'published' && (!readOnly || canSchedule) && (
+          {post.status !== 'published' && (!isClientMember || canSchedule) && (
             <IconTooltip
-              title={canSchedule && readOnly ? 'Schedule post' : 'Edit post'}
-              description={canSchedule && readOnly ? 'Pick a schedule time and queue for publishing' : 'Open in the composer to edit'}
+              title={canSchedule && isClientMember ? 'Schedule post' : 'Edit post'}
+              description={canSchedule && isClientMember ? 'Pick a schedule time and queue for publishing' : 'Open in the composer to edit'}
             >
               <Link
                 to={buildPostEditPath(id)}
-                aria-label={canSchedule && readOnly ? 'Schedule post' : 'Edit post'}
+                aria-label={canSchedule && isClientMember ? 'Schedule post' : 'Edit post'}
                 className={cn(buttonVariants({ size: 'icon', variant: 'outline' }))}
                 onClick={() => prepareForRouteChange()}
               >
@@ -393,7 +435,7 @@ export default function PostDetailPage() {
               </Link>
             </IconTooltip>
           )}
-          {!readOnly && (
+          {!isClientMember && (
             <IconTooltip title="Delete" description="Permanently remove this post">
               <Button size="icon" variant="destructive" onClick={handleDelete} aria-label="Delete">
                 <Trash2 className="h-4 w-4" />
@@ -430,19 +472,44 @@ export default function PostDetailPage() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>{readOnly && !canSchedule ? 'Status' : readOnly ? 'Status & scheduling' : 'Workflow'}</CardTitle>
+              <CardTitle>
+                {isClientMember && !canReview ? 'Status' : isClientMember ? 'Status & scheduling' : 'Workflow'}
+              </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
-              {readOnly && !canSchedule ? (
+              {isClientMember && !canReview ? (
                 <div className="sm:col-span-2 space-y-2 text-sm">
                   <p><span className="font-medium">Approval:</span> {APPROVAL_OPTIONS.find((o) => o.value === approval)?.label || approval}</p>
                   <p><span className="font-medium">Publish state:</span> {STATUS_OPTIONS.find((o) => o.value === publishStatus)?.label || publishStatus}</p>
                 </div>
-              ) : readOnly && canSchedule ? (
+              ) : isClientMember && canReview ? (
                 <>
-                  <div className="sm:col-span-2 space-y-2 text-sm">
-                    <p><span className="font-medium">Approval:</span> {APPROVAL_OPTIONS.find((o) => o.value === approval)?.label || approval}</p>
+                  <div className="sm:col-span-2">
+                    <label className="mb-1 block text-xs font-medium">Approval state</label>
+                    <select
+                      value={approval}
+                      onChange={(e) => handleApprovalChange(e.target.value)}
+                      className="h-10 w-full rounded-hyve-sm border border-input bg-background px-3 text-sm"
+                    >
+                      {qaApprovalOptions.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
                   </div>
+                  {canTransitionApproval(approval, 'changes_requested') && (
+                    <div className="sm:col-span-2 space-y-2">
+                      <label className="block text-xs font-medium">Request changes</label>
+                      <Textarea
+                        rows={2}
+                        placeholder="What needs to change?"
+                        value={changeNote}
+                        onChange={(e) => setChangeNote(e.target.value)}
+                      />
+                      <Button size="sm" variant="destructive" onClick={handleRequestChanges}>
+                        Send feedback
+                      </Button>
+                    </div>
+                  )}
                   <div className="sm:col-span-2">
                     <label className="mb-1 block text-xs font-medium">Publish state</label>
                     <select
@@ -610,7 +677,7 @@ export default function PostDetailPage() {
 
           <Card>
             <CardContent className="pt-6">
-              <CommentThread postId={id} teamView={!readOnly} readOnly={readOnly} />
+              <CommentThread postId={id} teamView={!isClientMember} readOnly={readOnly} />
             </CardContent>
           </Card>
         </div>

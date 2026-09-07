@@ -154,8 +154,10 @@ export default function QueuePage() {
       showToast({ title: 'Cannot request changes on this post', variant: 'error' });
       return;
     }
-    await addPostComment(postId, note);
-    await updateApprovalStatus(postId, 'changes_requested');
+    await addPostComment(postId, note, 'client');
+    if ((post.approval_status || 'draft') !== 'changes_requested') {
+      await updateApprovalStatus(postId, 'changes_requested');
+    }
     invalidate();
     showToast({ title: 'Changes requested', description: 'Feedback sent to the author', variant: 'info' });
     notifyWorkflowEvent({

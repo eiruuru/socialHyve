@@ -188,7 +188,7 @@ export default function ClientReviewPage() {
                     <PostActivityCard activity={approvalActivity} />
                     <Card>
                       <CardContent className="pt-6">
-                        <CommentThread postId={approvalSelected.id} teamView={false} readOnly />
+                        <CommentThread postId={approvalSelected.id} teamView={false} readOnly={false} />
                       </CardContent>
                     </Card>
                   </div>

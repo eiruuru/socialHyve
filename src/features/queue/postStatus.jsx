@@ -1,6 +1,8 @@
 import { StatusBadge, STATUS_LABELS } from '@/components/brand/StatusBadge';
 import { getEffectivePublishStatus, isApprovedNotQueued } from '@/lib/publishStatus';
 
+export { canTransitionApproval, isReviewableApproval } from './approvalTransitions';
+
 export function isApprovedDraft(post) {
   return isApprovedNotQueued(post);
 }
@@ -42,17 +44,6 @@ export function PostStatusBadges({ post, className }) {
       ))}
     </span>
   );
-}
-
-const ALLOWED_TRANSITIONS = {
-  draft: ['pending'],
-  pending: ['approved', 'changes_requested'],
-  changes_requested: ['pending'],
-  approved: ['pending'],
-};
-
-export function canTransitionApproval(from, to) {
-  return ALLOWED_TRANSITIONS[from]?.includes(to) ?? false;
 }
 
 export function filterQueuePosts(posts, tab) {

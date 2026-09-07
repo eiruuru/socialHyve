@@ -5,7 +5,7 @@ import { PlatformChip } from '@/components/brand/PlatformChip';
 import { StatusBadge } from '@/components/brand/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { showToast } from '@/lib/toast';
-import { getPostDisplayBadges, isApprovedDraft } from './postStatus';
+import { getPostDisplayBadges, isApprovedDraft, isReviewableApproval } from './postStatus';
 import { getScheduleUrgency } from './scheduleUrgency';
 import { isQueuedToPublish } from '@/lib/publishStatus';
 import { normalizeMediaList } from '@/features/posts/previews/mediaUtils';
@@ -118,7 +118,7 @@ export function PostQueueCard({
 
   const actionButtons = showActions && (
     <div className="mt-4 flex w-full shrink-0 items-center gap-2 border-t border-neutral-200 pt-3">
-      {approval === 'pending' && (
+      {isReviewableApproval(approval) && (
         <>
           <button
             type="button"

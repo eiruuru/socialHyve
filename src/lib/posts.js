@@ -206,7 +206,7 @@ export async function relocateDraftMedia(storagePath, postId) {
   };
 }
 
-export async function removePostMedia(id) {
+export async function removePostMedia(id, { keepStorage = false } = {}) {
   const { data: row, error: fetchErr } = await supabase
     .from('post_media')
     .select('storage_path, preview_storage_path, original_storage_path')
@@ -214,14 +214,17 @@ export async function removePostMedia(id) {
     .maybeSingle();
   if (fetchErr) throw fetchErr;
 
-  await deleteStorageObjects([
-    row?.storage_path,
-    row?.preview_storage_path,
-    row?.original_storage_path,
-  ]);
+  if (!keepStorage) {
+    await deleteStorageObjects([
+      row?.storage_path,
+      row?.preview_storage_path,
+      row?.original_storage_path,
+    ]);
+  }
 
   const { error } = await supabase.from('post_media').delete().eq('id', id);
   if (error) throw error;
+  return row;
 }
 
 export async function syncPublishJob(postId, scheduledAt) {

@@ -1,9 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { shouldResolveSignedMediaUrl } from '@/lib/postMedia';
 import { isVideo } from '@/features/posts/previews/mediaUtils';
 import { cn } from '@/lib/utils';
 
 const SIGNED_URL_TTL_SECONDS = 60 * 60;
+
+async function resolveSignedMediaUrl(storagePath) {
+  const { data, error } = await supabase.storage
+    .from('post-media')
+    .createSignedUrl(storagePath, SIGNED_URL_TTL_SECONDS);
+  if (error || !data?.signedUrl) return null;
+  return data.signedUrl;
+}
 
 export function PostMediaThumb({
   item,
@@ -23,20 +32,52 @@ export function PostMediaThumb({
   const triedSignedRef = useRef(false);
 
   useEffect(() => {
-    setSrc(publicUrl);
-    setFailed(!publicUrl && !storagePath);
+    let cancelled = false;
     triedSignedRef.current = false;
+
+    if (publicUrl) {
+      setSrc(publicUrl);
+      setFailed(false);
+      return undefined;
+    }
+
+    if (!storagePath) {
+      setSrc('');
+      setFailed(true);
+      return undefined;
+    }
+
+    setSrc('');
+    setFailed(false);
+
+    if (!shouldResolveSignedMediaUrl(publicUrl, storagePath)) return undefined;
+
+    triedSignedRef.current = true;
+    resolveSignedMediaUrl(storagePath)
+      .then((signedUrl) => {
+        if (cancelled) return;
+        if (signedUrl) {
+          setSrc(signedUrl);
+          return;
+        }
+        setFailed(true);
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [publicUrl, storagePath]);
 
   const handleError = async () => {
     if (!triedSignedRef.current && storagePath) {
       triedSignedRef.current = true;
       try {
-        const { data, error } = await supabase.storage
-          .from('post-media')
-          .createSignedUrl(storagePath, SIGNED_URL_TTL_SECONDS);
-        if (!error && data?.signedUrl) {
-          setSrc(data.signedUrl);
+        const signedUrl = await resolveSignedMediaUrl(storagePath);
+        if (signedUrl) {
+          setSrc(signedUrl);
           return;
         }
       } catch {

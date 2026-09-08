@@ -17,6 +17,10 @@ export function normalizeMediaList(items = []) {
     .map(normalizeMediaItem);
 }
 
+export function mediaItemKey(item, index) {
+  return item?.id || item?.storage_path || item?.storagePath || `media-${index}`;
+}
+
 export function isVideo(mimeType) {
   return (mimeType || '').startsWith('video/');
 }

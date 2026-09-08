@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight, GripVertical, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { IconTooltip } from '@/components/ui/IconTooltip';
-import { MAX_CAROUSEL_ITEMS, reorderMedia } from '@/features/posts/previews/mediaUtils';
+import { MAX_CAROUSEL_ITEMS, mediaItemKey, reorderMedia } from '@/features/posts/previews/mediaUtils';
 import { PostMediaThumb } from '@/features/posts/PostMediaThumb';
 
 export function MediaStrip({ items, onChange, maxItems = MAX_CAROUSEL_ITEMS }) {
@@ -33,7 +33,7 @@ export function MediaStrip({ items, onChange, maxItems = MAX_CAROUSEL_ITEMS }) {
       </p>
       <div className="space-y-2">
         {items.map((item, index) => (
-          <div key={`${item.public_url}-${index}`} className="flex items-center gap-2 rounded-md border p-2">
+          <div key={mediaItemKey(item, index)} className="flex items-center gap-2 rounded-md border p-2">
             <GripVertical className="h-4 w-4 shrink-0 text-muted-foreground" />
             <PostMediaThumb item={item} className="h-14 w-14 rounded object-cover" />
             <span className="flex-1 truncate text-xs text-muted-foreground">

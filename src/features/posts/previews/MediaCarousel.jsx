@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import { Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { computeAspectRatio, getAspectRatioClass, isVideo } from './mediaUtils';
+import { computeAspectRatio, getAspectRatioClass, isVideo, mediaItemKey } from './mediaUtils';
 import { PostMediaThumb } from '@/features/posts/PostMediaThumb';
 
 function MediaSlide({ item, platform, onAspectLoad }) {
@@ -103,7 +103,7 @@ export function MediaCarousel({
       <div ref={emblaRef} className="h-full overflow-hidden">
         <div className="flex h-full">
           {items.map((item, index) => (
-            <div key={`${item.public_url}-${index}`} className="min-w-0 flex-[0_0_100%]">
+            <div key={mediaItemKey(item, index)} className="min-w-0 flex-[0_0_100%]">
               <MediaSlide
                 item={item}
                 platform={platform}

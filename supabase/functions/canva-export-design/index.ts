@@ -238,24 +238,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (postId && files.length === 1) {
-      const { data: media, error: mediaErr } = await supabase
-        .from('post_media')
-        .insert({
-          post_id: postId,
-          source: 'canva',
-          canva_design_id: designId,
-          storage_path: files[0].storagePath,
-          public_url: files[0].publicUrl,
-          mime_type: files[0].mimeType,
-          sort_order: 0,
-        })
-        .select()
-        .single();
-      if (mediaErr) throw mediaErr;
-      return jsonResponse({ files, media, publicUrl: files[0].publicUrl });
-    }
-
     return jsonResponse({ files });
   } catch (err) {
     return jsonResponse({ error: (err as Error).message }, 400);

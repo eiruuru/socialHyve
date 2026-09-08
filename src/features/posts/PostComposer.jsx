@@ -14,6 +14,7 @@ import {
   logPostActivity,
   removePostMedia,
   deleteStorageObject,
+  deleteStorageObjects,
   clearPublishJob,
   listSocialAccounts,
 } from '@/lib/posts';
@@ -45,7 +46,7 @@ import {
 import { FineTunePanel } from '@/features/posts/composer/FineTunePanel';
 import { PlatformPreviewTabs } from '@/features/posts/previews/PlatformPreviewTabs';
 import { buildPostDetailPath, buildScheduleReturnPath } from '@/features/posts/postNavUtils';
-import { isDraftStoragePath } from '@/lib/postMedia';
+import { isDraftStoragePath, unusedMediaStoragePaths } from '@/lib/postMedia';
 import {
   getEffectiveCaption,
   IG_CAPTION_LIMIT,
@@ -327,9 +328,11 @@ export function PostComposer({ editPostId = null }) {
     const currentIds = new Set(relocatedMedia.filter((m) => m.id).map((m) => m.id));
     const currentPaths = new Set(relocatedMedia.filter((m) => m.storage_path).map((m) => m.storage_path));
 
+    const removedRows = [];
     for (const id of originalMediaIdsRef.current) {
       if (!currentIds.has(id)) {
-        await removePostMedia(id);
+        const row = await removePostMedia(id, { keepStorage: true });
+        if (row) removedRows.push(row);
       }
     }
 
@@ -377,6 +380,7 @@ export function PostComposer({ editPostId = null }) {
     }
 
     originalMediaIdsRef.current = relocatedMedia.filter((m) => m.id).map((m) => m.id);
+    await deleteStorageObjects(unusedMediaStoragePaths(removedRows, currentPaths));
     for (const path of [...trackedStoragePathsRef.current]) {
       if (!currentPaths.has(path)) {
         await deleteStorageObject(path);

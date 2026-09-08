@@ -5,6 +5,12 @@ import {
   buildDuplicateMediaRows,
   duplicateInternalName,
 } from '../src/lib/postDuplicate.js';
+import {
+  shouldKeepMediaStorage,
+  shouldResolveSignedMediaUrl,
+  unusedMediaStoragePaths,
+} from '../src/lib/postMedia.js';
+import { mediaItemKey } from '../src/features/posts/previews/mediaUtils.js';
 import { validatePost, validatePublishPlatforms } from '../src/features/posts/postValidation.js';
 import { validateFineTune } from '../src/features/posts/platformOverrides.js';
 
@@ -205,4 +211,42 @@ test('draft validation allows Instagram enabled with no media', () => {
     draftValidationErrors.some((e) => /Instagram requires at least one image or video/.test(e)),
     false,
   );
+});
+
+test('unusedMediaStoragePaths keeps a reused Canva path after row replace', () => {
+  const canvaPath = 'org/client/post/design-p1.png';
+  const unused = unusedMediaStoragePaths(
+    [{ storage_path: canvaPath }],
+    new Set([canvaPath]),
+  );
+  assert.deepEqual(unused, []);
+  assert.equal(shouldKeepMediaStorage({ storage_path: canvaPath }, [canvaPath]), true);
+});
+
+test('unusedMediaStoragePaths deletes a path that nothing still references', () => {
+  const unused = unusedMediaStoragePaths(
+    [
+      { storage_path: 'org/client/post/old.png', preview_storage_path: 'org/client/post/old-preview.png' },
+      { storage_path: 'org/client/post/kept.png' },
+    ],
+    ['org/client/post/kept.png'],
+  );
+  assert.deepEqual(unused, [
+    'org/client/post/old.png',
+    'org/client/post/old-preview.png',
+  ]);
+  assert.equal(shouldKeepMediaStorage({ storage_path: 'org/client/post/old.png' }, ['org/client/post/kept.png']), false);
+});
+
+test('shouldResolveSignedMediaUrl only when public url is empty', () => {
+  assert.equal(shouldResolveSignedMediaUrl('', 'org/client/post/design-p1.png'), true);
+  assert.equal(shouldResolveSignedMediaUrl(null, 'org/client/post/design-p1.png'), true);
+  assert.equal(shouldResolveSignedMediaUrl('https://cdn.example/img.png', 'org/client/post/design-p1.png'), false);
+  assert.equal(shouldResolveSignedMediaUrl('', ''), false);
+});
+
+test('mediaItemKey prefers id or storage path over public url', () => {
+  assert.equal(mediaItemKey({ id: 'row-1', public_url: 'https://cdn.example/a.png' }, 0), 'row-1');
+  assert.equal(mediaItemKey({ storage_path: 'org/a.png', public_url: 'https://cdn.example/a.png' }, 1), 'org/a.png');
+  assert.equal(mediaItemKey({ public_url: 'https://cdn.example/a.png' }, 2), 'media-2');
 });

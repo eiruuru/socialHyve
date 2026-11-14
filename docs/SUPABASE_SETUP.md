@@ -99,7 +99,7 @@ After Edge Functions are deployed:
 
 This schedules:
 - **Publish queue** — every minute (`publish-post`)
-- **Token refresh** — weekly Sunday 3am UTC (`refresh-tokens`)
+- **Token refresh** — daily 4am UTC (`refresh-tokens`). Re-run this script if the job was previously weekly.
 
 ## 7. Meta Developer App
 

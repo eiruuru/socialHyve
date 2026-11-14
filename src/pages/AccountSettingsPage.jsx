@@ -134,6 +134,7 @@ export default function AccountSettingsPage() {
     approved: true,
     changes_requested: true,
     publish_failed: true,
+    meta_reconnect_required: true,
   });
   const [savingNotifications, setSavingNotifications] = useState(false);
   const [inAppNotificationsEnabled, setInAppNotificationsEnabled] = useState(true);
@@ -494,6 +495,7 @@ export default function AccountSettingsPage() {
                   ['approved', 'Approved'],
                   ['changes_requested', 'Changes requested'],
                   ['publish_failed', 'Publish failed'],
+                  ['meta_reconnect_required', 'Facebook reconnect required'],
                 ].map(([key, label]) => (
                   <label key={key} className="flex items-center gap-2">
                     <input

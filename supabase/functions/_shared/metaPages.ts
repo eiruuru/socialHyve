@@ -77,29 +77,95 @@ export async function debugTokenType(
   return info.type;
 }
 
+export type DebugTokenInfo = {
+  ok: boolean;
+  type: string | null;
+  profileId: string | null;
+  userId: string | null;
+  isValid: boolean | null;
+  expiresAt: number | null;
+  dataAccessExpiresAt: number | null;
+  issuedAt: number | null;
+  error: string | null;
+};
+
+function emptyDebugTokenInfo(error: string | null): DebugTokenInfo {
+  return {
+    ok: false,
+    type: null,
+    profileId: null,
+    userId: null,
+    isValid: null,
+    expiresAt: null,
+    dataAccessExpiresAt: null,
+    issuedAt: null,
+    error,
+  };
+}
+
 export async function debugTokenInfo(
   token: string,
   appAccessToken: string,
-): Promise<{ type: string | null; profileId: string | null; userId: string | null }> {
-  const res = await fetch(
-    `${META_GRAPH}/debug_token?input_token=${encodeURIComponent(token)}&access_token=${encodeURIComponent(appAccessToken)}`,
-  );
-  const data = await res.json();
-  const debug = data.data as { type?: string; profile_id?: string; user_id?: string } | undefined;
-  const profileId = debug?.profile_id ? String(debug.profile_id) : null;
-  const userId = debug?.user_id ? String(debug.user_id) : (debug?.type === 'USER' ? profileId : null);
+): Promise<DebugTokenInfo> {
+  let data: Record<string, unknown>;
+  try {
+    const res = await fetch(
+      `${META_GRAPH}/debug_token?input_token=${encodeURIComponent(token)}&access_token=${encodeURIComponent(appAccessToken)}`,
+    );
+    data = await res.json();
+  } catch (err) {
+    return emptyDebugTokenInfo((err as Error).message || 'Meta debug_token failed');
+  }
+
+  const graphError = data.error as { message?: string } | undefined;
+  if (graphError) {
+    return emptyDebugTokenInfo(graphError.message || 'Meta debug_token failed');
+  }
+
+  const debug = data.data as {
+    type?: string;
+    profile_id?: string;
+    user_id?: string;
+    is_valid?: boolean;
+    expires_at?: number;
+    data_access_expires_at?: number;
+    issued_at?: number;
+  } | undefined;
+  if (!debug) return emptyDebugTokenInfo('Meta debug_token returned no data');
+
+  const profileId = debug.profile_id ? String(debug.profile_id) : null;
+  const userId = debug.user_id ? String(debug.user_id) : (debug.type === 'USER' ? profileId : null);
   return {
-    type: debug?.type || null,
+    ok: true,
+    type: debug.type || null,
     profileId,
     userId,
+    isValid: typeof debug.is_valid === 'boolean' ? debug.is_valid : null,
+    expiresAt: typeof debug.expires_at === 'number' ? debug.expires_at : null,
+    dataAccessExpiresAt: typeof debug.data_access_expires_at === 'number'
+      ? debug.data_access_expires_at
+      : null,
+    issuedAt: typeof debug.issued_at === 'number' ? debug.issued_at : null,
+    error: null,
   };
 }
 
 export function isValidPageTokenFor(
-  info: { type: string | null; profileId: string | null },
+  info: {
+    type: string | null;
+    profileId: string | null;
+    isValid?: boolean | null;
+    expiresAt?: number | null;
+  },
   pageId: string,
+  now = Date.now(),
 ): boolean {
-  return info.type === 'PAGE' && info.profileId === String(pageId);
+  if (info.type !== 'PAGE' || info.profileId !== String(pageId)) return false;
+  if (info.isValid === false) return false;
+  if (typeof info.expiresAt === 'number' && info.expiresAt > 0 && info.expiresAt * 1000 <= now) {
+    return false;
+  }
+  return true;
 }
 
 async function collectPagesForUser(userToken: string): Promise<Map<string, MetaPage>> {

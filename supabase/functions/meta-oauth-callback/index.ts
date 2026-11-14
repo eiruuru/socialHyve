@@ -9,6 +9,7 @@ import {
   getGrantedScopesArray,
   resolvePageAccessToken,
 } from '../_shared/metaPages.ts';
+import { releaseHeldPublishJobs } from '../_shared/publishRecovery.ts';
 
 const META_APP_ID = Deno.env.get('META_APP_ID') || '';
 const META_APP_SECRET = Deno.env.get('META_APP_SECRET') || '';
@@ -120,6 +121,9 @@ Deno.serve(async (req) => {
         user_access_token: encryptedUserToken.user_access_token,
         token_expires_at: tokenExpiresAt,
         granted_scopes: scopeList,
+        connection_status: 'connected',
+        last_refresh_error: null,
+        last_checked_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }, { onConflict: 'workspace_id,meta_user_id' })
       .select('id')
@@ -209,6 +213,12 @@ Deno.serve(async (req) => {
       await service.from('posts').update({ facebook_account_id: null }).in('facebook_account_id', staleAccountIds);
       await service.from('posts').update({ instagram_account_id: null }).in('instagram_account_id', staleAccountIds);
       await service.from('social_accounts').delete().in('id', staleAccountIds);
+    }
+
+    try {
+      await releaseHeldPublishJobs(service, workspaceId);
+    } catch {
+      // The login is saved. Held posts retry on the next publish pass.
     }
 
     return metaRedirect({ connected: 'meta' });

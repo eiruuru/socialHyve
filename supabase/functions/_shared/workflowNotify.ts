@@ -34,6 +34,7 @@ const DEFAULT_IN_APP_PREFS: Record<string, boolean> = {
   publish_success: true,
   publish_failed: true,
   review_needed: true,
+  meta_reconnect_required: true,
 };
 
 async function sendPush(
@@ -147,6 +148,71 @@ export async function getOrgAdminUserIds(
   if (org?.owner_id) ids.add(org.owner_id);
   for (const member of members || []) ids.add(member.user_id);
   return [...ids];
+}
+
+export async function getOrganizationAdminUserIds(
+  service: SupabaseClient,
+  organizationId: string | null | undefined,
+): Promise<string[]> {
+  if (!organizationId) return [];
+
+  const { data: org } = await service
+    .from('organizations')
+    .select('owner_id')
+    .eq('id', organizationId)
+    .maybeSingle();
+
+  const { data: members } = await service
+    .from('organization_members')
+    .select('user_id, role')
+    .eq('organization_id', organizationId)
+    .in('role', ['owner', 'admin']);
+
+  const ids = new Set<string>();
+  if (org?.owner_id) ids.add(org.owner_id);
+  for (const member of members || []) ids.add(member.user_id);
+  return [...ids];
+}
+
+export async function notifyMetaReconnectRequired(
+  service: SupabaseClient,
+  session: { workspaceId: string; accountName: string; detail: string },
+): Promise<void> {
+  const recipients = await getOrganizationAdminUserIds(service, session.workspaceId);
+  if (!recipients.length) return;
+
+  const title = 'Reconnect Facebook';
+  const body = `${session.accountName} needs to be reconnected before scheduled posts can publish.`;
+  await createInAppNotifications(
+    service,
+    recipients.map((userId) => ({
+      userId,
+      type: 'account',
+      event: 'meta_reconnect_required',
+      title,
+      body,
+      href: '/app/settings/account?tab=meta',
+      metadata: { accountName: session.accountName },
+    })),
+  );
+
+  const url = `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-workflow-email`;
+  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+  if (!url || !key) return;
+
+  await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      event: 'meta_reconnect_required',
+      recipientUserIds: recipients,
+      accountName: session.accountName,
+      detail: session.detail,
+    }),
+  }).catch(() => {});
 }
 
 export async function notifyPublishFailed(

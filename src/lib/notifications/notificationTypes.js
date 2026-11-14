@@ -7,6 +7,7 @@ export const DEFAULT_IN_APP_PREFS = {
   publish_success: true,
   publish_failed: true,
   review_needed: true,
+  meta_reconnect_required: true,
 };
 
 export const IN_APP_PREF_LABELS = {
@@ -18,6 +19,7 @@ export const IN_APP_PREF_LABELS = {
   publish_success: 'Published successfully',
   publish_failed: 'Publish failed',
   review_needed: 'Posts awaiting your review',
+  meta_reconnect_required: 'Facebook reconnect required',
 };
 
 export function eventLabel(event) {

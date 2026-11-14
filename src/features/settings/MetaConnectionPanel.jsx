@@ -94,6 +94,7 @@ export function MetaConnectionPanel() {
     pages: pages.filter((page) => page.meta_session_id === session.id),
   }));
   const needsInteractionsReconnect = sessionsNeedInteractionsReconnect(sessions);
+  const needsMetaReconnect = sessions.some((session) => session.connection_status === 'needs_reconnect');
 
   return (
     <div className="min-w-0 space-y-6 overflow-x-hidden">
@@ -101,6 +102,20 @@ export function MetaConnectionPanel() {
         Connect Facebook accounts at the organization level, then assign pages to each client under{' '}
         <Link to="/app/settings/accounts" className="underline">Social Links</Link>.
       </p>
+
+      {needsMetaReconnect && (
+        <div className="rounded-hyve-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <p className="font-medium">Reconnect Meta to keep posts publishing</p>
+          <p className="mt-1">
+            A Facebook login expired, so scheduled posts are waiting. Reconnect that account to publish them.
+          </p>
+          <div className="mt-3">
+            <Button size="sm" onClick={() => startMetaOAuth()} disabled={busy}>
+              Reconnect Facebook
+            </Button>
+          </div>
+        </div>
+      )}
 
       {needsInteractionsReconnect && (
         <div className="rounded-hyve-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
@@ -181,9 +196,20 @@ export function MetaConnectionPanel() {
                 <div key={session.id} className="flex items-center justify-between gap-3 rounded-md border p-3">
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">{session.meta_user_name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Connected {new Date(session.updated_at).toLocaleDateString()}
-                    </p>
+                    {session.connection_status === 'needs_reconnect' ? (
+                      <>
+                        <p className="text-xs font-medium text-amber-800">Reconnect required</p>
+                        {session.last_refresh_error && (
+                          <p className="break-words text-xs text-amber-800">{session.last_refresh_error}</p>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        {session.token_expires_at
+                          ? `Token expires ${new Date(session.token_expires_at).toLocaleDateString()}`
+                          : `Connected ${new Date(session.updated_at).toLocaleDateString()}`}
+                      </p>
+                    )}
                   </div>
                   <div className="flex shrink-0 items-center gap-1 sm:gap-2">
                     <IconTooltip title="Reconnect" description="Refresh this Facebook account connection">

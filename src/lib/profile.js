@@ -74,6 +74,7 @@ const DEFAULT_NOTIFICATION_PREFERENCES = {
   approved: true,
   changes_requested: true,
   publish_failed: true,
+  meta_reconnect_required: true,
 };
 
 export async function updateNotificationPreferences({

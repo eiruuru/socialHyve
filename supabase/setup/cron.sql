@@ -40,13 +40,14 @@ SELECT cron.schedule(
   $$
 );
 
--- Token refresh: weekly Sunday 3am UTC
+-- Token refresh: daily 4am UTC
+-- Re-run this script after deploy so an existing weekly job is replaced.
 SELECT cron.unschedule('socialhyve-refresh-tokens')
 WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'socialhyve-refresh-tokens');
 
 SELECT cron.schedule(
   'socialhyve-refresh-tokens',
-  '0 3 * * 0',
+  '0 4 * * *',
   $$
   SELECT net.http_post(
     url := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'supabase_url' LIMIT 1) || '/functions/v1/refresh-tokens',

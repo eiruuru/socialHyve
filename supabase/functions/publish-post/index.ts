@@ -9,10 +9,9 @@ import { shortenCaptionUrls } from '../_shared/shortLinks.ts';
 import {
   claimStatusesForSource,
   collectQueuePostIds,
+  decidePublishFailure,
   findPlatformTarget,
-  isRetryableAttempt,
   MAX_PUBLISH_ATTEMPTS,
-  nextPublishRetryAt,
   shouldSkipPublishedPlatform,
 } from '../_shared/publishQueue.ts';
 
@@ -361,16 +360,17 @@ async function resolveWorkingAccount(
   accounts: Record<string, unknown>[],
   platform: string,
   preferredId?: string | null,
-): Promise<Record<string, unknown> | null> {
+): Promise<{ account: Record<string, unknown> | null; error: string | null }> {
+  let lastError: string | null = null;
   for (const account of accountCandidates(accounts, platform, preferredId)) {
     try {
       await ensurePageAccessToken(service, account);
-      return account;
-    } catch {
-      // Try the next connected account for this client.
+      return { account, error: null };
+    } catch (err) {
+      lastError = (err as Error).message;
     }
   }
-  return null;
+  return { account: null, error: lastError };
 }
 
 async function claimPostForPublish(
@@ -422,22 +422,24 @@ async function publishPost(
     ? await loadClientAssignedAccounts(service, post.client_id as string)
     : [];
 
-  const fbAccount = post.publish_facebook
+  const fbResolved = post.publish_facebook
     ? await resolveWorkingAccount(
       service,
       accountRows,
       'facebook',
-      post.facebook_account_id,
+      post.facebook_account_id as string | null,
     )
-    : null;
-  const igAccount = post.publish_instagram
+    : { account: null, error: null };
+  const igResolved = post.publish_instagram
     ? await resolveWorkingAccount(
       service,
       accountRows,
       'instagram',
-      post.instagram_account_id,
+      post.instagram_account_id as string | null,
     )
-    : null;
+    : { account: null, error: null };
+  const fbAccount = fbResolved.account;
+  const igAccount = igResolved.account;
   const media: MediaItem[] = (post.post_media || []).sort(
     (a: MediaItem, b: MediaItem) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
   );
@@ -501,6 +503,16 @@ async function publishPost(
         social_account_id: fbAccount?.id || null,
       }, { onConflict: 'post_id,platform' });
     }
+  } else if (post.publish_facebook && fbResolved.error) {
+    hasError = true;
+    const msg = fbResolved.error;
+    errors.push(`Facebook: ${msg}`);
+    await service.from('post_targets').upsert({
+      post_id: postId,
+      platform: 'facebook',
+      status: 'failed',
+      error_message: msg,
+    }, { onConflict: 'post_id,platform' });
   } else if (post.publish_facebook) {
     await service.from('post_targets').upsert({
       post_id: postId,
@@ -562,6 +574,16 @@ async function publishPost(
         social_account_id: igAccount?.id || null,
       }, { onConflict: 'post_id,platform' });
     }
+  } else if (post.publish_instagram && igResolved.error) {
+    hasError = true;
+    const msg = igResolved.error;
+    errors.push(`Instagram: ${msg}`);
+    await service.from('post_targets').upsert({
+      post_id: postId,
+      platform: 'instagram',
+      status: 'failed',
+      error_message: msg,
+    }, { onConflict: 'post_id,platform' });
   } else if (post.publish_instagram) {
     await service.from('post_targets').upsert({
       post_id: postId,
@@ -608,17 +630,27 @@ async function publishPost(
       .eq('post_id', postId)
       .maybeSingle();
 
-    const attempts = (existingJob?.attempts || 0) + 1;
-    if (isRetryableAttempt(attempts)) {
+    const failure = decidePublishFailure({
+      errors,
+      attempts: existingJob?.attempts || 0,
+      scheduledAt: (post.scheduled_at as string | null) || null,
+      lastError: (existingJob?.last_error as string | null) || null,
+    });
+    const errorMessage = errors.join('; ');
+
+    if (failure.action === 'give_up') {
+      await service.from('publish_jobs').delete().eq('post_id', postId);
+      await notifyPublishFailed(service, { ...post, error_message: errorMessage });
+    } else {
       await service.from('publish_jobs').upsert({
         post_id: postId,
-        attempts,
-        next_run_at: nextPublishRetryAt(attempts),
-        last_error: errors.join('; '),
+        attempts: failure.attempts,
+        next_run_at: failure.nextRunAt,
+        last_error: errorMessage,
       }, { onConflict: 'post_id' });
-    } else {
-      await service.from('publish_jobs').delete().eq('post_id', postId);
-      await notifyPublishFailed(service, post);
+      if (failure.notify) {
+        await notifyPublishFailed(service, { ...post, error_message: errorMessage });
+      }
     }
   } else {
     await service.from('publish_jobs').delete().eq('post_id', postId);

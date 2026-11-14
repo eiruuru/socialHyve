@@ -9,14 +9,24 @@ type WorkflowEvent =
   | 'submitted_for_review'
   | 'approved'
   | 'changes_requested'
-  | 'publish_failed';
+  | 'publish_failed'
+  | 'meta_reconnect_required';
 
 const EVENT_LABELS: Record<WorkflowEvent, string> = {
   submitted_for_review: 'Submitted for review',
   approved: 'Approved',
   changes_requested: 'Changes requested',
   publish_failed: 'Publish failed',
+  meta_reconnect_required: 'Reconnect Facebook',
 };
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
 
 function shouldNotify(profile: Record<string, unknown>, event: WorkflowEvent): boolean {
   if (!profile.email_notifications_enabled) return false;
@@ -38,11 +48,54 @@ Deno.serve(async (req) => {
     const postId = body.postId as string;
     const recipientUserIds = (body.recipientUserIds || []) as string[];
 
-    if (!event || !postId || !recipientUserIds.length) {
-      return jsonResponse({ error: 'event, postId, and recipientUserIds required' }, 400);
+    if (!event || !recipientUserIds.length) {
+      return jsonResponse({ error: 'event and recipientUserIds required' }, 400);
     }
 
     const service = getServiceClient();
+
+    if (event === 'meta_reconnect_required') {
+      const accountNameRaw = String(body.accountName || 'Facebook account').replace(/[\r\n]+/g, ' ');
+      const accountName = escapeHtml(accountNameRaw);
+      const detail = escapeHtml(String(body.detail || 'Reconnect Meta so scheduled posts can publish.'));
+      const link = `${APP_URL}/app/settings/account?tab=meta`;
+      const { data: profiles } = await service
+        .from('profiles')
+        .select('id, email, full_name, email_notifications_enabled, notification_preferences')
+        .in('id', recipientUserIds);
+
+      const sent: string[] = [];
+      for (const profile of profiles || []) {
+        if (!profile.email || !shouldNotify(profile, event)) continue;
+        const html = `
+          <div style="font-family: Inter, sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a1a;">
+            <h2 style="font-family: Baloo 2, sans-serif;">Reconnect Facebook</h2>
+            <p><strong>${accountName}</strong> needs to be reconnected before scheduled posts can publish.</p>
+            <p>${detail}</p>
+            <p><a href="${link}" style="display:inline-block;background:#F6A600;color:#1a1a1a;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Reconnect Meta</a></p>
+          </div>
+        `;
+        const res = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${RESEND_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: INVITE_FROM_EMAIL,
+            to: [profile.email],
+            subject: `[socialHyve] Reconnect Facebook — ${accountNameRaw}`,
+            html,
+          }),
+        });
+        if (res.ok) sent.push(profile.email);
+      }
+      return jsonResponse({ ok: true, sent: sent.length });
+    }
+
+    if (!postId) {
+      return jsonResponse({ error: 'event, postId, and recipientUserIds required' }, 400);
+    }
     const { data: post } = await service
       .from('posts')
       .select('id, internal_name, caption, client_id, clients(name)')
